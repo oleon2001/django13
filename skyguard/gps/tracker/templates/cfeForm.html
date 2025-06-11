@@ -1,0 +1,8 @@
+{% extends 'cfeBase_form.html' %}
+
+{% block content-form %}
+<form action="" method="post">{% csrf_token %}
+    {{ form.as_ul }}
+    <input type="submit" value="{{ form.submit_text }}" />
+</form>
+{% endblock content-form %}

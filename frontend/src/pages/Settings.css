@@ -1,0 +1,309 @@
+.settings {
+  padding: 1rem;
+}
+
+.settings h1 {
+  margin-bottom: 2rem;
+  color: var(--primary-color);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.settings-card {
+  background-color: var(--white);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card h3 {
+  color: var(--text-color);
+  margin: 0 0 1.5rem 0;
+  font-size: 1.2rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-form .form-group {
+  margin-bottom: 0;
+}
+
+.settings-form .form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.settings-form .form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--caption-background);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.settings-form .form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 128, 64, 0.2);
+}
+
+.settings-form .btn {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* Estilos específicos para select */
+.settings-form select.form-control {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+}
+
+.settings-container {
+  padding: 30px;
+  min-height: calc(100vh - 70px); /* Adjust height based on header */
+  background-color: #1a1a1a; /* Dark background similar to Arsenal's */
+  color: #f5f5f5; /* Light text color */
+  font-family: 'Roboto', sans-serif;
+  overflow-y: auto; /* Add vertical scrollbar if content overflows */
+}
+
+.settings-container h1 {
+  margin-bottom: 30px;
+  color: #e01a22; /* Arsenal's signature red */
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.settings-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  color: #424242;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.settings-error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.settings-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #424242;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-group input {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.settings-submit {
+  background-color: #1976d2;
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.settings-submit:hover {
+  background-color: #1565c0;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-container > * {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .settings-container {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .settings-container {
+    padding: 15px;
+  }
+
+  .settings-container h1 {
+    font-size: 2rem;
+  }
+
+  .settings-card h3 {
+    font-size: 1.5rem;
+  }
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2.5rem;
+}
+
+.settings-card {
+  background-color: #2a2a2a; /* Slightly lighter dark for cards */
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.settings-card h3 {
+  color: #e01a22; /* Arsenal red for card titles */
+  margin: 0 0 1.8rem 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.settings-form .form-group {
+  margin-bottom: 0;
+}
+
+.settings-form .form-label {
+  display: block;
+  margin-bottom: 0.6rem;
+  color: #bbb; /* Lighter grey for labels */
+  font-weight: 500;
+  font-size: 1.05rem;
+}
+
+.settings-form .form-control {
+  width: calc(100% - 20px); /* Adjusting for padding */
+  padding: 12px 10px;
+  border: 1px solid #444; /* Darker border */
+  border-radius: 5px;
+  font-size: 1.1rem;
+  background-color: #333; /* Darker input background */
+  color: #f5f5f5;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.settings-form .form-control:focus {
+  outline: none;
+  border-color: #e01a22; /* Red border on focus */
+  box-shadow: 0 0 0 3px rgba(224, 26, 34, 0.3); /* Red glow on focus */
+}
+
+.settings-form select.form-control {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.btn.btn-primary {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 15px;
+  background-color: #e01a22; /* Arsenal's red */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn.btn-primary:hover {
+  background-color: #c0151c; /* Slightly darker red on hover */
+  transform: translateY(-2px);
+}
+
+.btn.btn-primary:active {
+  transform: translateY(0);
+}
+
+.error {
+  background-color: #e01a22; /* Arsenal Red */
+  color: white;
+  padding: 0.8rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.success {
+  background-color: #4caf50; /* Green for success */
+  color: white;
+  padding: 0.8rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+} 

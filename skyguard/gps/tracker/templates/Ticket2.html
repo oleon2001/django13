@@ -1,0 +1,90 @@
+<html>
+	<head>
+  	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}/Style.css">
+
+	<link href="/static/css/ui/jquery.ui.all.css" rel="stylesheet" type="text/css">
+	<script type = "text/javascript" src = "//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+	<script type = "text/javascript" src = "//ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="/static/jquery.spinner.js"></script>
+	<script type="text/javascript" src="/static/jquery_easing.js"></script>
+	<script type="text/javascript" src="/static/markerAnimate.js"></script>
+
+	<script type="text/javascript">
+
+	</script>
+  </head>
+<body>
+  <table width="70%" border="0" cellpadding="0" cellspacing="0"><tbody>
+  	<tr><td valign="top">
+    	<table class="Header" border="0" cellpadding="0" cellspacing="0"><tbody>
+    			<tr><td class="HeaderLeft"><img src="{{ STATIC_URL }}/Spacer.gif" border="0"></td><th>Captura Liquidación</th>
+    			<td class="HeaderLeft"><img src="{{ STATIC_URL }}/Spacer.gif" border="0"></td></tr>
+			</tbody></table>
+			<table class="Grid" style="empty-cells: show;" cellpadding="0" cellspacing="0">
+      	<tbody>
+      		<tr class="Row"><td colspan="1" style="text-align: left;">{{ Name }}</td>
+      			<td colspan="3" style="text-align: left;">{{ Ruta }}</td>
+				<td colspan="2" style="text-align: left;">Fecha Imp:  {{ Date }} </td>
+				<td colspan="2" style="text-align: left;">Unidad: {{ Economico }} </td>
+          </tr>
+		  <!-- Loop para cada vuelta -->{% for i in rounds %}
+		  <!-- total: {{ i.total }}, ord: {{ i.normal }}, pref: {{ i.pref }} subidas: {{ i.up }} bajadas: {{ i.down }} -->
+          <tr><td colspan="4"><hr size="3" width="100%" align="center"></td><td></td></tr>
+		      <tr class="Row">
+		      	<td style="text-align: left;" colspan="3">Ruta: {{ Ramal }} </td>
+		        <td style="text-align: left;">Vuelta: {{ forloop.counter }} </td>
+				<td style="text-align: left;" colspan="2">Fecha Rep: {{ i.date }}</td>
+				<td style="text-align: left;" colspan="2">HI: {{ i.start }} -  HF: {{ i.stop }}</td>
+          </tr>
+          <tr class="Row">
+            <td colspan="4" style="text-align: left; background-color: rgb(189, 183, 107);">Subidas: {{ i.nocard }}
+			    &nbsp;&nbsp;&nbsp;||&nbsp;&nbsp;&nbsp;Tarj. Pref.: {{ i.pref }}</td>
+			<td colspan="4" style="text-align: left; background-color: rgb(189, 183, 107);">Tarj. Ord.: {{ i.normal }}
+			    &nbsp;&nbsp;&nbsp;||&nbsp;&nbsp;&nbsp;Pasaje Real: {{ i.real }}</td>
+	      </tr>
+
+
+
+          <tr class="Row">
+            <td colspan="4" style="text-align: left; background-color: rgb(189, 183, 107);">Liquidación</td>
+            <td colspan="4" style="text-align: left; background-color: rgb(189, 183, 107);">${{ i.cash|floatformat:2}}</td>
+          </tr>
+          <!-- tr class="Row">
+            <td colspan="2" style="background: rgb(143, 188, 143) none repeat scroll 0% 0%; text-align: center; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial;">Tarj. Pref. Despues: 0</td>
+            <td colspan="2" style="background: rgb(143, 188, 143) none repeat scroll 0% 0%; text-align: center; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial;">Tarj. Ord. Despues: 0 </td>
+          </tr -->{% endfor %}
+
+	      <tr><td colspan="8"><hr size="3" width="100%" align="center"></td><td></td></tr>
+          <tr class="Row">
+            <td colspan="8" style="text-align: center; background-color: rgb(70, 130, 180);"><font color="#000000">TOTALES</font></td>
+          </tr>
+          <tr class="Row">
+            <td colspan="8" style="text-align: center;"><font size="1">Subidas = Subidas[ {{ NoCard }}  ] - Cortesias Aplicadas[ 0  ]</font></td>
+          </tr>
+          <tr class="Row">
+            <td colspan="2" style="text-align: center;">Subidas</td>
+            <td colspan="2" style="text-align: center;">Ordinaria</td>
+            <td colspan="2" style="text-align: center;">Preferente</td>
+            <td colspan="2" style="text-align: center; background-color: rgb(189, 183, 107);">Liquidación</td>
+          </tr>
+          <tr class="Row">
+            <td colspan="2" style="text-align: center;"><font size="+1">{{ NoCard }}</font></td>
+            <td colspan="2" style="text-align: center;"><font size="+1">{{ Ordinarias }}</font></td>
+            <td colspan="2" style="text-align: center;"><font size="+1">{{ Preferentes }}</font></td>
+            <td colspan="2" style="text-align: center; background-color: rgb(189, 183, 107);"><font size="+1">${{ Cash|floatformat:2 }}</font></td></tr>
+      	  <!--tr><td colspan="8"><hr size="3" width="100%" align="center"></td></tr-->
+
+        </tbody>
+      </table>
+    </td></tr>
+	</tbody></table>
+	<p>
+	
+	<div id="content-full">
+	<form action="" method="post">{% csrf_token %}
+	{{ form.as_p }}
+	<input type="submit" value="{{ form.submit_text }}" />
+	</form>
+	</div>	
+</body></html>

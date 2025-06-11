@@ -1,0 +1,93 @@
+.base-layout {
+  min-height: 100vh; /* Ensures the base layout fills the entire viewport height */
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: #0d0d0d; /* Very dark background */
+  padding: 1.2rem 3rem; /* More vertical padding, wider horizontal padding */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+}
+
+.logo img {
+  height: 50px;
+  max-width: 150px; /* Ensure logo doesn't get too big */
+}
+
+.nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 2.5rem; /* Increased gap between nav items */
+}
+
+.nav a {
+  text-decoration: none;
+  color: #f5f5f5; /* Off-white for better contrast */
+  font-weight: 500; /* Slightly less bold */
+  font-size: 1.1rem;
+  padding: 0.5rem 0;
+  transition: color 0.3s ease; /* Smoother transition */
+  position: relative;
+}
+
+.nav a::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  bottom: -5px;
+  left: 0;
+  background-color: #e01a22; /* Arsenal red underline */
+  transition: width 0.3s ease;
+}
+
+.nav a:hover {
+  color: #ffffff;
+}
+
+.nav a:hover::after {
+  width: 100%;
+}
+
+.cta-button {
+  background-color: #e01a22; /* Arsenal's signature red */
+  color: white;
+  border: none;
+  border-radius: 5px; /* Rounded corners */
+  padding: 0.8rem 1.8rem; /* Generous padding */
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-left: 2rem; /* Space from nav links */
+}
+
+.cta-button:hover {
+  background-color: #c0151c; /* Slightly darker red on hover */
+  transform: translateY(-2px);
+}
+
+.cta-button:active {
+  transform: translateY(0);
+}
+
+.nav button {
+  display: none; /* Hide the existing button as we'll add a new cta-button */
+}
+
+.logged-user {
+  text-align: right;
+  font-size: 0.9rem;
+  color: #bbb; /* Lighter grey for better visibility on dark background */
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto; /* Enables vertical scrolling for content area */
+} 

@@ -1,0 +1,177 @@
+.reports-container {
+  padding: 30px;
+  min-height: calc(100vh - 70px); /* Adjust height based on header */
+  background-color: #1a1a1a; /* Dark background similar to Arsenal's */
+  color: #f5f5f5; /* Light text color */
+  font-family: 'Roboto', sans-serif;
+  overflow-y: auto; /* Add vertical scrollbar if content overflows */
+}
+
+.reports-container h1 {
+  margin-bottom: 30px;
+  color: #e01a22; /* Arsenal's signature red */
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.MuiTableContainer-root {
+  background-color: #2a2a2a !important; /* Slightly lighter dark for the table container */
+  border-radius: 10px !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important; /* Deeper shadow */
+  overflow-x: auto; /* Enable horizontal scrolling for tables */
+}
+
+.MuiTableHead-root {
+  background-color: #333;
+}
+
+.MuiTableCell-head {
+  color: #f5f5f5 !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.MuiTableRow-root {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Subtle row divider */
+}
+
+.MuiTableRow-root:last-child {
+  border-bottom: none;
+}
+
+.MuiTableCell-body {
+  color: #f5f5f5 !important;
+  font-size: 1rem !important;
+  padding: 15px !important; /* Increased padding for table cells */
+}
+
+/* Estilos para estados de reportes */
+.reports-container .status {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.reports-container .status.completed {
+  background-color: #4caf50; /* Green */
+  color: #fff;
+}
+
+.reports-container .status.pending {
+  background-color: #ff9800; /* Orange */
+  color: #fff;
+}
+
+.reports-container .status.failed {
+  background-color: #e01a22; /* Arsenal Red */
+  color: #fff;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reports-container > * {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .reports-container {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .reports-container {
+    padding: 15px;
+  }
+
+  .reports-container h1 {
+    font-size: 2rem;
+  }
+
+  .MuiTableCell-body {
+    font-size: 0.9rem !important;
+    padding: 10px !important;
+  }
+}
+
+.reports {
+  padding: 1rem;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.reports-header h1 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.reports-content {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+.reports-calendar {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.reports-table {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+/* Estilos para acciones */
+.reports .actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.reports .action-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.reports .action-btn:hover {
+  opacity: 0.8;
+}
+
+.reports .action-btn.edit {
+  background-color: var(--link-color);
+  color: var(--white);
+}
+
+.reports .action-btn.delete {
+  background-color: var(--hover-link-color);
+  color: var(--white);
+} 

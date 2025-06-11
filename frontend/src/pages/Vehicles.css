@@ -1,0 +1,125 @@
+.vehicles-container {
+  padding: 30px;
+  min-height: calc(100vh - 70px); /* Adjust height based on header */
+  background-color: #1a1a1a; /* Dark background similar to Arsenal's */
+  color: #f5f5f5; /* Light text color */
+  font-family: 'Roboto', sans-serif;
+  overflow-y: auto; /* Add vertical scrollbar if content overflows */
+}
+
+.vehicles-container h1 {
+  margin-bottom: 30px;
+  color: #e01a22; /* Arsenal's signature red */
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+/* The Table component already handles its own styles */
+
+/* Estilos para estados de vehículos */
+.vehicles-container .status {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.vehicles-container .status.active {
+  background-color: #4caf50; /* Green */
+  color: #fff;
+}
+
+.vehicles-container .status.maintenance {
+  background-color: #ff9800; /* Orange */
+  color: #fff;
+}
+
+.vehicles-container .status.inactive {
+  background-color: #e01a22; /* Arsenal Red */
+  color: #fff;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vehicles-container > * {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .vehicles-container {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .vehicles-container {
+    padding: 15px;
+  }
+
+  .vehicles-container h1 {
+    font-size: 2rem;
+  }
+}
+
+.vehicles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.vehicles-header h1 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+/* Estilos específicos para la tabla de vehículos */
+.vehicles .table-container {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.vehicles .actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.vehicles .action-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.vehicles .action-btn:hover {
+  opacity: 0.8;
+}
+
+.vehicles .action-btn.edit {
+  background-color: var(--link-color);
+  color: var(--white);
+}
+
+.vehicles .action-btn.delete {
+  background-color: var(--hover-link-color);
+  color: var(--white);
+} 

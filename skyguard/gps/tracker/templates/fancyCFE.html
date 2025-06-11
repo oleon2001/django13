@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="UFT-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rastreo // Innovative Tracking Solutions</title>
+
+  <!-- Default Styles (DO NOT TOUCH) -->
+  <link rel="stylesheet" href="/static/lib/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/static/lib/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/lib/css/fonts.css">
+  <link rel="stylesheet" href="/static/lib/css/soft-admin.css"/>
+
+  <!-- Adjustable Styles -->
+  <link type="text/css" rel="stylesheet" href="/static/lib/css/morris.css"/>
+  <link type="text/css" rel="stylesheet" href="/static/lib/css/colorbox.css"/>
+  <link type="text/css" rel="stylesheet" href="/static/lib/css/icheck.css">
+
+  <link rel="stylesheet" href="/static/lib/css/soft-theme-blue.css"/>
+
+  <!-- ADDITIONAL THEMES
+  <link rel="stylesheet" href="/static/lib/css/soft-theme-ocean.css"/> // SIMPLE OCEAN THEME
+  <link rel="stylesheet" href="/static/lib/css/soft-theme-dark.css"/> // DARK THEME
+  <link rel="stylesheet" href="/static/lib/css/soft-theme-light.css"/> // LIGHT THEME
+  <link rel="stylesheet" href="/static/lib/css/soft-theme-fixed.css"/> // AFFIXES YOUR SIDEBAR AND NAVIGATION
+  -->
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+   <script src="/static/lib/js/html5shiv.js"></script>
+   <script src="/static/lib/js/respond.min.js"></script>
+  <![endif]-->
+
+ </head>
+ <body>
+
+  <div class="cntnr">
+
+   <!-- RIGHT NAV, CRUMBS, & CONTENT -->
+   <div class="right">
+
+    <div class="nav">
+     <div class="bar">
+
+      <!-- NAV PILLS -->
+      <ul class="nav nav-pills hidden-xs">
+        <li class="active"><a href="{{ urlthis }}"><span class="fa fa-dashboard"></span>Demo</a></li>
+      </ul>
+
+      <!-- ICON DROPDOWNS -->
+      <div class="hov">
+       <div class="btn-group">
+        <a class="con" href="" data-toggle="dropdown"><span class="icon icon-user"></span><span class="label label-primary"></span></a>
+        <ul class="dropdown-menu pull-right dropdown-profile" role="menu">
+         <li class="title"><span class="icon icon-user"></span>&nbsp;&nbsp;Hola, {{ user.username|default:"Demo" }}!</li>
+         <li class="divider"></li>
+         <li><a href="/demo"><span class="fa fa-power-off"></span>Salir</a></li>
+        </ul>
+       </div>
+      </div>
+     </div>
+
+     <!-- BREADCRUMBS -->
+     <div class="crumbs">
+      <ol class="breadcrumb hidden-xs">
+       <li><i class="fa fa-home"></i> <a href="/">Inicio</a></li>
+       <li class="active">Demo</li>
+      </ol>
+     </div>
+    </div>
+
+    <!-- BEGIN PAGE CONTENT -->
+    <div class="content">
+     <div class="page-h1">
+      <h1>Control de acometidas: <small>Circuito {{ avl.name }}</small></h1>
+     </div>
+	 
+	    <div class="col-md-12">
+	     <div class="wdgt wdgt-warning" hide-btn="true">
+	      <div class="wdgt-header">Ubicación
+	      </div>
+	      <div class="wdgt-body wdgt-map" style="padding-bottom:10px;height:300px;">
+	       <div id="map-canvastwo"></div>
+	      </div>
+	      <style type="text/css">
+	       #map-canvastwo { height: 100% }
+	      </style>
+	     </div>
+	    </div>
+
+     <div class="tbl">
+      <div class="col-md-4">
+       <div id="spin" class="wdgt wdgt-soft" hide-btn="false">
+        <div class="wdgt-header">Acometidas</div>
+        <div class="wdgt-body wdgt-table" style="padding-bottom:10px;">
+         <table class="table table-hover table-striped">
+          <thead>
+            <tr>
+	           <th>ID</th>
+	           <th>Estado</th>
+	           <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>{% for e in outputs %}
+            <tr><td >{{ e.id }}</td><td><span class="fa fa-sign-{{ e.dir }}"></span>&nbsp;&nbsp;{{ e.state }}</td>
+			    <td><button type="button" onclick="action('{{ e.id }}','{{ e.cmd }}')">{{ e.action }}</button></td></tr>
+            {% endfor %}
+          </tbody>
+         </table>
+
+        </div>
+       </div>
+
+      </div>
+
+      <div class="col-md-8">
+      </div>
+
+    </div>
+    <!-- END PAGE CONTENT -->
+
+   </div>
+   <!-- END NAV, CRUMBS, & CONTENT -->
+
+  </div>
+
+  <!-- Default JS (DO NOT TOUCH) -->
+  <script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
+  <script src="/static/lib/js/bootstrap.min.js"></script>
+  <script src="/static/lib/js/hogan.min.js"></script>
+  <script src="/static/lib/js/typeahead.min.js"></script>
+  <script src="/static/lib/js/typeahead-example.js"></script>
+
+  <!-- Adjustable JS -->
+  <script src="/static/lib/js/soft-widgets.js"></script>
+  <script type="text/javascript" src="/static/jquery.spinner.js"></script>
+  <script src="/static/lib/js/icheck.js"></script>
+  <script type='text/javascript' src='//www.google.com/jsapi'></script>
+  <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=AIzaSyDAJgTMNvIGnRCrnqH6Ok8kayI-shZhRPI"></script>
+  <script>
+
+	var map;
+	var marker = new google.maps.Marker({ map: null, draggable: false, position: new google.maps.LatLng( {{ y }}, {{ x }})});
+
+	function initializemap() {
+	  map = new google.maps.Map(document.getElementById("map-canvastwo"), {	center: new google.maps.LatLng( {{ y }}, {{ x }} ),
+			zoom: 16,
+			mapTypeId: google.maps.MapTypeId.ROADMAP});
+	  marker.setMap(map);
+	}
+	google.maps.event.addDomListener(window, 'load', initializemap);
+
+	function action(id,cmd)
+	{
+		spin = $('#spin');
+		opts = { img: '/static/img/loader.gif',
+			position: 'center',
+			hide: true,
+			width: 100,
+			height: 88,
+		};
+		$.ajax('',{
+			async: true,
+			type: "post",
+			dataType: "json",
+			data: {id: id, cmd: cmd},
+			error: function() { alert("Error en peticion");},
+			success: function(res) { window.location =''; },
+			beforeSend: function() { spin.spinner(opts);},
+			complete: function() { spin.spinner('remove');},
+	});
+}
+
+
+  </script>
+
+ </body>
+</html>

@@ -1,0 +1,15 @@
+{% extends 'base_form.html' %}
+
+{% block content-form %}
+	<table border=1>
+		<tr><th rowspan=2>Carro</th>{% for i in dates %}<th colspan=2>{{ i|date:"b-d" }}</th>{% endfor %}</tr>
+		<tr>{% for i in dates %}<th>Km</th><th>Tiempo</th>{% endfor %}</tr>
+		{% for i in data %}
+		<tr><td align="left">{{ i.dev.name }}</td>
+			{% for j in i.res %}
+				<td align="right">{{ j.km|floatformat:2 }}</td><td align="right">{{ j.time }}</td>
+			{% endfor %}
+		</tr>
+		{% endfor %}
+	</table>
+{%endblock content-form %}

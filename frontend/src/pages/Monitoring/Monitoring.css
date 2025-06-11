@@ -1,0 +1,142 @@
+.monitoring-container {
+    padding: 30px;
+    min-height: calc(100vh - 70px); /* Adjust height based on header */
+    background-color: #1a1a1a; /* Dark background similar to Arsenal's */
+    color: #f5f5f5; /* Light text color */
+    font-family: 'Roboto', sans-serif;
+    overflow-y: auto; /* Add vertical scrollbar if content overflows */
+}
+
+.monitoring-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.monitoring-header h1 {
+    margin: 0;
+    color: #e01a22; /* Arsenal's signature red */
+    font-weight: 700;
+    font-size: 2.5rem;
+}
+
+.map-container,
+.control-panel,
+.device-list,
+.device-details {
+    background-color: #2a2a2a !important; /* Slightly lighter dark for cards */
+    border-radius: 10px !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important; /* Deeper shadow */
+    color: #f5f5f5; /* Light text inside cards */
+    padding: 25px !important; /* Increased padding */
+}
+
+.map-container {
+    height: 500px;
+    overflow: hidden;
+}
+
+.control-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.control-panel-header h6 {
+    font-weight: 700 !important;
+    color: #e01a22 !important;
+    font-size: 1.8rem !important;
+}
+
+.device-list {
+    max-height: 500px; /* Adjust max height for scrolling */
+    overflow-y: auto;
+}
+
+.MuiListItem-root {
+    padding: 15px 20px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Subtle divider */
+}
+
+.MuiListItem-root:last-child {
+    border-bottom: none;
+}
+
+.MuiListItemText-primary {
+    font-weight: 500 !important;
+    color: #f5f5f5 !important;
+    font-size: 1.05rem !important;
+}
+
+.MuiListItemText-secondary {
+    color: #bbb !important;
+    font-size: 0.95rem !important;
+}
+
+.MuiChip-root {
+    font-weight: 500 !important;
+    color: white !important;
+}
+
+.MuiIconButton-root {
+    color: #e01a22 !important;
+}
+
+.MuiIconButton-root:hover {
+    background-color: rgba(224, 26, 34, 0.1) !important;
+}
+
+.MuiTooltip-tooltip {
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    font-size: 13px !important;
+    color: #fff !important;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.monitoring-container > * {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+    .map-container {
+        height: 400px;
+    }
+}
+
+@media (max-width: 600px) {
+    .monitoring-container {
+        padding: 15px;
+    }
+
+    .map-container {
+        height: 300px;
+    }
+
+    .MuiCardContent-root {
+        padding: 20px !important;
+    }
+
+    .monitoring-header h1 {
+        font-size: 2rem !important;
+    }
+
+    .control-panel-header h6 {
+        font-size: 1.5rem !important;
+    }
+}
+
+.MuiPaper-root {
+    background-color: #2a2a2a !important;
+} 

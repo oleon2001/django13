@@ -1,0 +1,187 @@
+{% extends 'base_map.html' %}
+{% load l10n %}
+{% block custom-js %}
+{% localize off %}
+var assets = [];
+var map,mapBounds;
+
+{% for i in overlays %}
+path{{ forloop.counter }} = new google.maps.MVCArray(google.maps.geometry.encoding.decodePath("{{ i|escapejs }}"));
+poly{{ forloop.counter }} = new google.maps.Polyline({ strokeWeight: 5,strokeOpacity: 0.5, strokeColor: '#0000FF',path: path{{ forloop.counter }},draggable: false});
+{% endfor %}
+
+function KillAssets()
+{
+	var i;
+	$("#devices").replaceWith($('<tbody id="devices"></tbody>'))
+	if (assets.length) for (i in assets)
+	{
+		if (assets[i].marker) {
+			assets[i].marker.setVisible(false);
+			assets[i].marker.setMap(null);
+		}
+	}
+	assets = [];
+}
+
+function zoomxy(x,y)
+{
+	map.panTo(new google.maps.LatLng(y,x));
+	google.maps.event.addListenerOnce(map,"idle",function() {if (map.getZoom()<15) map.setZoom(17);})
+}
+
+function Zoom()
+{
+	id = $(this).parent().parent().attr('id');
+	for (i in assets){	if (assets[i].id == id) break;	}
+	zoomxy(assets[i].coord.x,asset[i].coord.y);
+}
+
+function CreateHtml(asset)
+{
+	var html;
+	if (asset.marker)
+		html = '<tr id="'+asset.id+'"><td><img class="jsAction icon ic0D" src="{{ STATIC_URL }}img/t.gif" onclick="zoomxy('
+			+asset.coord.x+','+asset.coord.y+')" >'
+	else
+		html = '<tr id="'+asset.id+'"><td><img class="icon ic0E" src="{{ STATIC_URL }}img/t.gif">'
+	html+= '<td><img class="icon ic'+asset.stats[0]+'" src="{{ STATIC_URL }}img/t.gif">'
+	html+= '<img class="icon ic'+asset.stats[1]+'" src="{{ STATIC_URL }}img/t.gif">'
+	html+= '<img class="icon ic'+asset.stats[2]+'" src="{{ STATIC_URL }}img/t.gif">'
+	html+= '<td><a href="'+asset.url+'">'+asset.name+'</a>'
+	return html;
+}
+
+function nCreateAssets(data)
+{
+	var i,newAssets,html;
+	var devList;
+
+    KillAssets();
+    devList = $('#devices')
+
+	newAssets = data; //.sort(sort_by(name,false));
+    for (i in newAssets)
+    {
+        assets[i] = newAssets[i];
+        if (assets[i].coord) {
+            assets[i].marker = new google.maps.Marker({
+                map: map,
+                position: new google.maps.LatLng(assets[i].coord.y, assets[i].coord.x),
+                icon: new google.maps.MarkerImage(assets[i].icon),
+                title: assets[i].mname,
+                animation: null });
+            //assets[i].marker.info = new google.maps.InfoWindow({ content : assets[i].mname});
+            //assets[i].marker.info.open(map,assets[i].marker);
+        }
+        else
+        {
+            assets[i].marker = null;
+        }
+        assets[i].html = CreateHtml(assets[i]);
+        //assets[i].marker.setMap(map);
+        devList.append(assets[i].html);
+    }
+}
+
+function CreateAssets(data)
+{
+	var i,newAssets,html;
+	var devList = $('#devices')
+
+	newAssets = data;//.sort(sort_by(name,false));
+	if (newAssets.length == assets.length) {
+		for (var i in assets){
+			if (newAssets[i].name != assets[i].name) {
+				KillAssets();
+				devList = $('#devices');
+				break;
+			}
+		}
+	}
+	else if (assets.length)
+	{
+		KillAssets();
+		devList = $('#devices');
+	}
+	if (!assets.length) { // Create assets, markers and table
+		for (i in newAssets)
+		{
+			assets[i] = newAssets[i];
+			if (assets[i].coord) {
+				assets[i].marker = new google.maps.Marker({
+					map: map,
+					position: new google.maps.LatLng(assets[i].coord.y, assets[i].coord.x),
+					icon: new google.maps.MarkerImage(assets[i].icon),
+					//shape: {coord: [1, 1, 1, 46, 28, 46, 28 , 1], type: 'poly'},
+					title: assets[i].mname,
+					animation: null }); //google.maps.Animation.DROP});
+			}
+			else
+			{
+				assets[i].marker = null;
+			}
+			assets[i].html = CreateHtml(assets[i]);
+			//assets[i].marker.setMap(map);
+			devList.append(assets[i].html);
+		}
+	}
+	else {	// Modify asset list with new coordinates, regenerate table
+		for (i in newAssets)
+		{
+			if (newAssets[i].coord && !assets[i].marker)
+			{
+				assets[i].marker = new google.maps.Marker({
+					map: map,
+					position: new google.maps.LatLng(assets[i].coord.y, assets[i].coord.x),
+					icon: new google.maps.MarkerImage(assets[i].icon),
+					//shape: {coord: [1, 1, 1, 46, 28, 46, 28 , 1], type: 'poly'},
+					title: assets[i].mname,
+					animation: null }); //google.maps.Animation.DROP});
+			}
+			else if (newAssets[i].coord && (newAssets[i].coord.x != assets[i].coord.x || newAssets[i].coord.y != assets[i].coord.y))
+			{
+				assets[i].coord = newAssets[i].coord;
+				assets[i].marker.setPosition(new google.maps.LatLng(assets[i].coord.y, assets[i].coord.x));
+			}
+			html = CreateHtml(assets[i])
+			if (html != assets[i].html)
+			{
+				assets[i].html = html;
+				$('#'+assets[i].id,devList).replaceWith($(html));
+			}
+		}
+	}
+	//$('.jsAction').unbind("click").click(Zoom);
+}
+
+$(document).ready(function()
+{
+	$.getJSON('devices.json',CreateAssets);
+	map = new google.maps.Map(document.getElementById("map"),
+		{	center: new google.maps.LatLng( {{ center.y }}, {{ center.x }} ),
+			zoom: 6,
+			mapTypeId: google.maps.MapTypeId.ROADMAP});
+	mapBounds = new google.maps.LatLngBounds(
+		new google.maps.LatLng({{ center.swy }},{{ center.swx }}),
+		new google.maps.LatLng({{ center.ney }},{{ center.nex }})
+	);
+	if ({{ use_zoom }} != 0)
+	{
+		map.setZoom(16);
+	} else {
+		map.fitBounds(mapBounds);
+	}
+	{% for i in overlays %}poly{{ forloop.counter }}.setMap(map);
+	{% endfor%}
+	window.setInterval(function(){$.getJSON('devices.json',CreateAssets);},20000);
+});
+
+{% endlocalize %}
+{% endblock custom-js %}
+{% block sidebar %}
+<table>
+	<thead><tr><th><th>Stats<th>Nombre</thead>
+	<tbody id="devices"></tbody>
+</table>
+{% endblock sidebar %}

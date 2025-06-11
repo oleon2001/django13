@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Equipos</h2>
+	Bounded at {{ bounds.sw}}, {{bounds.ne}}<p>
+	{{ diagonal }} km.
+    <ul>
+        {% for dev in object_list %}
+            <li>{{dev.imei}} - {{ dev.name }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

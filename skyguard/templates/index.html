@@ -1,0 +1,43 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html >
+  <head>
+    <meta charset="UTF-8">
+    <title>Login Form</title>
+	<link rel="stylesheet" href="/static/css/login.css">
+    <style>
+		body{
+			width: 100%;
+			height:100%;
+			font-family: 'Open Sans', sans-serif;
+			background:url(/static/img/b{% firstof random3 "0" %}.jpg)  no-repeat center fixed;
+			-webkit-background-size: cover;
+			-moz-background-size: cover;
+			-o-background-size: cover;
+			background-size: cover;
+			position:relative;
+			font-family: sans-serif;
+		}
+	</style>
+    
+  </head>
+
+  <body>
+
+    <div class="login">
+	<h1>Ingresar</h1>
+	<form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+		<input id="id_username" type="text" name="username" maxlength="30" 
+			placeholder="Usuario" required="required"
+			oninput="setCustomValidity('')" onchange="this.setCustomValidity('')" oninvalid="this.setCustomValidity('Favor de introducir tu usuario')"/>
+		<input type="password" name="password" id="id_password" 
+			placeholder="Contraseña" required="required"
+			oninput="setCustomValidity('')" onchange="this.setCustomValidity('')" oninvalid="this.setCustomValidity('Favor de introducir tu contraseña')"/>
+		<input type="hidden" name="this_is_the_login_form" value="1" />
+		<input type="hidden" name="next" value="{{ next }}" />
+        <button type="submit" class="btn btn-primary btn-block btn-large">{% trans 'Log in' %}</button>
+    </form>
+</div>
+    
+  </body>
+</html>

@@ -1,0 +1,72 @@
+.tracking-container {
+  padding: 30px;
+  min-height: calc(100vh - 70px); /* Adjust height based on header */
+  background-color: #1a1a1a; /* Dark background similar to Arsenal's */
+  color: #f5f5f5; /* Light text color */
+  font-family: 'Roboto', sans-serif;
+  overflow-y: auto; /* Add vertical scrollbar if content overflows */
+}
+
+.tracking-container h1 {
+  margin-bottom: 30px;
+  color: #e01a22; /* Arsenal's signature red */
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.MuiPaper-root {
+  background-color: #2a2a2a !important; /* Apply dark background to Paper components */
+  border-radius: 10px !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+}
+
+.MuiCard-root {
+  background-color: #333 !important; /* Darker card background */
+  border-radius: 10px !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+  color: #f5f5f5; /* Light text for cards */
+}
+
+.MuiTypography-h6 {
+  font-weight: 700 !important;
+  color: #e01a22 !important;
+  font-size: 1.8rem !important;
+  margin-bottom: 20px !important;
+}
+
+.MuiTypography-h4 {
+  color: #f5f5f5 !important;
+  font-weight: 600 !important;
+}
+
+.MuiTypography-subtitle1,
+.MuiTypography-caption {
+  color: #bbb !important;
+}
+
+/* Map container specific styles */
+.map-container {
+  height: 100%; /* Ensure map takes available height */
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .tracking-container {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .tracking-container {
+    padding: 15px;
+  }
+
+  .tracking-container h1 {
+    font-size: 2rem;
+  }
+
+  .MuiTypography-h6 {
+    font-size: 1.5rem;
+  }
+} 

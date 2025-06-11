@@ -1,0 +1,143 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+  margin-top: 20px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.table th {
+  background-color: #333;
+  color: #f5f5f5;
+  font-weight: 600;
+  text-align: left;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table td {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #f5f5f5;
+}
+
+.table td a {
+  color: #f5f5f5;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.table td a:hover {
+  color: #e01a22;
+}
+
+.table tbody tr:hover {
+  background-color: #3a3a3a;
+}
+
+.table tbody tr.clickable {
+  cursor: pointer;
+}
+
+.table tbody tr.clickable:hover {
+  background-color: #3a3a3a;
+}
+
+.table .no-records {
+  text-align: center;
+  padding: 2rem;
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Estilos para columnas específicas */
+.table .text-center {
+  text-align: center;
+}
+
+.table .text-right {
+  text-align: right;
+}
+
+.table .text-bold {
+  font-weight: bold;
+}
+
+.table .text-muted {
+  color: #888;
+}
+
+/* Estilos para acciones */
+.table .actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+}
+
+.table .action-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.table .action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.table .action-btn.edit {
+  background-color: #ff9800;
+  color: #fff;
+}
+
+.table .action-btn.edit:hover {
+  background-color: #e68a00;
+}
+
+.table .action-btn.delete {
+  background-color: #e01a22;
+  color: #fff;
+}
+
+.table .action-btn.delete:hover {
+  background-color: #c0151c;
+}
+
+/* Estilos para estados */
+.table .status {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.table .status.active,
+.table .status.online,
+.table .status.completed {
+  background-color: #4caf50;
+  color: #fff;
+}
+
+.table .status.inactive,
+.table .status.offline,
+.table .status.failed {
+  background-color: #e01a22;
+  color: #fff;
+}
+
+.table .status.pending {
+  background-color: #ff9800;
+  color: #fff;
+} 

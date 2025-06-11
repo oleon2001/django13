@@ -1,0 +1,55 @@
+.hero-section {
+  background-image: url('../../../public/static/img/b0.jpg'); /* Usar una de las imágenes copiadas */
+  background-size: cover;
+  background-position: center;
+  height: calc(100vh - 70px); /* Ajustar según la altura del header */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  padding-left: 10%; /* Ajustar para la posición del texto */
+}
+
+.hero-content {
+  max-width: 600px;
+  text-align: left;
+}
+
+.falkon-logo {
+  width: 250px;
+  margin-bottom: 1rem;
+}
+
+.hero-content h1 {
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+
+.hero-content h2 {
+  font-size: 2.5rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.demo-button {
+  background-color: #e74c3c; /* Color rojo del botón */
+  color: white;
+  padding: 1rem 2.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.demo-button:hover {
+  background-color: #c0392b;
+} 

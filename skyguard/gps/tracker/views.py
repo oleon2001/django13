@@ -1,0 +1,1979 @@
+# Create your views here.
+from django.template import RequestContext
+from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+from django.shortcuts import render_to_response,get_object_or_404, get_list_or_404
+from django.db.models import Avg, Max, Min, Q
+from models import *
+from django.contrib.auth.decorators import login_required
+from datetime import timedelta,time,datetime,date
+from django.utils import simplejson
+from django.core.urlresolvers import reverse
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import ListView, DetailView, TemplateView
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, SuspiciousOperation
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
+
+from geopy.point import Point as gPoint
+from geopy.distance import distance as geoLen,vincenty
+
+from django.contrib.gis.geos.polygon import Polygon
+import django.core.exceptions
+import gpolyencode
+
+import subprocess
+import time
+from pytz import utc, timezone
+
+from decimal import Decimal
+
+from reportlab.platypus import BaseDocTemplate, PageTemplate, Table, TableStyle, Paragraph, Spacer, Frame, PageBreak
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+
+MIN_EXTENT = 1.0
+MAX_STEP = 0.25
+
+def maxx(a,b): return max(a.position.x, b.position.x)
+def maxy(a,b): return max(a.position.y, b.position.y)
+def minx(a,b): return min(a.position.x, b.position.x)
+def miny(a,b): return min(a.position.y, b.position.y)
+
+def decode_line(encoded):
+	"""Decodes a polyline that was encoded using the Google Maps method.
+
+	See http://code.google.com/apis/maps/documentation/polylinealgorithm.html
+
+	This is a straightforward Python port of Mark McClure's JavaScript polyline decoder
+	(http://facstaff.unca.edu/mcmcclur/GoogleMaps/EncodePolyline/decode.js)
+	and Peter Chng's PHP polyline decode
+	(http://unitstep.net/blog/2008/08/02/decoding-google-maps-encoded-polylines-using-php/)
+	"""
+
+	encoded_len = len(encoded)
+	index = 0
+	array = []
+	lat = 0
+	lng = 0
+
+	while index < encoded_len:
+
+		b = 0
+		shift = 0
+		result = 0
+
+		while True:
+			b = ord(encoded[index]) - 63
+			index = index + 1
+			result |= (b & 0x1f) << shift
+			shift += 5
+			if b < 0x20:
+				break
+
+		dlat = ~(result >> 1) if result & 1 else result >> 1
+		lat += dlat
+
+		shift = 0
+		result = 0
+
+		while True:
+			b = ord(encoded[index]) - 63
+			index = index + 1
+			result |= (b & 0x1f) << shift
+			shift += 5
+			if b < 0x20:
+				break
+
+		dlng = ~(result >> 1) if result & 1 else result >> 1
+		lng += dlng
+
+		array.append((lng * 1e-5, lat * 1e-5))
+
+	return array
+
+def geoExtents(extents):
+	sw = gPoint(extents[1],extents[0])
+	ne = gPoint(extents[3],extents[2])
+	center = gPoint((extents[1]+extents[3])/2,(extents[0]+extents[2])/2)
+	if geoLen(ne,sw).km < MIN_EXTENT:
+		d = geoLen(MIN_EXTENT/2)
+		ne = d.destination(center,45)
+		sw = d.destination(center,225)
+	return dict(center = center,sw = sw,ne = ne)
+
+def dayRange(day):
+	return datetime(day.year, day.month, day.day),datetime(day.year, day.month, day.day,23,59,59)
+
+def dayRangeX(day,start,stop):
+	if (start>stop):
+		start -= timedelta(days =1)
+	#return datetime(day.year, day.month, day.day),datetime(day.year, day.month, day.day,23,59,59)
+	return datetime(day.year, day.month, day.day)+start,datetime(day.year, day.month, day.day)+stop
+
+def monthRange(day):
+	m1 = datetime(day.year,day.month,1)
+	m2 = m1+timedelta(days=32)
+	m2 = datetime(m2.year,m2.month,1) - timedelta(seconds=1)
+	return m1,m2
+
+def prevDay(day):
+	d = day - timedelta(days=1)
+	return datetime(d.year, d.month, d.day,23,59,59)
+
+def nextDay(day):
+	d = day + timedelta(days=1)
+	return datetime(d.year, d.month, d.day)
+
+class GeofenceListView(ListView):
+	template_name = "geoFences.html"
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(GeofenceListView, self).dispatch(*args, **kwargs)
+
+	def get_queryset(self):
+		""" Get list of geoFences available to the user.
+		"""
+		if self.request.user.is_superuser:
+			return  GeoFence.objects.all().order_by('name')
+		else:
+			return GeoFence.objects.filter(owner = self.request.user).order_by('name')
+
+	def get_context_data(self, **kwargs):
+		context = super(GeofenceListView, self).get_context_data(**kwargs)
+		if len(self.object_list):
+			context['bounds'] = self.object_list.extent()
+		else:
+			context['bounds'] = (-118.867172, 14.532850,-86.703392, 32.718620)
+		return context
+
+
+class GeofenceView(TemplateView):
+	template_name = "geoFence.html"
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		self.fid = kwargs.pop('fid')
+		if self.fid == '':
+			self.fence = None
+		else:
+			self.fence = get_object_or_404(GeoFence,id = self.fid)
+		return super(GeofenceView, self).dispatch(*args, **kwargs)
+
+	def post(self, request, *args, **kwargs):
+		coords = decode_line(request.POST['fence_poly'])
+		if len(coords)<3:
+			if self.fence: self.fence.delete()
+			return redirect('fences')
+		coords.append(coords[0])
+		if not self.fence:
+			self.fence = GeoFence(owner = self.request.user)
+		if self.fence.owner != self.request.user and not self.request.user.is_superuser:
+			raise Http404
+
+		self.fence.name = request.POST['fence_name']
+		self.fence.fence = Polygon(coords)
+		self.fence.save()
+		if not self.fid:
+			return redirect('fence',fid=self.fence.id)
+		return super(GeofenceView, self).get(request,*args, **kwargs)
+		#except:
+		#	return super(GeofenceView, self).get(request,*args, **kwargs)
+
+	def get_context_data(self, **kwargs):
+		context = super(GeofenceView, self).get_context_data(**kwargs)
+		if self.fence and self.fence.owner != self.request.user and not self.request.user.is_superuser:
+			raise Http404
+		context['fence'] = self.fence
+		if self.fence:
+			context['bounds'] = self.fence.fence.extent
+			enc = gpolyencode.GPolyEncoder()
+			context['geom'] = enc.encode(self.fence.fence.tuple[0])['points']
+			#raise ValueError
+		else:
+			context['bounds'] = (-118.867172, 14.532850,-86.703392, 32.718620)
+			#raise ValueError
+		return context
+
+
+class TrackerListView(ListView):
+	template_name = "devList.html"
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(TrackerListView, self).dispatch(*args, **kwargs)
+
+	def get_queryset(self):
+		""" Get list of devices available to the user.
+		Add a session cache for speed if we start adding computing
+		user permissions according to roles
+		"""
+		quser = Q(owner = self.request.user)
+		if self.request.user.is_superuser:
+			return  SGAvl.objects.all().order_by("name") 
+		return SGAvl.objects.filter(quser).order_by('name')
+
+	def get_context_data(self, **kwargs):
+		#raise ImproperlyConfigured
+		#self.queryset = self.device_list()
+		#a = kwargs['object_list']
+		context = super(TrackerListView, self).get_context_data(**kwargs)
+		try:
+			context['bounds'] = geoExtents(self.object_list.extent())
+			context['diagonal'] = geoLen(context['bounds']['ne'],context['bounds']['sw'])
+		except:
+			context['bounds'] = None
+		self.assets = []
+
+		for i in context["object_list"]:
+			self.assets.append(dict(
+				id = str(i.imei),
+				url = reverse('gps.tracker.views.device',args=[i.imei] ),
+				name = i.name,
+				icon = settings.STATIC_URL+'caricons/'+i.icon,
+				#coord = crds,
+				#stats = stat
+			))
+		return context
+
+EVENT_SETTINGS = {
+	"TRACK": dict(sub = None, icon = 'ARROWico', time = u'{obj.date.hour:2}:{obj.date.minute:02} - {obj.date_end.hour:2}:{obj.date_end.minute:02}', sdesc = u'Recorrido',desc = u'Recorrido {obj.km:.2f}km'),
+	"TRACK_PSI": dict(sub = None, icon = 'ARROWico',time = u'{obj.date.hour:2}:{obj.date.minute:02} - {obj.date_end.hour:2}:{obj.date_end.minute:02}', sdesc = u'Recorrido',desc = u'Recorrido {obj.km:.2f}km. {obj.psi1:.3f}psi/{obj.psi2:.3f}psi -> {obj.kg:.2f}Kg'),
+	"IO_FIX": dict(sub = IOEvent, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'{sub.changes:s}'),
+	"IO_NOFIX": dict(sub = IOEvent, icon = 'CIRCLEico',time = u'--:--', desc = u'{sub.changes:s}'),
+	"CURRENT_FIX": dict(sub = None, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'REPORTE'),
+	"CURRENT_TIME": dict(sub = None, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'REPORTE'),
+	"STARTUP_FIX": dict(sub = None, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'REPORTE'),
+	"STARTUP_TIME": dict(sub = None, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'REPORTE'),
+	"GPS_OK": dict(sub = None, icon = 'CIRCLEico',time = u'{obj.date.hour:2}:{obj.date.minute:02}', desc = u'GPS OK'),
+	"GPS_LOST": dict(sub = None, icon = 'CIRCLEico',time = u'--:--', desc = u'GPS LOST'),
+	"CPU_RESET": dict(sub = ResetEvent, icon = 'CIRCLEico',time = u'--:--', desc = u'RESET {sub.reason:s}'),
+	"SMS_RECEIVED": dict(sub = GsmEvent, icon = 'CIRCLEico',time = u'--:--', desc = u'SMS({sub.source:s}): {sub.text:s}'),
+	"CALL_RECEIVED": dict(sub = GsmEvent, icon = 'CIRCLEico',time = u'--:--', desc = u'CALL FROM {sub.source:s}')
+	}
+
+class EventDetail(object):
+	def __init__(self,ev):
+		self.type = ev.type
+		self.date = ev.date
+		self.date_end = ev.date
+		self.position = ev.position
+		self.id = ev.id
+		if self.position:
+			self.points = [(self.position.x,self.position.y)]
+		else:
+			self.points = None
+		self.km = 0
+		self.device = ev.imei
+
+	def close(self):
+		if self.points:
+			maxx = minx = self.points[0][0]
+			maxy = miny = self.points[0][1]
+			for i in self.points[1:]:
+				if maxx<i[0]: maxx = i[0]
+				if minx>i[0]: minx = i[0]
+				if maxy<i[1]: maxy = i[1]
+				if miny>i[1]: miny = i[1]
+			# get extents
+			self.bounds = geoExtents((minx,miny,maxx,maxy))
+			#check for pressure
+			psi = PsiWeightLog.objects.filter(imei = self.device,date__gte = self.date, date__lte = self.date_end )
+			cals = PsiCal.objects.filter(imei = self.device)
+			if psi and cals:
+				self.kg = 0
+				for i in cals:
+					log = psi.filter(sensor = i.sensor)
+					psis = psi.aggregate(Avg('psi1'),Avg('psi2'))
+					self.psi1 =  psis['psi1__avg'] - float(i.offpsi1)
+					self.psi2 =  psis['psi2__avg'] - float(i.offpsi2)
+					self.kg += self.psi1*float(i.mulpsi1)+self.psi2*float(i.mulpsi2)
+				#
+				#psis = psi.aggregate(Avg('psi1'),Avg('psi2'))
+				#self.psi1 =  psis['psi1__avg'] - 22.964065
+				#self.psi2 =  psis['psi2__avg'] - 12.000458
+				##self.kg = (self.psi1*4*46.331+self.psi2*6*68.)# 67.073)
+				#self.kg = (self.psi1*4*48.831+self.psi2*6*71.)# 67.073)
+				self.type = "TRACK_PSI"
+				if self.psi1<0.75: self.psi1=0
+				if self.psi2<0.75: self.psi2=0
+				if self.kg<150: self.kg =0
+
+	def evFormat(self,type,default):
+		if not self.type in EVENT_SETTINGS:
+			return default
+		if EVENT_SETTINGS[self.type]['sub']:
+			I = EVENT_SETTINGS[self.type]['sub'].objects.get(id = self.id)
+		else:
+			I = self
+		return EVENT_SETTINGS[self.type][type].format(obj = self, sub = I)
+
+	def time(self): return self.evFormat('time',u'--:--')
+	def desc(self): return self.evFormat('desc',u'UNK')
+	def icon(self): return self.evFormat('icon','CIRCLEico')
+	def dtime(self):
+		if self.date==self.date_end: return ""
+		else:
+			d = self.date_end - self.date
+			if d.seconds ==0: return u"0:00"
+			return u"{0:2}:{1:2}".format(d.seconds/60, d.seconds%60)
+	def sdesc(self):
+		if not self.type in EVENT_SETTINGS:
+			return self.desc()
+		if 'sdesc' in EVENT_SETTINGS[self.type]:
+			return EVENT_SETTINGS[self.type]['sdesc']
+		return self.desc()
+	def iclass(self):
+		if self.type == 'TRACK' or self.type == 'TRACK_PSI' or self.type == 'TRACK_COUNT':
+			return u'fa-forward'
+		if "ON" in self.desc():
+			return u'fa-play'
+		if "OFF" in self.desc():
+			return u'fa-stop'
+		return u'fa-circle'
+
+	def addEvent(self,ev):
+		if ev.type == 'TRACK' and self.type == 'TRACK':
+			p0 = gPoint(ev.position.y,ev.position.x)
+			p1 = gPoint(self.points[-1][1],self.points[-1][0])
+			dist = geoLen(p0,p1)
+			if  dist > MAX_STEP or self.date + timedelta(hours = 1)< ev.date:
+				self.close()
+				return EventDetail(ev)
+			self.date_end = ev.date
+			self.km += dist.km
+			self.points.append((ev.position.x,ev.position.y))
+			return None
+		if ev.position and self.points:
+			self.points.append((ev.position.x,ev.position.y))
+		self.close()
+		return EventDetail(ev)
+
+class WeeklyReportView(ListView):
+	template_name = "weekly.html"
+	EVS = ["TRACK","IO_FIX","IO_NOFIX"] #,"GPS_OK","GPS_LOST"]
+
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(WeeklyReportView, self).dispatch(*args, **kwargs)
+
+	def get_queryset(self): pass
+
+	def get(self, request, *args, **kwargs):
+		own = kwargs.pop('owner')
+		if own: own = User.objects.get(username = own)
+		if not own:
+			own = self.request.user
+		if own != self.request.user and not (self.request.user.is_staff or self.request.user.is_superuser):
+			raise Http404
+		self.devices = SGAvl.objects.filter(owner = own).order_by('name')
+		self.userlist = User.objects.all().order_by('username')
+		self.start_date = datetime.date(datetime.now() - timedelta(days=7))
+		return super(WeeklyReportView, self).get(request,*args,**kwargs)
+
+	def get_usage_data(self,dev,day):
+		events = Event.objects.filter(imei = dev).filter(date__range = dayRange(day)).order_by('date').filter(type__in = self.EVS)
+		if events.count():
+			self.evDetails = [EventDetail(events[0])]
+			for ev in events[1:]:
+				e = self.evDetails[-1].addEvent(ev)
+				if (e): self.evDetails.append(e)
+			self.evDetails[-1].close()
+		else:
+			self.evDetails = []
+		# Add odometer and texts to the events and coneccting points.
+		e0 = None
+		odom = 0
+		rtime = timedelta(seconds = 0)
+		for i in self.evDetails:
+			i.odom = 0
+			if i.points:
+				if not e0:
+					e0 = i
+				else:
+					p0 = gPoint(e0.points[-1][1],e0.points[-1][0])
+					p1 = gPoint(i.points[0][1],i.points[0][0])
+					d = geoLen(p0,p1).km
+					e0.km += d
+					odom += e0.km +d
+					e0.odom = odom
+					e0 = i
+			if i.km > 0.2 :
+				rtime += i.date_end - i.date
+		if e0: odom += e0.km	# last point
+		return odom,rtime
+
+	def get_context_data(self, **kwargs):
+		context = super(WeeklyReportView, self).get_context_data(**kwargs)
+		context['dates'] = [self.start_date+timedelta(days=x) for x in range(7)]
+		#context['dates'] = [self.start_date]
+		data = []
+		for i in self.devices:
+			res  = []
+			for j in context['dates']:
+				km,time = self.get_usage_data(i,j)
+				res.append({'km':km,'time':time})
+			data.append({'dev':i,'res':res})
+		context['data']= data
+		#raise
+		return context
+
+def setupOdom(imei):
+	EVS = ["TRACK","IO_FIX","SMS_RECEIVED"]
+	avl = SGAvl.objects.get(imei = imei)
+	evs = Event.objects.filter(imei = avl).order_by("id").filter(type__in = EVS)
+	avl.odom = 0
+	p0 = gPoint(evs[0].position.y,evs[0].position.x)
+	lastPos = evs[0].position
+	for e in evs[1:]:
+		if e.type == "TRACK":
+			p1 = gPoint(e.position.y,e.position.x)
+			dist = geoLen(p0,p1).m
+			avl.odom += dist
+			p0 = p1
+			lastPos = e.position
+		e.odom = avl.odom
+		e.save()
+	avl.position = lastPos
+	avl.save()
+
+class TicketApiView(ListView):
+	template_name = "devDetail.html"
+	@method_decorator(csrf_exempt)
+	def dispatch(self, *args, **kwargs):
+		return super(TicketApiView, self).dispatch(*args, **kwargs)
+
+	def get_context_data(self, **kwargs):
+		return dict(name ="hola")
+
+	def post(self, request, *args, **kwargs):
+		ticket = int(self.request.POST.get('Ticket',None))
+		cash = int(self.request.POST.get('Cash',None))
+		transfers = int(self.request.POST.get('Transfer',None))
+		driver =  int(self.request.POST.get('Driver',None))
+		if not ticket and not cash:
+			raise SuspiciousOperation("Invalid values")
+		try:
+			t = TicketsLog.objects.get(id = ticket)
+			d = simplejson.loads(t.data)
+			d["Payed"] = cash
+			d["Driver"] = driver
+			d["Transfers"] = transfers
+			t.data = simplejson.dumps(d)
+			t.save()
+		except:
+			raise SuspiciousOperation("Invalid values")
+		return HttpResponse(simplejson.dumps(dict(result = "OK")), mimetype='application/json')
+
+		
+class AjaxNewCoords(ListView):
+	template_name = "devDetail.html"
+	def get_queryset(self):
+		try:
+			imei = self.request.GET.get('imei',None)
+			self.startID = int(self.request.GET.get('last',0))
+			limit = int(self.request.GET.get('limit',10))
+			self.avl = SGAvl.objects.get(imei = imei)
+			if self.avl.imei == 861001000210399:
+				self.avl = SGAvl.objects.get(imei = 861001000205928)
+			if not self.startID:
+				self.startID = Event.objects.filter(imei = self.avl).order_by("-id")[0].id
+			qs = Event.objects.filter(imei = self.avl).filter(id__gt = self.startID).order_by("id").filter(type = "TRACK")
+		except:
+			raise SuspiciousOperation("Invalid values")
+		return qs[:limit]
+
+	def render_to_response(self,context):
+		return HttpResponse(simplejson.dumps(context), mimetype='application/json')
+
+	def get_context_data(self, **kwargs):
+		data = []
+		count = len(self.object_list)
+		if count:
+			for i in self.object_list:
+				data.append(dict(x = i.position.x, y = i.position.y))
+			next = self.object_list[count-1].id
+			time = self.object_list[count-1].date.strftime("%H:%M:%S")
+			date = self.object_list[count-1].date.strftime("%Y-%m-%d")
+		else:
+			next = self.startID
+			time = None
+			date = None
+		return dict(
+			name = self.avl.name,
+			data = data,
+			count = count,
+			next = next,
+			time = time,
+			date = date
+		)
+
+class AjaxMsgs(ListView):
+	template_name = "devDetail.html"
+	def get_queryset(self):
+		try:
+			imei = self.request.GET.get('imei',None)
+			self.startID = int(self.request.GET.get('last',0))
+			limit = int(self.request.GET.get('limit',10))
+			self.avl = SGAvl.objects.get(imei = imei)
+			if self.avl.imei == 861001000210399:
+				self.avl = SGAvl.objects.get(imei = 861001000205928)
+			if not self.startID:
+				self.startID = Event.objects.filter(imei = self.avl).order_by("-id")[0].id
+			qs = Event.objects.filter(imei = self.avl).filter(id__gt = self.startID).order_by("id").filter(type = "SMS_RECEIVED")
+		except:
+			raise SuspiciousOperation("Invalid values")
+		return qs[:limit]
+
+	def render_to_response(self,context):
+		return HttpResponse(simplejson.dumps(context), mimetype='application/json')
+
+	@method_decorator(csrf_exempt)
+	def dispatch(self, *args, **kwargs):
+		return super(AjaxMsgs, self).dispatch(*args, **kwargs)
+
+	def post(self, request, *args, **kwargs):
+		imei = self.request.POST.get('imei',None)
+		msg = self.request.POST.get('msg',None)
+		if not msg and not imei:
+			raise SuspiciousOperation("Invalid values")
+		self.avl = SGAvl.objects.get(imei = imei)
+		if self.avl.imei == 861001000210399:
+			self.avl = SGAvl.objects.get(imei = 861001000205928)
+		sms = ServerSMS(imei = self.avl, msg = msg)
+		sms.save()
+		return HttpResponse(simplejson.dumps(dict(result = "OK")), mimetype='application/json')
+
+	def get_context_data(self, **kwargs):
+		data = []
+		count = len(self.object_list)
+		if count:
+			for i in self.object_list:
+				sms = GsmEvent.objects.get(id = i.id)
+				data.append(dict(
+					source = sms.source,
+					text = sms.text,
+					time = sms.date.strftime("%H:%M:%S"),
+					date = sms.date.strftime("%Y-%m-%d")))
+			next = self.object_list[count-1].id
+		else:
+			next = self.startID
+		return dict(
+			name = self.avl.name,
+			data = data,
+			count = count,
+			next = next,
+		)
+
+class RealTimeView(DetailView):
+	template_name = "devrt.html"
+	model = SGAvl
+
+	def get_context_data(self, **kwargs):
+		context = super(RealTimeView, self).get_context_data(**kwargs)
+		last = Event.objects.filter(imei = self.object).order_by("-id").filter(type = "TRACK")[10]
+		#last = Event.objects.filter(imei = self.object).order_by("-date").filter(type = "TRACK")[100]
+		context['position'] = last.position
+		context['lastID'] = last.id
+		context['center'] = geoExtents((last.position.x,last.position.y,last.position.x,last.position.y))
+		context['timestr'] = last.date.strftime("%H:%M:%S")
+		return context
+
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(RealTimeView, self).dispatch(*args, **kwargs)
+
+class TrackerPsiApiView(ListView):
+	EVS = ["TRACK","IO_FIX","SMS_RECEIVED"]
+	template_name = "devDetail.html"
+
+	def render_to_response(self,context):
+		return HttpResponse(simplejson.dumps(context), mimetype='application/json')
+
+	def get_queryset(self):
+		try:
+			imei = self.request.GET.get('imei',None)
+			startID = int(self.request.GET.get('startid',0))
+			self.limit = int(self.request.GET.get('limit',500))
+			count = self.request.GET.get('count',None)
+			self.count = not count is None
+			self.avl = SGAvl.objects.get(imei = imei)
+			qs = PsiWeightLog.objects.filter(imei = self.avl).filter(id__gt = startID).order_by("id")
+		except:
+			raise SuspiciousOperation("Invalid values")
+		#raise ValueError
+		return qs
+
+	def get_context_data(self, **kwargs):
+		self.pos = self.avl.position
+		imei = self.avl.imei
+		if self.count:
+			context = dict(count = len(self.object_list),
+						   imei = imei,
+						   name = self.avl.name)
+		else:
+			context = dict(count = len(self.object_list),
+						   imei = imei,
+						   name = self.avl.name)
+			evs = []
+			for e in self.object_list[:self.limit]:
+				evs.append(dict(id = e.id,
+								sensor = e.sensor,
+								date = e.date.strftime("%Y-%m-%d %H:%M:%S"),
+								psi1= float(e.psi1), psi2 = float(e.psi2)))
+			context['events'] = evs
+		return context
+
+class TrackerApiView(ListView):
+	EVS = ["TRACK","IO_FIX","SMS_RECEIVED","CURRENT_FIX"]
+	template_name = "devDetail.html"
+
+	def trackDict(self,ev):
+		if ev.position: self.pos = ev.position
+		else: ev.position = self.pos
+		return dict(id = ev.id,
+					type = "GPS",
+					lat = ev.position.y,
+					lng = ev.position.x,
+					date = ev.date.strftime("%Y-%m-%d"),
+					time = ev.date.strftime("%H:%M:%S"),
+					speed = ev.speed,
+					heading = ev.course,
+					odom = ev.odom or 0
+					)
+
+	def smsDict(self,ev):
+		ev = GsmEvent.objects.get(id = ev.id)
+		a = self.trackDict(ev)
+		a['type'] = "SMS"
+		a['source']= ev.source
+		a['text']=ev.text
+		return a
+
+	def FixDict(self,ev):
+		a = self.trackDict(ev)
+		#a['type'] = "REPORTE"
+		return a
+
+	def IoDict(self,ev):
+		ev = IOEvent.objects.get(id = ev.id)
+		#if "Ign" in ev.changes:
+		a = self.trackDict(ev)
+		a['type'] = "IO"
+		a['event'] = ev.changes
+		return a
+
+
+	def get_queryset(self):
+		try:
+			imei = self.request.GET.get('imei',None)
+			startID = int(self.request.GET.get('startid',0))
+			self.limit = int(self.request.GET.get('limit',500))
+			count = self.request.GET.get('count',None)
+			self.count = not count is None
+			self.avl = SGAvl.objects.get(imei = imei)
+			if self.avl.imei == 861001000210399:
+				self.avl = SGAvl.objects.get(imei = 861001000205928)
+			qs = Event.objects.filter(imei = self.avl).filter(id__gt = startID).order_by("id").filter(type__in = self.EVS )
+		except:
+			raise SuspiciousOperation("Invalid values")
+		#raise ValueError
+		return qs
+
+	#def get(self, request, *args, **kwargs):
+	#	return super(TrackerApiView, self).get(request,*args,**kwargs)
+
+	def render_to_response(self,context):
+		return HttpResponse(simplejson.dumps(context), mimetype='application/json')
+
+	def get_context_data(self, **kwargs):
+		self.pos = self.avl.position
+		imei = self.avl.imei
+		if imei == 861001000205928:
+			imei = 861001000210399
+		if self.count:
+			context = dict(count = len(self.object_list),
+						   imei = imei,
+						   name = self.avl.name)
+		else:
+			context = dict(count = len(self.object_list),
+						   imei = imei,
+						   name = self.avl.name)
+			evs = []
+			for e in self.object_list[:self.limit]:
+				if e.type == "TRACK":
+					evs.append(self.trackDict(e))
+				elif e.type == "IO_FIX":
+					evs.append(self.IoDict(e))
+				elif e.type == "SMS_RECEIVED":
+					evs.append(self.smsDict(e))
+				elif e.type == "CURRENT_FIX":
+					evs.append(self.FixDict(e))
+			context['events'] = evs
+		return context
+
+def getPeopleCount(sensor,start,end):
+	ev0 = PsiWeightLog.objects.filter(sensor = sensor, date__gte = start).order_by("date")
+	ev1 = PsiWeightLog.objects.filter(sensor = sensor, date__lte = end).order_by("-date")
+	try:
+		cnts = ( int(ev1[0].psi1-ev0[0].psi1),int(ev1[0].psi2-ev0[0].psi2))
+		#s = PsiCal.objects.get(sensor = sensor)
+		#if (int(s.offpsi2) == 207) and (int(s.mulpsi1) not in [1,5,6,14,17,18,19,21,24,25,28,29]):
+		#	cnts = (int(cnts[0]*1.12),int(cnts[1]*1.12))
+	except:
+		cnts = (0,0)
+	return cnts
+
+def SensorCounts(avls,dt1,dt2):
+	sensors = []
+	for i in avls:
+		cals = PsiCal.objects.filter(imei = i).order_by("offpsi1")
+		up=down= 0
+		data = []
+		for j in cals:
+			j.up,j.down = getPeopleCount(j.sensor,dt1,dt2)
+			up+=j.up
+			down+=j.down
+			sensors.append(j)
+			data.append(dict(up=j.up,down=j.down))
+			#print j.imei.name,j.name,j.up,j.down
+		print i.name,data,up,"/",down, "(",abs(up-down), ")"
+	return sensors
+
+def SensorCountsCsv(avls,dt1,dt2):
+	sensors = []
+	for i in avls:
+		cals = PsiCal.objects.filter(imei = i).order_by("offpsi1")
+		up=down= 0
+		data = []
+		for j in cals:
+			j.up,j.down = getPeopleCount(j.sensor,dt1,dt2)
+			up+=j.up
+			down+=j.down
+			sensors.append(j)
+			data.append(dict(up=j.up,down=j.down))
+			#print j.imei.name,j.name,j.up,j.down
+		dt =""
+		for j in data:
+			dt += ",%d,%d"%(j["up"],j["down"])
+		cards = len(Tarjetas.objects.filter(linea = i.ruta, economico = i.economico, date__range = (dt1,dt2)))
+		print i.name,dt,',',up,",",down, ",",abs(up-down), ",",cards, ",",max(up,down)-cards
+
+def SensorActivityCsv(name,y,m,d,hours):
+	avls = NamedAvls(name)
+	dt = datetime(y,m,d)
+	for i in avls:
+		cals = PsiCal.objects.filter(imei = i).order_by("offpsi1")
+		data = []
+		dt1=dt
+		for hs in range(hours):
+			dt2=dt1+timedelta(hours = 1)
+			n = 0
+			for j in cals:
+				j.up,j.down = getPeopleCount(j.sensor,dt1,dt2)
+				n += j.up+j.down
+			data.append(n)
+			dt1 = dt2
+		txt =""
+		for j in data:
+			txt += ",%d"%(j/10)
+		print i.name,txt
+
+def avlSensorCatalog(avl,dt1,dt2):
+	slog = PsiWeightLog.objects.filter(imei = avl,date__gte = dt1,date__lte = dt2).order_by("sensor")
+	sensors = slog.values_list("sensor",flat = True).distinct("sensor")
+	for i in sensors:
+		print i, len(slog.filter(sensor = i))
+
+def SensorAvlCatalog(sensor,dt1,dt2):
+	slog = PsiWeightLog.objects.filter(sensor = sensor,date__gte = dt1,date__lte = dt2).order_by("imei")
+	avls = slog.values_list("imei",flat = True).distinct("imei")
+	for i in avls:
+		print i, len(slog.filter(imei = i))
+
+def BluetoothStats(dt1,dt2):
+	for sensor in PsiCal.objects.all():
+		if len(sensor.sensor) == 12:
+			slog = PsiWeightLog.objects.filter(sensor = sensor.sensor,date__gte = dt1,date__lte = dt2).order_by("imei")
+			avls = slog.values_list("imei",flat = True).distinct("imei")
+			owner = len (slog.filter(imei = sensor.imei_id))
+			print sensor.sensor, sensor.imei_id, sensor.imei.name, "Owner: ",owner , "Other: ", len(slog)-owner
+			
+def RutaXls(avls):
+	for i in avls:
+		sensors = PsiCal.objects.filter(imei=i).order_by("offpsi1")
+		st = '"'+i.name+'"'
+		for s in sensors:
+			st +=","+s.name
+		print st
+		st = str(i.imei)
+		for s in sensors:
+			st +=","+s.sensor[2:4]+s.sensor[6:8]
+		print st
+		print ",,,"
+
+#Obsoleted 
+class TicketView(ListView):
+	template_name = "Ticket.html"
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(TicketView, self).dispatch(*args, **kwargs)
+
+	def get_basegfevents(self,range):
+		events = Event.objects.filter(imei = self.dev, date__range = range, type = 'TRACK').order_by("date")
+		fences = GeoFence.objects.filter(base = self.dev.ruta)
+		gf_evs=[]
+		if events:
+			for i in fences:
+				i.where = i.fence.contains(events[0].position)
+			for p in events:
+				for i in fences:
+					wh = i.fence.contains(p.position)
+					if i.where != wh:
+						i.where = wh
+						if wh:
+							gf_evs.append(dict(time = p.date, dir ="in"))
+						else:
+							gf_evs.append(dict(time = p.date, dir ="out"))
+		return gf_evs
+
+	def get_pTimes(self,gf_evs,range):
+		times = []
+		start = range[0]
+		if gf_evs:
+			#if self.dev.harness.name == u"Tarifa":
+			#	start = range[0]
+			#else:
+			#	start = gf_evs[0]['time']
+			for i in gf_evs[1:]:
+				if i['time']-start > timedelta(minutes = 100):
+					times.append(dict(type = "run" if i['dir'] == "in" else "stop"
+									  ,start = start, end = i['time'],range = (start,i['time'])))
+					start = i['time']
+				elif i['time']-start < timedelta(minutes = 25) and i['dir']=="out":
+					#times.append(dict(type = "stop",start = start, end = i['time']))
+					start = i['time']
+			if start<range[1]:
+				times.append(dict(type = "tail" ,start = start, end = self.range[1],range = (start,range[1])))
+		else:
+			times.append(dict(type = "head" ,start = self.range[0], end = self.range[1],range = (range[0],range[1])))
+			
+		return times
+
+	def get(self, request, *args, **kwargs):
+		try:
+			self.imei = int(request.GET['imei'])
+			self.date = datetime.strptime(request.GET['date'],"%Y-%m-%d")
+			tm1 = time.strptime(request.GET['start'],"%H:%M")
+			start = timedelta(hours = tm1.tm_hour, minutes = tm1.tm_min)
+			tm2 = time.strptime(request.GET['stop'],"%H:%M")
+			stop = timedelta(hours = tm2.tm_hour, minutes = tm2.tm_min)
+			self.range = dayRangeX(self.date,start,stop)
+			range= self.range
+		except:
+			raise django.core.exceptions.ValidationError("<h1>Invalid value</h1>")
+		self.dev = get_object_or_404(SGAvl,imei = self.imei)
+		if self.dev.ruta == 112 and (request.user == User.objects.get(username = "ruta400") or request.user == User.objects.get(username = "ruta140")):
+			pass
+		elif self.dev.name == "R202 - 06" and request.user == User.objects.get(username = "grupomg"):
+			pass
+		elif not (self.dev.owner == request.user or self.request.user.is_staff):
+			raise Http404
+		gf_evs = self.get_basegfevents(self.range)
+		rounds = self.get_pTimes(gf_evs,self.range)
+		self.rounds = rounds
+		return super(TicketView, self).get(request,*args,**kwargs)
+
+	def get_queryset(self):
+		self.cals = PsiCal.objects.filter(imei = self.dev).order_by("offpsi1")
+		self.counters = []
+		self.cards = Tarjetas.objects.filter(linea = self.dev.ruta, economico = self.dev.economico, date__range = self.range)
+		return self.cards
+
+	def get_context_data(self, **kwargs):
+		#avls = []
+		#avls.append(SGAvl.objects.get(name = "R400 - 59"))
+		#avls.append(SGAvl.objects.get(name = "R400 - 29A"))
+		#avls.append(SGAvl.objects.get(name = "R202 - 21"))
+		user = User.objects.get(username = "sector4")
+		#query = Q(ruta = 89) | Q(owner = user)
+		query = Q(owner = user)
+		avls = SGAvl.objects.filter(query)
+		
+	
+		context = super(TicketView, self).get_context_data(**kwargs)
+		#if len(self.cards)==0:
+		#	raise Http500
+		range = self.range
+		rounds = self.rounds
+		
+		context['Name']= self.dev.name
+		context['Date']=datetime.now().strftime("%d/%m/%Y %H:%M")
+		context['Economico']=self.dev.economico
+		if (self.cards):
+			context['Ruta']=self.cards[0].nlinea
+			context['Ramal']=self.cards[0].nramal
+		else:
+			context['Ruta']='N/D'
+			context['Ramal']='N/D'
+		context['rounds'] = []
+		#Totales
+
+		context['Up']=0
+		context['Down']=0
+		for s in self.cals:
+			s.up,s.down = getPeopleCount(s.sensor,self.range[0],self.range[1])
+			context['Up']+=s.up
+			context['Down']+=s.down
+
+		upn = context['Up'] if context['Up']>context['Down'] else context['Down']
+		total = len(self.cards)
+		pref = total-len(self.cards.filter(tipo__in = [8,5]))
+		normal = len(self.cards.filter(tipo = 5))
+		nocard = upn - total - self.cals[1].up
+		if nocard <0 : 
+			nocard =0
+		# Tarifa
+		if self.dev.harness.id == 3:
+			cash = nocard * 17.0
+		elif self.dev.harness.id == 4:
+			cash = nocard * 12.0
+		else:
+			cash = nocard * 12.0
+		context['Preferentes']=pref
+		context['Ordinarias']=normal
+		context['Cash'] = cash
+		context['NoCard'] = nocard
+
+		#raise ValueError
+		context['Up']=0
+		context['Preferentes']=0
+		context['Ordinarias']=0
+		context['Cash'] = 0
+		context['NoCard'] = 0
+		
+		debugi = []
+		for dt in self.rounds:
+			up=down=0
+			for s in self.cals:
+				s.t1,s.t2 = getPeopleCount(s.sensor,dt['range'][0],dt['range'][1])
+				up+=s.t1
+				down+=s.t2
+
+			upn = up if up>down else down
+			if self.dev in avls:	###
+				upn = up			### Cambio sector 4 prueba
+			cards = self.cards.filter(date__range = dt['range'])
+			total = len(cards)
+			pref = total-len(cards.filter(tipo__in = [8,5]))
+			normal = len(cards.filter(tipo = 5))
+			nocard = upn - total - self.cals[1].t1
+			debugi.append(dict( upn = upn, cards = cards, total = total,
+				pref = pref, normal = normal, nocard = nocard, up = up, down = down))
+			if nocard <0 : 
+				nocard =0
+			#tarifa
+			if self.dev.harness.id == 3:
+				cash = nocard * 17.0
+			elif self.dev.harness.id == 4:
+				cash = nocard * 12.0
+			else:
+				cash = nocard * 12.0			
+			context['Up']+=up
+			context['Preferentes']+=pref
+			context['Ordinarias']+=normal
+			context['Cash'] += cash
+			context['NoCard'] += nocard
+			#
+			round = dict(
+				date = dt['range'][0].strftime("%d/%m/%Y"),
+				start = dt['range'][0].strftime("%H:%M"),
+				stop = dt['range'][1].strftime("%H:%M"),
+				up = up,
+				down = down,
+				total = total,
+				pref = pref,
+				normal = normal,
+				nocard = nocard,
+				cash = cash,
+				real = nocard+total
+
+			)
+			context['rounds'].append(round)
+		ticketLog = TicketsLog()
+		context['object_list'] = None
+		context['tarjetas_list'] = None
+		ticketLog.data = simplejson.dumps(context)
+		ticketLog.ruta = self.dev.ruta
+		ticketLog.date = datetime.now(utc)
+		ticketLog.save()
+		context['folio'] = ticketLog.id
+		context['Drivers'] = Driver.objects.all().order_by('name')
+		#raise ValueError
+		return context
+
+class TargetView(TicketView):
+	def get_context_data(self, **kwargs):
+		context = super(TicketView, self).get_context_data(**kwargs)
+		#if len(self.cards)==0:
+		#	raise Http500
+		context['Name']= self.dev.name
+		context['Date']=datetime.now().strftime("%d/%m/%Y %H:%M")
+		context['Economico']=self.dev.economico
+		if (self.cards):
+			context['Ruta']=self.cards[0].nlinea
+			context['Ramal']=self.cards[0].nramal
+		else:
+			context['Ruta']='N/D'
+			context['Ramal']='N/D'
+		context['rounds'] = []
+		#Totales
+
+		context['Up']=0
+		context['Down']=0
+		for s in self.cals:
+			s.up,s.down = getPeopleCount(s.sensor,self.range[0],self.range[1])
+			context['Up']+=s.up
+			context['Down']+=s.down
+
+		upn = context['Up'] if context['Up']>context['Down'] else context['Down']
+		total = len(self.cards)
+		pref = total-len(self.cards.filter(tipo__in = [8,5]))
+		normal = len(self.cards.filter(tipo = 5))
+		nocard = upn - total - self.cals[1].up
+		# Tarifa
+		if self.dev.harness.id == 3:
+			cash = nocard * 0
+		elif self.dev.harness.id == 4:
+				cash = nocard * 0			
+		else:
+			cash = nocard * 0
+		context['Preferentes']=pref
+		context['Ordinarias']=normal
+		context['Cash'] = 0
+		context['NoCard'] = 0
+
+		rounds = self.rounds
+		#raise ValueError
+		context['Up']=0
+		context['Preferentes']=0
+		context['Ordinarias']=0
+		context['Cash'] = 0
+		context['NoCard'] = 0
+		
+		for dt in self.rounds:
+			up=down=0
+			for s in self.cals:
+				s.t1,s.t2 = getPeopleCount(s.sensor,dt['range'][0],dt['range'][1])
+				up+=s.t1
+				down+=s.t2
+
+			upn = up if up>down else down
+			cards = self.cards.filter(date__range = dt['range'])
+			total = len(cards)
+			pref = total-len(cards.filter(tipo__in = [8,5]))
+			normal = len(cards.filter(tipo = 5))
+			nocard = upn - total - self.cals[1].t1
+			#tarifa
+			if self.dev.harness.id == 3:
+				cash = nocard * 17.0
+			elif self.dev.harness.id == 4:
+				cash = nocard * 12.0
+			else:
+				cash = nocard * 12.0			
+			context['Up']+=0
+			context['Preferentes']+=pref
+			context['Ordinarias']+=normal
+			context['Cash'] += 0
+			context['NoCard'] += 0
+			#
+			round = dict(
+				date = dt['range'][0].strftime("%d/%m/%Y"),
+				start = dt['range'][0].strftime("%H:%M"),
+				stop = dt['range'][1].strftime("%H:%M"),
+				up = up,
+				down = down,
+				total = total,
+				pref = pref,
+				normal = normal,
+				nocard = 0,
+				cash = 0,
+				real = 0
+
+			)
+			context['rounds'].append(round)
+		ticketLog = TicketsLog()
+		context['object_list'] = None
+		context['tarjetas_list'] = None
+		ticketLog.data = simplejson.dumps(context)
+		ticketLog.ruta = self.dev.ruta
+		ticketLog.date = datetime.now(utc)
+		ticketLog.save()
+		context['folio'] = ticketLog.id
+		context['Drivers'] = Driver.objects.all().order_by('name')
+		return context
+
+
+import logging
+from django.contrib.gis.measure import Distance
+from django.contrib.gis.geos.point import Point
+import geopy
+
+Geocoder = geopy.geocoders.GoogleV3(scheme='http')
+GeocoderN = geopy.geocoders.Nominatim()
+LookupRange = Distance(m=100)
+logger = logging.getLogger('gps')
+PolyEncoder = gpolyencode.GPolyEncoder()
+
+def getAddress(pos):
+	ch = AddressCache.objects.filter(position__distance_lte=(pos,LookupRange)).distance(pos).order_by('distance')
+	if ch:
+		return ch[0].text
+	else:
+		try:
+			lu = Geocoder.reverse((pos.y,pos.x),exactly_one=True,language='es')
+		except:
+			try:
+				lu = GeocoderN.reverse((pos.y,pos.x),exactly_one=True,language='es')
+			except:
+				return ""
+		if lu:
+			point = Point(lu.longitude,lu.latitude,srid = 4326)
+			ch = AddressCache.objects.filter(position = point).distance(pos)
+			if len(ch):
+				logger.warning( u"**Warning: Point already in db: {:.2f}m [{:.80s}] -- adding anyway".format(ch[0].distance.m,ch[0].text))
+				ch = AddressCache(position = pos, date = datetime.now(), text = lu.address)
+				ch.save()
+				return ch.text
+			else:
+				ch = AddressCache.objects.filter(text=lu.address).distance(pos)
+				if len(ch):
+					logger.warning(u"**Warning: Address already in db: {:.2f}m [{:.80s}]".format(ch[0].distance.m,ch[0].text))
+					return ch[0].text
+				else:
+					ch = AddressCache(position = point, date = datetime.now(), text = lu.address)
+					ch.save()
+				return ch.text
+		else:
+			return ""
+
+""" #### Tabla de recorridos
+      <div class="col-sm-12">
+       <div class="wdgt wdgt-info" hide-btn="false">
+        <div class="wdgt-header">Recorridos </div>
+        <div class="wdgt-body wdgt-table" style="padding-bottom:10px;">
+         <div class="bodycontainer scrollable" style="height: 450px;" >
+          <table class='table table-hover table-striped table-scrollable'>
+           <thead>
+           <tr>
+            <th>Hora</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Duracion</th>
+            <th>Distancia</th>
+           </tr>
+           </thead>
+           <tbody>
+           {% for e in tracks %}
+           <tr>
+            <td ><a href='#tr{{ forloop.counter0 }}' onclick=showTrack({{ forloop.counter0 }})>{{ e.start|time:"H:i" }}</a></td>
+            <td ><span class="fa {{ e.iclass }}"></span>&nbsp{{ e.startAddress }}</td>
+            <td >{% if e.stopAddress %}{{ e.stopAddress }}{% endif %}</td>
+            <td>{{ e.duration }}</td>
+            <td>{% if e.km %}{{ e.km|floatformat:2 }} Km{% endif %}</td>
+           </tr>
+           {% endfor %}
+           </tbody>
+           <tfoot>
+            <tr>
+             <td id="horasTotal"></td>
+             <td></td>
+             <td id="totalDistancia"></td>
+             <td id="totalDuracionesTrayectos:"></td>
+            </tr>
+           </tfoot>
+         </table>
+        </div>
+        </div>
+       </div>
+
+      </div>
+"""
+			
+TRACKCOLORS = ["#0000CD","#2E8B57","#FFFF00","#A020F0","#8B8682"]
+class TrackDetail(object):
+	def __repr__(self):
+		return "Details: %s - %d, %s"%(self.type, len(self.route),repr(self.stop-self.start))
+
+	def reject(self):
+		if self.type == 'TRACK' and self.distance.m <= 20:
+			return True
+		if self.type == "IDLE":
+			d = self.stop - self.start
+			if d.seconds <30:
+				return True
+		return False
+	
+	def __init__(self,ev,tpe = None):
+		self.color = TRACKCOLORS[0]
+		self.type = "TRACK"
+		self.dead = timedelta(seconds = 0)
+		if ev:
+			self.route = [ev.position]
+			self.distance = geoLen(0) #gpDistance(0)
+			self.start = self.stop = ev.date
+			self.sw = dict(x = ev.position.x, y= ev.position.y)
+			self.ne = dict(x = ev.position.x, y= ev.position.y)
+			self.bounds = (self.sw, self.ne)
+			self.maxspeed = ev.speed
+
+	def setColor(self,i):
+		self.color = TRACKCOLORS[ i % len(TRACKCOLORS)]
+			
+	def addTrack(self,ev):
+		newTrack = None
+		if self.distance.m > 500 or self.distance>250 and not ev.speed:
+			newTrack = TrackDetail(ev,"TRACK")
+		else:
+			newTrack = None
+		self.distance += vincenty(self.route[-1],ev.position)
+		self.stop = ev.date
+		self.route.append(ev.position)
+		self.sw['x'],self.sw['y'] = min(self.sw['x'],ev.position.x),min(self.sw['y'],ev.position.y)
+		self.ne['x'],self.ne['y'] = max(self.ne['x'],ev.position.x),max(self.ne['y'],ev.position.y)
+		self.maxspeed = max(self.maxspeed,ev.speed)
+		return newTrack
+
+	def icon(self):
+		return 'ARROWico' if self.type == "TRACK" else 'CIRCLEico'
+
+	def hasPoly(self):
+		return self.type == 'TRACK'
+
+	def poly(self):
+		return PolyEncoder.encode( [(i.x,i.y) for i in self.route])['points']
+
+	def duration(self):
+		dt = self.stop - self.start
+		if dt.seconds == 0:
+			return u"0:00:00"
+		m,s = divmod(dt.seconds,60)
+		h,m = divmod(m,60)
+		return u"{0:2}:{1:02}:{2:02}".format(h,m,s)
+
+	def desc(self):
+		if self.type =='TRACK':
+			return "Recorrido"
+		else:
+			return "Parada"
+
+	def iclass(self):
+		if self.type == 'TRACK':
+			#return u'fa-forward'
+			return u'fa-play'
+		return u'fa-stop'
+
+	def km(self):
+		if self.type == 'TRACK':
+			return self.distance.km
+		return None
+
+	def speed(self):
+		t = (self.stop-self.start).seconds/3600.0
+		return 0 if not t else int(self.distance.km/t)
+		
+	def startAddress(self):
+		return getAddress(self.route[0])
+
+	def stopAddress(self):
+		if self.type =='TRACK':
+			return getAddress(self.route[-1])
+		else:
+			if self.dead.seconds:
+				m,s = divmod(self.dead.seconds,60)
+				h,m = divmod(m,60)
+				if h:
+					return "Tiempo muerto: %d:%02d:%02d"%(h,m,s)
+				else:
+					return "Tiempo muerto: %d:%02d"%(m,s)
+			else:
+				return ""
+
+def trackDetails(tracks,ios=None):
+	if not len(tracks):
+		return []
+	# Create track list
+	t0 = TrackDetail(tracks[0])
+	trDetails = [t0]
+	for i in tracks[1:]:
+		nt = t0.addTrack(i)
+		if nt:
+			trDetails.append(nt)
+			t0 = nt
+	return trDetails
+
+class TrackerDetailView(ListView):
+	EVS = ["CURRENT_FIX","TRACK","IO_FIX","IO_NOFIX","SMS_RECEIVED"] #,"GPS_OK","GPS_LOST"]
+
+	template_name = "devDetail.html"
+
+	@method_decorator(login_required)
+	def dispatch(self, *args, **kwargs):
+		return super(TrackerDetailView, self).dispatch(*args, **kwargs)
+
+	def has_fences(self):
+		fences = GeoFence.objects.filter(owner = self.dev.owner)
+		#if not self.request.user.is_superuser:
+		self.template_name = "fancyDetail.html"
+		self.cals = PsiCal.objects.filter(imei = self.dev).order_by("offpsi1")
+
+	def get_gfevents(self,fences):
+		if not fences:
+			if (self.dev.ruta):
+				q = Q(base = None)|Q(base = self.dev.ruta)
+			else:
+				q = Q(base = None)
+			self.fences = GeoFence.objects.filter(q,owner = self.dev.owner)
+			fences = self.fences
+		evs = self.object_list.filter(type = "TRACK")
+		gf_evs = []
+		if evs:
+			for i in fences:
+				i.where = i.fence.contains(evs[0].position)
+			for p in evs:
+				for i in fences:
+					wh = i.fence.contains(p.position)
+					if i.where != wh:
+						i.where = wh
+						if wh:
+							gf_evs.append(dict(time = p.date, desc = "->"+i.name,name = i.name, dir ="in"))
+						else:
+							gf_evs.append(dict(time = p.date, desc = "<-"+i.name,name = i.name, dir ="out"))
+		return gf_evs
+
+	def get_peopleTimes(self):
+		if self.dev.ruta and self.cals:
+			fences = GeoFence.objects.filter(owner = self.dev.owner,base = self.dev.ruta)
+			gf_evs = self.get_gfevents(fences)
+
+			times = []
+			if gf_evs:
+				start = gf_evs[0]['time']
+				for i in gf_evs[1:]:
+					if i['time']-start > timedelta(minutes = 100):
+						times.append(dict(type = "run" if i['dir'] == "in" else "stop"
+										  ,start = start, end = i['time']))
+						start = i['time']
+					elif i['time']-start < timedelta(minutes = 25) and i['dir']=="out":
+						#raise ValueError
+						times.append(dict(type = "stop",start = start, end = i['time']))
+						start = i['time']
+			return times
+		else:
+			return None
+
+	def get(self, request, *args, **kwargs):
+		self.imei = kwargs.pop('imei')
+		self.date = kwargs.pop('date')
+		self.starth = timedelta(hours = 3)
+		self.stoph  = timedelta(hours = 23, minutes = 59)
+		if 'start' in request.GET and 'stop' in request.GET:
+			try:
+				tm1 = time.strptime(request.GET['start'],"%H:%M")
+				tm2 = time.strptime(request.GET['stop'],"%H:%M")
+				self.starth = timedelta(hours = tm1.tm_hour, minutes = tm1.tm_min)
+				self.stoph  = timedelta(hours = tm2.tm_hour, minutes = tm2.tm_min)
+			except:
+				self.starth = timedelta(hours = 3)
+				self.stoph  = timedelta(hours = 23, minutes = 59)
+		self.dev = get_object_or_404(SGAvl,imei = self.imei)
+		if self.dev.ruta == 112 and (request.user == User.objects.get(username = "ruta400") or request.user == User.objects.get(username = "ruta140")):
+			pass
+		elif self.dev.name == "R202 - 06" and request.user == User.objects.get(username = "grupomg"):
+			pass			
+		elif not (self.dev.owner == request.user or self.request.user.is_staff):
+			raise Http404
+		if self.date: self.date = datetime.strptime(self.date,"%Y-%m-%d")
+		self.has_fences()
+		return super(TrackerDetailView, self).get(request,*args,**kwargs)
+
+	def get_queryset(self):
+		devEvents = Event.objects.filter(imei = self.dev)
+		# Get events for the device
+		try:
+			e = devEvents[0]
+		except IndexError:
+			raise Http404
+		#Get date if not specified
+		self.cals = PsiCal.objects.filter(imei = self.dev).order_by("offpsi1")
+		if not self.date:
+			self.date = datetime.now()
+			self.prevDay = self.prevDate = prevDay(self.date)
+			self.nexDate = self.nextDay = None
+		else:
+			self.prevDay = self.prevDate = prevDay(self.date)
+			self.nexDate = self.nextDay =nextDay(self.date)
+
+		if self.request.user.is_superuser:
+			events = devEvents.filter(date__range = dayRange(self.date))
+			#events = devEvents.filter(date__range = dayRangeX(self.date,self.starth,self.stoph))
+		else:
+			#events = devEvents.filter(date__range = dayRangeX(self.date,self.starth,self.stoph)).filter(type__in = self.EVS)
+			events = devEvents.filter(date__range = dayRange(self.date)).filter(type__in = self.EVS)
+		return events.order_by('date')
+
+	def getLis(self):
+		lis = AccelLog.objects.filter(imei = self.dev, date__range = dayRange(self.date))#, peak__gte = 1.0)
+		evs = []
+		for i in lis.order_by("peak"):
+			if i.peak <1.0 :
+				i.color = "yellow"
+			elif i.peak <1.5:
+				i.color = "orange"
+			else:
+				i.color = "red"
+			evs.append(i)
+		return evs
+		
+	def get_context_data(self, **kwargs):
+		context = super(TrackerDetailView, self).get_context_data(**kwargs)
+		evs = context['object_list'].count()
+		try:
+			context['bounds'] = geoExtents(context['object_list'].extent())
+			context['exLen'] =  geoLen(context['bounds']['sw'],context['bounds']['ne'])
+		except Exception as e:
+			context['bounds'] = geoExtents((self.dev.position.x,self.dev.position.y,self.dev.position.x,self.dev.position.y))
+			context['exLen'] =  geoLen(context['bounds']['sw'],context['bounds']['ne'])
+		self.evDetails = []
+
+		tracks = context['object_list'].filter(type__in = ['CURRENT_FIX','TRACK'])
+		context['ntracks']= len(tracks)
+		context['tracks'] = trackDetails(tracks)
+		
+		context['date'] = self.date
+		context['events'] = self.evDetails
+		context['lis'] = self.getLis() if self.dev.ruta else {}
+		context['dev_name'] = self.dev.name
+		context['avl'] = dict(
+			imei = self.dev.imei,
+			name = self.dev.name,
+			serial = self.dev.serial,
+			version = self.dev.swversion,
+			inputs = self.dev.inputs,
+			outputs = self.dev.outputs,
+			alarms = self.dev.alarms,
+			lastLog = self.dev.lastLog,
+			date = self.dev.date,
+			odom = "", #tOdom
+			time = time,
+			x = self.dev.position.x,
+			y = self.dev.position.y,
+			icon = 'caricons/'+self.dev.icon
+		)
+		dr = dayRange(self.date)
+		context['display_pos'] = (dr[0] < self.dev.date < dr[1]) or (dr[0] < self.dev.lastLog < dr[1])
+		#raise ValueError
+		if self.dev.owner:
+			context['avl']['owner'] = u"{0:s} : {1:s}".format(self.dev.owner.username,self.dev.owner.get_full_name())
+			#if self.dev.owner.username == 'eman':
+			#	context['people']= True
+		if self.dev.sim:
+			context['avl']['sim'] = self.dev.sim.phone
+		context['urlthis']  = reverse('dev_detail',args=[self.imei])
+		if self.nextDay:
+			#context['urlnext'] = reverse('dev_detail2',args=[self.dev.imei,self.nextDay.date().isoformat()])
+			context['urlnext'] = reverse('dev_detail2',args=[self.imei,self.nextDay.date().isoformat()])
+		if self.prevDay:
+			#context['urlprev'] = reverse('dev_detail2',args=[self.dev.imei,self.prevDay.date().isoformat()])
+			context['urlprev'] = reverse('dev_detail2',args=[self.imei,self.prevDay.date().isoformat()])
+		context['pdata']=[]
+		if self.request.user.is_staff: 
+			context['gf_events'] = self.get_gfevents(None)
+		#if self.dev.owner == self.request.user and len(self.cals) != 0:
+		if len(self.cals) != 0:
+			context['gf_events'] = self.get_gfevents(None)
+			context['has_people'] = True
+			context['pcounters'] = []
+			dr = context['DateRange'] = dayRangeX(self.date,self.starth,self.stoph)
+			for s in self.cals:
+				t1,t2 = getPeopleCount(s.sensor,dr[0],dr[1])
+				context['pcounters'].append(dict(name = s.name,	t1 = t1, t2 = t2))
+			if context['gf_events']:
+				pt = self.get_peopleTimes()
+				for i in pt:
+					i['starth']= i['start'].strftime("%H:%M")
+					i['endh']= i['end'].strftime("%H:%M")
+					i['counts']=[]
+					i['eventCnts'] = []
+					for s in self.cals:
+						cntA,cntB = getPeopleCount(s.sensor,i['start'],i['end'])
+						i['counts'].append([cntA,cntB])
+				context['pdata']=pt
+		context['Start_H'] = td2str(self.starth)
+		context['Stop_H'] = td2str(self.stoph)
+		context['Imei'] = self.dev.imei
+		context['Date'] = self.date.strftime("%Y-%m-%d")
+		#Overlays
+		color = 0
+		ptidx = 0
+		tridx = 0
+		while ptidx<len(context['pdata']):
+			while ptidx<len(context['pdata']) and (context['pdata'][ptidx]['type']!= 'run'):
+				ptidx+=1
+			if ptidx>= len(context['pdata']):
+				break
+			while tridx < len(context['tracks']):
+				if context['tracks'][tridx].start<context['pdata'][ptidx]['start']:
+					context['tracks'][tridx].setColor(color)
+					tridx +=1
+				elif context['tracks'][tridx].stop < context['pdata'][ptidx]['end']:
+					context['tracks'][tridx].setColor(color+1)
+					tridx +=1
+				else:
+					break
+			color +=1
+			ptidx +=1
+		if self.dev.ruta == 96:
+			if self.dev.economico <=23:
+				overlays = Overlays.objects.filter(name__startswith = "Ruta 400.1")
+			elif 26 <= self.dev.economico <= 57:
+				overlays = Overlays.objects.filter(name__startswith = "Ruta 400.2")
+			else:
+				overlays = Overlays.objects.filter(name__startswith = "Ruta 400.3")
+		elif self.dev.ruta == 92:
+			if self.dev.economico <=41:
+				overlays = Overlays.objects.filter(name__startswith = "Ruta 4 ")
+			else:
+				overlays = Overlays.objects.filter(name__startswith = "Ruta 69 ")			
+		else:
+			overlays = Overlays.objects.filter(base = self.dev.ruta)
+		traces = []
+		enc = gpolyencode.GPolyEncoder()
+		for i in overlays:
+			traces.append( enc.encode(i.geometry.tuple)['points'])
+		context['overlays']= traces
+		return context
+
+def td2str(tdelta):
+	h = tdelta.seconds / 3600
+	m = tdelta.seconds %3600 / 60
+	return "%02d:%02d"%(h,m)
+
+class PsiReportPDF(TrackerDetailView):
+	def get_queryset(self):
+		devEvents = Event.objects.filter(imei = self.dev)
+		try:
+			e = devEvents[0]
+		except IndexError:
+			raise Http404
+		#Get date if not specified
+		if not self.date:
+			self.date = devEvents.order_by('-date').filter(position__isnull = False)[0].date
+		events = devEvents.filter(date__range = dayRange(self.date)).filter(type__in = self.EVS)
+		self.psiEvents = PsiWeightLog.objects.filter(imei = self.dev, date__range = dayRange(self.date))
+		return events.order_by('id')
+
+	boxgrid = TableStyle([
+		('GRID',(0,0),(-1,-1),1,colors.black),
+		('BOX',(0,0),(-1,-1),2,colors.black),
+		('ALIGN',(0,0),(-1,-1),'LEFT'),
+		('SPAN',(0,0),(-1,0)),
+		('SPAN',(0,1),(-1,1))
+	])
+
+	def render_to_response(self,context):
+		data = [['ID: %s'%self.dev.name,'','','','',''],
+			['Fecha: %s'%self.date.strftime("%x"),'','','','',''],
+			['Inicio','Fin','Distancia','Peso','Psi F', 'Psi T']]
+		for i in context['psi_evs']:
+			data.append([i.date.strftime("%H:%M"),
+						 i.date_end.strftime("%H:%M"),
+						 "%.2f km"%i.km,
+						 "%.2f kg"%i.kg,
+						 "%.2f psi"%i.psi1,
+						 "%.2f psi"%i.psi2,
+						 ])
+		t = Table(data)
+		t.setStyle(self.boxgrid)
+		response = HttpResponse(content_type='application/pdf')
+		#response['Content-Disposition'] = 'attachment; filename="taskLogReport.pdf"'
+		response['Content-Disposition'] = 'filename="peso.pdf"'
+
+		doc = BaseDocTemplate(response, pagesize=letter, leftMargin = 0.25*inch, rightMargin = 0.25*inch, topMargin = 0.25*inch, bottomMargin = 0.25*inch)
+		frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height,
+				   id='normal')
+		template = PageTemplate(id='test', frames=frame)
+		doc.addPageTemplates([template])
+		story = [t]
+		doc.build(story)
+		return response
+
+	def get(self, request, *args, **kwargs):
+		self.imei = kwargs.pop('imei')
+		self.date = kwargs.pop('date')
+		self.dev = get_object_or_404(SGAvl,imei = self.imei)
+		################
+		if request.user.username == "demo_taxi" and self.dev.owner.username == "TaxiActivo":
+			pass
+		##############
+		elif not (self.dev.owner == request.user or self.request.user.is_staff):
+			raise Http404
+		if self.date: self.date = datetime.strptime(self.date,"%Y-%m-%d")
+		self.object_list = self.get_queryset()
+		context = self.get_context_data(object_list = self.object_list)
+		return self.render_to_response(context)
+
+	def get_context_data(self, **kwargs):
+		context = super(TrackerDetailView, self).get_context_data(**kwargs)
+		evs = context['object_list'].count()
+		if evs:
+			self.evDetails = [EventDetail(context['object_list'][0])]
+			for ev in context['object_list'][1:]:
+				e = self.evDetails[-1].addEvent(ev)
+				if (e): self.evDetails.append(e)
+			self.evDetails[-1].close()
+		else:
+			self.evDetails  = []
+		psi_evs = []
+		for i in self.evDetails:
+			if i.type == "TRACK_PSI":
+				psi_evs.append(i)
+		context['psi_evs'] = psi_evs
+		return context
+
+def device_history(request,imei,tdate = None):
+	#dev = get_object_or_404(SGAvl,imei = imei)
+	#tracks = get_list_or_404(Event, imei=dev, type = 'TRACK')
+	try:
+		dev = SGAvl.objects.get(imei = imei)
+		tracks = Event.objects.filter( imei=dev, type = 'TRACK')
+		if not tdate:
+			tdate = tracks.latest('date').date.date()
+		date_e = tdate + timedelta(days=1)
+		tracks_f = tracks.filter( date__range = (tdate,date_e))
+	except:
+		return None
+	if not tracks_f: return None
+	swx = nex = tracks_f[0].position.x
+	swy = ney = tracks_f[0].position.y
+
+	for i in tracks_f[1:]:
+		nex = max(nex,i.position.x)
+		ney = max(ney,i.position.y)
+		swx = min(swx,i.position.x)
+		swy = min(swy,i.position.y)
+	centerx = (nex + swx )/ 2.0
+	centery = (ney + swy )/ 2.0
+	center = dict(cx=centerx, cy=centery, nex = nex, ney = ney, swx =swx, swy= swy)
+	return center,tracks_f
+	#routes = []
+	#track = []
+	#for t in tracks_f:
+	#	if not track:
+	#		track.append(t)
+	#	else:
+	#		pass
+
+@login_required
+@csrf_exempt
+def device(request,imei,year=None, month=None, day=None):
+	try:
+		dev = SGAvl.objects.get(imei = imei)
+	except:
+		raise Http404
+	if not request.user.is_staff and dev.owner != request.user:
+		raise Http404
+	if request.is_ajax():
+		try:
+			args = ["ssh",
+					"sms@skyguard.dlinkddns.com",
+					"gammu","sendsms","TEXT",dev.sim.phone,"-text",
+					'"COMMAND %s"'%request.POST['action']]
+		except:
+			args = None
+		if request.POST['action'] == 'cancel':
+			dev.newOutputs = None
+			dev.save()
+		elif request.POST['action'] == 'stop':
+			if dev.harness.name == 'NCerrado':
+				dev.newOutputs = 15
+			else:
+				dev.newOutputs = 0
+			dev.save()
+			if args:	subprocess.call(args)
+		elif request.POST['action'] == 'update':
+			if args:
+				subprocess.call(args)
+				return HttpResponse(simplejson.dumps({'result': "Ok."}), mimetype='application/json')
+			else:
+				return HttpResponse(simplejson.dumps({'result': "Falta telefono"}), mimetype='application/json')
+		elif request.POST['action'] == 'start':
+			if dev.harness.name == 'NCerrado':
+				dev.newOutputs = 0
+			else:
+				dev.newOutputs = 15
+			dev.save()
+			if args:	subprocess.call(args)
+		if args:
+			return HttpResponse(simplejson.dumps({'result': "Ok"}), mimetype='application/json')
+		else:
+			return HttpResponse(simplejson.dumps({'result': "Ok (sin telefono)"}), mimetype='application/json')
+	if dev.newOutputs != None:
+		dev.button = "Cancelar Accion"
+		dev.baction = "cancel"
+	elif dev.outputs !=0:
+		if dev.harness.name == 'NCerrado':
+			dev.button = "Reactivar"
+			dev.baction = 'start'
+		else:
+			dev.button = "Parar"
+			dev.baction = 'stop'
+	else:
+		if dev.harness.name == 'NCerrado':
+			dev.button = "Parar"
+			dev.baction = 'stop'
+		else:
+			dev.button = 'Reactivar'
+			dev.baction = 'start'
+	if dev.date:
+		dev.dates = unicode(dev.date)
+	target_date = None
+	if year and month and day:
+		try:
+			target_date = date(int(year),int(month),int(day))
+		except ValueError:
+			target_date = None
+	a = device_history(request,imei,target_date)
+	if a:
+		ctx ={
+			'car':dev,
+			'tracks':[a[1]],
+			'center':a[0]
+		}
+	else:
+		ctx ={
+			'car':dev,
+		}
+	return render_to_response('device.html',ctx,context_instance=RequestContext(request))
+
+def query_cars(request):
+	uname = request.user.username
+	qorphan = Q(owner = None)
+	quser = Q(owner = request.user)
+	qruta6 = Q(ruta = 112)
+	qruta400 = Q(ruta = 96)
+	qgmg = Q(name = "R202 - 06")
+	u140 = User.objects.get(username = "ruta140")
+	u400 = User.objects.get(username = "ruta400")
+	ugmg = User.objects.get(username = "grupomg")
+	if request.user.is_superuser:
+		return  SGAvl.objects.all().order_by('name')
+	else:
+		if request.user == u400:
+			quser = quser | qruta400
+		if request.user == u140 or request.user == u400:
+			quser = quser | qruta6
+		if request.user == ugmg:
+			quser = quser | qgmg
+		cars = SGAvl.objects.filter(quser).order_by('name')
+		if not cars:
+			rutas = request.user.last_name.split()
+			if request.user.last_name[0] in RUTA_CATALOG:
+				rvals = []
+				for i in rutas:
+					rvals.append(RUTA_CATALOG[i])
+				cars = SGAvl.objects.filter(ruta__in = rvals).order_by('name')
+				#cars = SGAvl.objects.filter(ruta__in = RUTA_CATALOG[request.user.last_name]).order_by('name')
+		#raise ValueError
+		return cars
+
+@login_required
+def devices_ajax(request):
+	if not request.is_ajax(): raise Http404
+	cars = query_cars(request)
+	assets = []
+	for car in cars:
+		if car.position:
+			crds = dict(x= car.position.x, y= car.position.y)
+			address = "{1},{0}".format(car.position.x,car.position.y)
+			if car.lastLog:
+				td = datetime.now()-car.lastLog
+			else:
+				td = timedelta(hours=5)
+			if td > timedelta(hours = 5):					stata = '03'
+			elif td > timedelta(hours = 2,minutes = 15):	stata = '02'
+			elif td > timedelta(minutes = 16):				stata = '01'
+			else:											stata = '00'
+			if ((car.inputs>>1)&1) == 1: 	statb = '05'
+			else:							statb = '06'
+			if car.alarms:	statc = "07"
+			else: 			statc = "08"
+			stat = [stata, statb, statc]
+		else:
+			crds = None
+			stat = ['04','0E','0E']
+		ncar = dict(
+			id = str(car.imei),
+			name = car.name,
+			icon = settings.STATIC_URL+'caricons/'+car.icon,
+			coord = crds,
+			stats = stat
+			)
+		if car.ruta and car.economico:
+			if car.economico <100:
+				eco = car.economico
+			else:
+				eco = car.economico/100
+			ncar['icon'] = settings.STATIC_URL+"img/camiones/camion{0:02d}.png".format(eco)
+		try:
+			ncar['mname'] = car.name +'\n{0} kph\n'.format(car.speed)+car.date.strftime("%H:%M:%S")
+		except:
+			ncar['mname'] = car.name
+		fences = GeoFence.objects.filter(owner = request.user)
+		#if (fences):
+		ncar['url'] = reverse('dev_detail',kwargs = {"imei":str(car.imei)} )
+		#else:
+		#	ncar['url'] = reverse('gps.tracker.views.device',args=[car.imei] )
+		assets.append(ncar)
+	return HttpResponse(simplejson.dumps(assets), mimetype='application/json')
+
+@login_required
+def devices(request):
+	cars = query_cars(request)
+	#raise ValueError
+	if not cars: raise Http404
+	cars_wpos = cars.filter(~Q(position = None))
+	use_zoom = 0
+	if (cars_wpos):
+		if len(cars_wpos) == 1:
+			use_zoom = 1
+		bbox = cars_wpos.extent()
+		centerx = (bbox[0] + bbox[2])/ 2.0
+		centery = (bbox[1] + bbox[3] )/ 2.0
+		center = dict(x=centerx, y = centery, nex = bbox[2], ney = bbox[3], swx = bbox[0], swy = bbox[1] )
+	else:
+		center = dict(x=-100, y= 25, nex= -99.9, ney=25.1, swx= -100.1, swy= 24.9)
+	overlays = Overlays.objects.filter(owner = request.user)
+	traces = []
+	enc = gpolyencode.GPolyEncoder()
+	for i in overlays:
+		traces.append( enc.encode(i.geometry.tuple)['points'])
+	ctx ={
+		'title': 	'Resumen de equipos',
+		'center':   center,
+		'overlays': traces,
+		'use_zoom': use_zoom,
+		}
+	#raise ValueError
+	return render_to_response('devices.html',ctx,context_instance=RequestContext(request))
+
+from pygeoif.geometry import LineString as pgLineString, Point as pgPoint, Polygon as pgPolygon
+from fastkml import kml
+from fastkml.kml import Folder as kFolder,Placemark as kPlace ,Document as kDoc, KML as kKML
+
+def readKml(fname):
+	f = open(fname)
+	doc = f.read()
+	f.close()
+	k = kml.KML()
+	k.from_string(doc)
+	return k
+
+def kmlPlacemarks(kml):
+	places = []
+	if type(kml) is kDoc or type(kml) is kFolder or type(kml) is kKML:
+		for i in kml.features():
+			if type(i) is kPlace:
+				places.append(i)
+			else:
+				places += kmlPlacemarks(i)
+	return places
+
+from django.contrib.gis.geos import LineString
+from django.contrib.gis.geos import MultiLineString
+def getLineStrings(fname):
+	k = readKml(fname)
+	l = []
+	for i in kmlPlacemarks(k):
+		if type(i.geometry) is pgLineString:
+			ls = LineString([(x[0],x[1]) for x in i.geometry.coords])
+			l.append(ls)
+	#return MultiLineString(l)
+	return l
+
+def purgeDb(rec_qty):
+	first = Event.objects.all().order_by("id")[0].id
+	for i in range(first,first+rec_qty,1000):
+		IOEvent.objects.filter(id__lte = i).delete()
+		GsmEvent.objects.filter(id__lte = i).delete()
+		ResetEvent.objects.filter(id__lte = i).delete()
+		Event.objects.filter(id__lte = i).delete()
+		print i
+		
+def purgePeople(rec_qty):
+	first = PsiWeightLog.objects.all().order_by("id")[0].id
+	for i in range(first,first+rec_qty,1000):
+		PsiWeightLog.objects.filter(id__lte = i).delete()
+		print i
+
+import gps.gprs.models as gprs		
+def purgeGprs(rec_qty):
+	first = gprs.Record.objects.all().order_by("id")[0].id
+	for i in range(first,first+rec_qty,1000):
+		gprs.Record.objects.filter(id__lte = i).delete()
+		packet = gprs.Record.objects.all().order_by("id")[0].packet.id
+		gprs.Packet.objects.filter(id__lt=packet).delete()
+		session = gprs.Packet.objects.all().order_by("id")[0].session.id
+		gprs.Session.objects.filter(id__lt=session).delete()
+		print i
+
+from django.views.decorators.csrf import csrf_exempt
+
+import struct
+from django.contrib.gis.geos import Point
+@csrf_exempt
+def iridium(request):
+	log = logging.getLogger('gps')
+	log.debug("method: %s",request.method)
+	if request.method == 'POST':
+		for key,val in request.POST.items():
+			log.debug("DATA: %s = %s",key,val)
+		try:
+			gps = SGAvl.objects.get(imei = request.POST["imei"])
+			data = bytearray.fromhex(request.POST["data"])
+			while len(data)>=50:
+				log.debug("Processing chunk.")
+				satRec = data[:50]
+				data = data[50:]
+				utc0, = struct.unpack("<I",satRec[:4])
+				x = struct.unpack("<iiii",satRec[4:20])
+				y = struct.unpack("<iiii",satRec[20:36])
+				speed = struct.unpack("BBBB",satRec[36:40])
+				alt = struct.unpack("BBBB",satRec[40:44])
+				dif = struct.unpack("<HHH",satRec[44:50])
+				ev0 = Event(imei = gps, type = "TRACK", position = Point(x[0]/10000000.0,y[0]/10000000.0),
+					date = datetime.fromtimestamp(utc0,utc), speed = speed[0], 
+					course = 0, odom = 0, altitude = alt[0])
+				ev1 = Event(imei = gps, type = "TRACK", position = Point(x[1]/10000000.0,y[1]/10000000.0),
+					date = datetime.fromtimestamp(utc0+dif[0],utc), speed = speed[1], 
+					course = 0, odom = 0, altitude = alt[1])
+				ev2 = Event(imei = gps, type = "TRACK", position = Point(x[2]/10000000.0,y[2]/10000000.0),
+					date = datetime.fromtimestamp(utc0+dif[1],utc), speed = speed[2], 
+					course = 0, odom = 0, altitude = alt[2])
+				ev3 = Event(imei = gps, type = "TRACK", position = Point(x[3]/10000000.0,y[3]/10000000.0),
+					date = datetime.fromtimestamp(utc0+dif[2],utc), speed = speed[3], 
+					course = 0, odom = 0, altitude = alt[3])
+				ev0.save()
+				ev1.save()
+				ev2.save()
+				ev3.save()
+				log.debug("Processed 4 points")
+			if len(data):
+				raise ValueError("Invalid data" +repr(data))
+		except Exception:
+			log.debug("Data: %s",repr(data))
+			log.exception("** EXCEPTION ON IRIDIUM **")
+		return HttpResponse()
+	else:
+		return HttpResponseForbidden()
+	

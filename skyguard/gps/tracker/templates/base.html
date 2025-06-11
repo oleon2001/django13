@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html><head>
+    <title>{{ title|default:"Grupo Martínez García" }}</title>
+    <!--meta name="viewport" content="initial-scale=1.0, user-scalable=no" /-->
+    <link href="{{ STATIC_URL }}css/site.css" rel="stylesheet" type="text/css">
+	{% block additional-styles %}{% endblock additional-styles %}
+	{% block additional-scripts %}{% endblock additional-scripts %}
+</head>
+<body>
+	<div id="header">
+    	<div id="logo"><img src="{{ STATIC_URL }}img/{{ logo }}" alt="logo"></div>
+		{% block nav-menu %}
+		<div id="nav">
+			<ul>
+			<li><a href="{{ HOME_URL }}">Inicio</a>
+			<!-- {%if user.is_staff %}
+			<li><a href="/admin">Administrar</a>
+			{% endif %} -->
+			{%if user.hasFences %}
+			<li><a href="/fences">Geocercas</a>
+			{% endif %}
+			<li><a href="/logoff">Salir</a>
+			</ul>
+		</div>
+		<div id="logged">
+			Usuario<br>{{ user.username }}
+		</div>
+		{% endblock nav-menu %}
+    </div>
+{% block content %}
+{% endblock content %}
+</body></html>
