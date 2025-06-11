@@ -4,6 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import { Device } from '../types';
 import './DeviceMap.css';
 
+
+
 interface DeviceMapProps {
     devices: Device[];
     selectedDevice: Device | null;
@@ -23,11 +25,9 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
             }).addTo(mapRef.current);
         }
 
-        // Clear existing markers
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
 
-        // Add new markers
         devices.forEach((device) => {
             const marker = L.marker([device.latitude, device.longitude])
                 .bindPopup(`

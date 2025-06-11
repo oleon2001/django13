@@ -5,7 +5,7 @@ export const HeroSection: React.FC = () => {
   return (
     <section className="hero-section">
       <div className="hero-content">
-        <img src="/static/img/skyguard.png" alt="Skyguard Logo" className="falkon-logo" />
+        <img src="/static/img/logofalkon.png" alt="Skyguard Logo" className="falkon-logo" />
         <h1>¡Recupera lo que pierdes!</h1>
         <h2>Protege tu flotilla</h2>
         <p>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Box, TextField, Button, Typography, InputAdornment } from '@mui/material';
 import { AccountCircle, Lock } from '@mui/icons-material';
-import logo from '../../assets/img/skyguard.png';
+import logo from '../../assets/img/logofalkon.png';
 
 export const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');

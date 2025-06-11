@@ -27,7 +27,7 @@ interface MapProps {
 const Map: React.FC<MapProps> = ({
   devices,
   center = [-33.4489, -70.6693], // Santiago, Chile
-  zoom = 13,
+  zoom = 133,
 }) => {
   const mapRef = useRef<L.Map>(null);
 

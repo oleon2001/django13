@@ -24,7 +24,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../../hooks/useAuth'; // Import useAuth hook
-import logo from '../../assets/img/skyguard.png';
+import logo from '../../assets/img/logofalkon.png';
 
 interface BaseLayoutProps {
   children: React.ReactNode;
