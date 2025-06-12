@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Device } from '../types';
-import { authService } from './authService';
+import authService from './auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -9,39 +9,51 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true,
 });
 
-// Add token to requests if it exists
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Interceptor para agregar el token JWT a las peticiones
+api.interceptors.request.use(
+    (config) => {
+        const token = authService.getToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-});
+);
 
-// Interceptor para manejar errores y renovación de tokens
+// Interceptor para manejar errores de respuesta
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // Si el error es 401 y no es una solicitud de renovación de token
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Si el error es 401 y no hemos intentado refrescar el token
+        if (error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                // Intentar renovar el token
-                const { access } = await authService.refreshToken();
-                
-                // Actualizar el token en la solicitud original
-                localStorage.setItem('token', access);
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (!refreshToken) {
+                    throw new Error('No refresh token available');
+                }
+
+                const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
+                    refresh: refreshToken
+                });
+
+                const { access } = response.data;
+                localStorage.setItem('access_token', access);
+
+                // Actualizar el token en la petición original
                 originalRequest.headers.Authorization = `Bearer ${access}`;
-                
-                // Reintentar la solicitud original
                 return api(originalRequest);
             } catch (refreshError) {
-                // Si falla la renovación, cerrar sesión
+                // Si falla el refresh, hacer logout
                 authService.logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);

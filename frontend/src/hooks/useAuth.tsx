@@ -32,14 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string) => {
     setLoading(true);
-    if (username === 'admin' && password === 'admin123') {
-      const simUser = { username: 'admin', isStaff: true, hasFences: true };
-      localStorage.setItem('accessToken', 'fake-token');
-      localStorage.setItem('simUser', JSON.stringify(simUser));
-      setUser(simUser);
-      setLoading(false);
-      return;
-    }
     try {
       const response = await fetch('/api/token/', {
         method: 'POST',
@@ -70,9 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       const userData = await userResponse.json();
       setUser(userData);
+      setLoading(false);
 
     } catch (error) {
       console.error('Login error:', error);
+      setLoading(false);
       throw error;
     }
   };
