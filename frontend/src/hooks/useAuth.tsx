@@ -1,16 +1,20 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/auth';
 
 interface User {
+  id: number;
   username: string;
-  isStaff: boolean;
-  hasFences: boolean;
+  email: string;
+  is_staff: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,71 +22,61 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const initializeAuth = async () => {
+    try {
+      if (authService.isAuthenticated()) {
+        const userData = await authService.getCurrentUser();
+        setUser(userData);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      await authService.logout();
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    const storedUser = localStorage.getItem('simUser');
-    if (accessToken && storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      setUser(null);
-    }
-    setLoading(false);
+    initializeAuth();
   }, []);
 
   const login = async (username: string, password: string) => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch('/api/token/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Invalid credentials');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('accessToken', data.access);
-      localStorage.setItem('refreshToken', data.refresh);
-
-      // Fetch user data with the new access token
-      const userResponse = await fetch('/api/auth/session', {
-        headers: {
-          'Authorization': `Bearer ${data.access}`,
-        },
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Failed to fetch user data after login');
-      }
-      const userData = await userResponse.json();
-      setUser(userData);
-      setLoading(false);
-
-    } catch (error) {
-      console.error('Login error:', error);
-      setLoading(false);
+      const response = await authService.login({ username, password });
+      setUser(response.user);
+      setIsAuthenticated(true);
+    } catch (error: any) {
+      setError(error.message || 'Error al iniciar sesión');
+      setIsAuthenticated(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('simUser');
-    setUser(null);
-    setLoading(false);
-    // Optionally, you might want to hit a logout endpoint on the backend to invalidate server-side sessions/tokens if any
-    // For stateless JWTs, clearing client-side tokens is usually sufficient.
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await authService.logout();
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, error, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

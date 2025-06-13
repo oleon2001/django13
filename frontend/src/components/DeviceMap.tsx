@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+// Importar el CSS de compatibilidad para los iconos de Leaflet
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css';
+// Importar el paquete de compatibilidad
+import 'leaflet-defaulticon-compatibility';
 import { Device } from '../types';
 import './DeviceMap.css';
-
-
 
 interface DeviceMapProps {
     devices: Device[];
@@ -15,6 +17,14 @@ interface DeviceMapProps {
 const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDeviceSelect }) => {
     const mapRef = useRef<L.Map | null>(null);
     const markersRef = useRef<L.Marker[]>([]);
+
+    // Solución para el problema de los iconos predeterminados de Leaflet con Webpack
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+        iconUrl: require('leaflet/dist/images/marker-icon.png'),
+        shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+    });
 
     useEffect(() => {
         if (!mapRef.current) {
@@ -48,6 +58,13 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
                 13
             );
         }
+
+        return () => {
+            if (mapRef.current) {
+                mapRef.current.remove();
+                mapRef.current = null;
+            }
+        };
     }, [devices, selectedDevice, onDeviceSelect]);
 
     return <div id="map" className="device-map" />;

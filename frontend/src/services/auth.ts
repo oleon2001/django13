@@ -1,4 +1,6 @@
-import api from './api';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 interface LoginCredentials {
   username: string;
@@ -10,68 +12,167 @@ interface RegisterData {
   email: string;
   password: string;
   password2: string;
-  first_name: string;
-  last_name: string;
 }
 
-const authService = {
-  async login(credentials: LoginCredentials) {
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  is_staff: boolean;
+}
+
+interface LoginResponse {
+  access: string;
+  refresh: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    is_staff: boolean;
+  };
+}
+
+interface AuthResponse {
+  access: string;
+  refresh: string;
+  user: User;
+}
+
+class AuthService {
+  private token: string | null = null;
+  private user: User | null = null;
+
+  constructor() {
     try {
-      const response = await api.post('/api/auth/login/', credentials);
-      const { access, refresh, user } = response.data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-      return response.data;
-    } catch (error: any) {
-      if (error.response) {
-        throw new Error(error.response.data.error || 'Error de autenticación');
+      this.token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      this.user = userStr ? JSON.parse(userStr) : null;
+      
+      // Configurar el token en axios si existe
+      if (this.token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
       }
-      throw new Error('Error de conexión');
+    } catch (error) {
+      console.error('Error initializing auth state:', error);
+      this.clearAuth();
     }
-  },
-
-  async register(data: RegisterData) {
-    try {
-      const response = await api.post('/api/auth/register/', data);
-      const { access, refresh, user } = response.data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-      return response.data;
-    } catch (error: any) {
-      if (error.response) {
-        throw new Error(error.response.data.error || 'Error en el registro');
-      }
-      throw new Error('Error de conexión');
-    }
-  },
-
-  async logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-  },
-
-  async getCurrentUser() {
-    try {
-      const response = await api.get('/api/auth/profile/');
-      return response.data;
-    } catch (error: any) {
-      if (error.response && error.response.status === 401) {
-        this.logout();
-      }
-      throw error;
-    }
-  },
-
-  isAuthenticated() {
-    return !!localStorage.getItem('access_token');
-  },
-
-  getToken() {
-    return localStorage.getItem('access_token');
   }
-};
 
-export default authService; 
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/token/`, credentials);
+      const { access, refresh, user } = response.data;
+      
+      this.token = access;
+      this.user = user;
+      
+      localStorage.setItem('token', access);
+      localStorage.setItem('refresh', refresh);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Configurar el token en axios para futuras peticiones
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al iniciar sesión');
+    }
+  }
+
+  async logout(): Promise<void> {
+    try {
+      if (this.token) {
+        await axios.post(`${API_URL}/api/auth/logout/`, {}, {
+          headers: { Authorization: `Bearer ${this.token}` }
+        });
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      this.clearAuth();
+    }
+  }
+
+  private clearAuth(): void {
+    this.token = null;
+    this.user = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.token;
+  }
+
+  getToken(): string | null {
+    return this.token;
+  }
+
+  async getCurrentUser(): Promise<User> {
+    if (!this.token) {
+      throw new Error('No authenticated user');
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/api/auth/user/`, {
+        headers: { Authorization: `Bearer ${this.token}` }
+      });
+      this.user = response.data;
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    } catch (error) {
+      this.clearAuth();
+      throw new Error('Error getting user data');
+    }
+  }
+
+  async refreshToken(): Promise<string> {
+    const refresh = localStorage.getItem('refresh');
+    if (!refresh) {
+      throw new Error('No refresh token available');
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
+        refresh
+      });
+      
+      const { access } = response.data;
+      this.token = access;
+      localStorage.setItem('token', access);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      return access;
+    } catch (error) {
+      this.clearAuth();
+      throw new Error('Error refreshing token');
+    }
+  }
+
+  async register(data: RegisterData): Promise<AuthResponse> {
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/register/`, data);
+      const { access, refresh, user } = response.data;
+      
+      localStorage.setItem('token', access);
+      localStorage.setItem('refresh', refresh);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      this.token = access;
+      this.user = user;
+      
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error en el registro');
+    }
+  }
+
+  getUser(): User | null {
+    return this.user;
+  }
+}
+
+export default new AuthService(); 

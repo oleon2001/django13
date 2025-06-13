@@ -2,13 +2,13 @@
 Admin interface for the GPS application.
 """
 from django.contrib import admin
-from django.contrib.gis.admin import GeoModelAdmin
+from django.contrib.gis.admin import GISModelAdmin
 
 from .models import GPSDevice, GPSLocation, GPSEvent
 
 
 @admin.register(GPSDevice)
-class GPSDeviceAdmin(GeoModelAdmin):
+class GPSDeviceAdmin(GISModelAdmin):
     """Admin interface for GPS devices."""
     list_display = ('imei', 'name', 'protocol', 'firmware_version', 'last_log', 'is_active')
     list_filter = ('protocol', 'is_active', 'created_at')
@@ -34,7 +34,7 @@ class GPSDeviceAdmin(GeoModelAdmin):
 
 
 @admin.register(GPSLocation)
-class GPSLocationAdmin(GeoModelAdmin):
+class GPSLocationAdmin(GISModelAdmin):
     """Admin interface for GPS locations."""
     list_display = ('device', 'timestamp', 'speed', 'course', 'altitude', 'satellites')
     list_filter = ('timestamp', 'satellites', 'fix_quality', 'fix_type')

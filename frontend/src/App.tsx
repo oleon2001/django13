@@ -14,28 +14,44 @@ import './App.css';
 
 // Componente para rutas protegidas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
 
   if (loading) {
-    return <div style={{ color: 'blue', fontWeight: 'bold', fontSize: 24 }}>Cargando autenticación...</div>;
+    return (
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
+        color: '#e01a22',
+        fontSize: '1.2rem'
+      }}>
+        Cargando...
+      </div>
+    );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   return <BaseLayout>{children}</BaseLayout>;
 };
 
-function App() {
+const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
-            element={<Navigate to="/dashboard" replace />}
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/dashboard"
@@ -93,12 +109,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Redirigir cualquier ruta no encontrada al dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
-}
+};
 
 export default App;

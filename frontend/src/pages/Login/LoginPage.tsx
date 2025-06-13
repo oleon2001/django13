@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Box, TextField, Button, Typography, InputAdornment } from '@mui/material';
+import { Box, TextField, Button, Typography, InputAdornment, CircularProgress } from '@mui/material';
 import { AccountCircle, Lock } from '@mui/icons-material';
 import logo from '../../assets/img/logofalkon.png';
 
@@ -10,7 +10,14 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    // Si el usuario ya está autenticado, redirigir al dashboard
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,11 +25,32 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login(username, password);
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      setError('Usuario o contraseña incorrectos');
+      // La redirección se maneja en el useEffect
+    } catch (err: any) {
+      setError(err.message || 'Usuario o contraseña incorrectos');
     }
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
+        }}
+      >
+        <CircularProgress sx={{ color: '#e01a22' }} />
+      </Box>
+    );
+  }
+
+  // Si el usuario ya está autenticado, no mostrar el formulario de login
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box
@@ -41,7 +69,7 @@ export const LoginPage: React.FC = () => {
       <Box
         sx={{
           background: '#2a2a2a',
-          p: { xs: 3, sm: 4.5 }, // Responsive padding
+          p: { xs: 3, sm: 4.5 },
           borderRadius: '12px',
           boxShadow: '0 15px 30px rgba(0, 0, 0, 0.5)',
           width: '100%',
@@ -107,92 +135,85 @@ export const LoginPage: React.FC = () => {
         )}
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              margin="normal"
-              required
-              id="username"
-              label="Usuario"
-              name="username"
-              autoComplete="username"
-              autoFocus
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              sx={{ flexGrow: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <AccountCircle sx={{ color: '#888' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '8px',
-                  bgcolor: '#333',
-                  color: '#f5f5f5',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444 !important' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important', boxShadow: '0 0 0 4px rgba(224, 26, 34, 0.4)' },
-                  '& .MuiInputBase-input': { color: '#f5f5f5' },
-                },
-              }}
-              InputLabelProps={{
-                sx: { color: '#888' },
-              }}
-            />
-            <TextField
-              margin="normal"
-              required
-              name="password"
-              label="Contraseña"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              sx={{ flexGrow: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock sx={{ color: '#888' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  borderRadius: '8px',
-                  bgcolor: '#333',
-                  color: '#f5f5f5',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444 !important' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important', boxShadow: '0 0 0 4px rgba(224, 26, 34, 0.4)' },
-                  '& .MuiInputBase-input': { color: '#f5f5f5' },
-                },
-              }}
-              InputLabelProps={{
-                sx: { color: '#888' },
-              }}
-            />
-          </Box>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="username"
+            label="Usuario"
+            name="username"
+            autoComplete="username"
+            autoFocus
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <AccountCircle sx={{ color: '#888' }} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: '8px',
+                bgcolor: '#333',
+                color: '#f5f5f5',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444 !important' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important', boxShadow: '0 0 0 4px rgba(224, 26, 34, 0.4)' },
+                '& .MuiInputBase-input': { color: '#f5f5f5' },
+              },
+            }}
+            InputLabelProps={{
+              sx: { color: '#888' },
+            }}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Contraseña"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#888' }} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: '8px',
+                bgcolor: '#333',
+                color: '#f5f5f5',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444 !important' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#e01a22 !important', boxShadow: '0 0 0 4px rgba(224, 26, 34, 0.4)' },
+                '& .MuiInputBase-input': { color: '#f5f5f5' },
+              },
+            }}
+            InputLabelProps={{
+              sx: { color: '#888' },
+            }}
+          />
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{
-              mt: 3, mb: 2,
+              mt: 3,
+              mb: 2,
               bgcolor: '#e01a22',
               color: 'white',
+              '&:hover': {
+                bgcolor: '#b3141c',
+              },
               py: 1.5,
               borderRadius: '8px',
-              fontSize: '1.3rem',
-              fontWeight: 700,
-              letterSpacing: '0.5px',
-              '&:hover': {
-                bgcolor: '#c0151c',
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
-              },
-              '&:active': {
-                transform: 'translateY(0)',
-                boxShadow: 'none',
-              },
+              textTransform: 'none',
+              fontSize: '1.1rem',
+              fontWeight: 600,
             }}
           >
             Iniciar Sesión

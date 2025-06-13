@@ -1,6 +1,12 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { Device } from '../types';
 import authService from './auth';
+
+interface ErrorResponse {
+    detail?: string;
+    message?: string;
+    [key: string]: any;
+}
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -26,41 +32,47 @@ api.interceptors.request.use(
     }
 );
 
-// Interceptor para manejar errores de respuesta
+// Interceptor para manejar errores y refresh token
 api.interceptors.response.use(
     (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+    async (error: AxiosError<ErrorResponse>) => {
+        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
         // Si el error es 401 y no hemos intentado refrescar el token
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                const refreshToken = localStorage.getItem('refresh_token');
-                if (!refreshToken) {
-                    throw new Error('No refresh token available');
-                }
-
-                const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
-                    refresh: refreshToken
-                });
-
-                const { access } = response.data;
-                localStorage.setItem('access_token', access);
-
+                // Intentar refrescar el token
+                const newToken = await authService.refreshToken();
+                
                 // Actualizar el token en la petición original
-                originalRequest.headers.Authorization = `Bearer ${access}`;
+                if (originalRequest.headers) {
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                }
+                
+                // Reintentar la petición original
                 return api(originalRequest);
             } catch (refreshError) {
                 // Si falla el refresh, hacer logout
-                authService.logout();
+                await authService.logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
         }
 
-        return Promise.reject(error);
+        // Manejar otros errores
+        if (error.response) {
+            // Error de respuesta del servidor
+            const errorMessage = error.response.data?.detail || error.response.data?.message || 'Error del servidor';
+            return Promise.reject(new Error(errorMessage));
+        } else if (error.request) {
+            // Error de red
+            return Promise.reject(new Error('Error de conexión'));
+        } else {
+            // Error en la configuración de la petición
+            return Promise.reject(new Error('Error en la petición'));
+        }
     }
 );
 

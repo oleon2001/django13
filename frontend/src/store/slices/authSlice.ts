@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { User } from '../../types';
-import { authService } from '../../services/authService';
+import authService from '../../services/auth';
 
 interface AuthState {
     user: User | null;
@@ -11,11 +11,31 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-    user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') as string) : null,
-    token: localStorage.getItem('token'),
-    isAuthenticated: localStorage.getItem('isAuthenticated') === 'true',
+    user: null,
+    token: null,
+    isAuthenticated: false,
     loading: false,
     error: null,
+};
+
+// Inicializar el estado desde el localStorage de manera segura
+const initializeState = () => {
+    try {
+        const user = authService.getUser();
+        const token = authService.getToken();
+        const isAuthenticated = authService.isAuthenticated();
+
+        return {
+            user,
+            token,
+            isAuthenticated,
+            loading: false,
+            error: null,
+        };
+    } catch (error) {
+        console.error('Error initializing auth state:', error);
+        return initialState;
+    }
 };
 
 export const login = createAsyncThunk(
@@ -29,18 +49,21 @@ export const login = createAsyncThunk(
 export const logout = createAsyncThunk(
     'auth/logout',
     async () => {
-        authService.logout();
+        await authService.logout();
     }
 );
 
-export const getCurrentUser = createAsyncThunk('auth/getCurrentUser', async () => {
-    const user = await authService.getCurrentUser();
-    return user;
-});
+export const getCurrentUser = createAsyncThunk(
+    'auth/getCurrentUser',
+    async () => {
+        const user = await authService.getCurrentUser();
+        return user;
+    }
+);
 
 const authSlice = createSlice({
     name: 'auth',
-    initialState,
+    initialState: initializeState(),
     reducers: {
         clearError: (state) => {
             state.error = null;
