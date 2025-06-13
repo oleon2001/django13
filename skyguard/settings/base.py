@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'skyguard.apps.gps',
     'skyguard.apps.tracking',
     'skyguard.apps.monitoring',
+    'skyguard.apps.coordinates',  # New coordinates app
 ]
 
 MIDDLEWARE = [

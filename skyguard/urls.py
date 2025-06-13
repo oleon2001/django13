@@ -26,6 +26,7 @@ urlpatterns = [
     path('gps/', include('skyguard.apps.gps.urls')),
     path('tracking/', include('skyguard.apps.tracking.urls')),
     path('monitoring/', include('skyguard.apps.monitoring.urls')),
+    path('api/', include('skyguard.apps.coordinates.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
