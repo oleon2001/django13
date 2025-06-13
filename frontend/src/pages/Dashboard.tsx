@@ -53,6 +53,7 @@ const Dashboard: React.FC = () => {
                 <Grid item xs={12} md={8}>
             <Paper sx={{ height: 500, p: 2 }}>
               <DeviceMap
+                key={Date.now()}
                             devices={mockDevices}
                 selectedDevice={selectedDevice}
                 onDeviceSelect={handleDeviceSelect}
