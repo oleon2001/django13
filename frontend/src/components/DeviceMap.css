@@ -1,7 +1,7 @@
 .device-map {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 400px;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -29,4 +29,63 @@
 
 .device-map .leaflet-popup-content br {
   margin: 4px 0;
+}
+
+.device-popup {
+  padding: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.device-popup h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #1976d2;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 4px;
+}
+
+.device-popup p {
+  margin: 4px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.device-popup strong {
+  color: #666;
+  margin-right: 4px;
+}
+
+/* Estilos para el estado del dispositivo */
+.device-popup .status-online {
+  color: #4caf50;
+}
+
+.device-popup .status-offline {
+  color: #f44336;
+}
+
+/* Estilos para la información de batería */
+.device-popup .battery-low {
+  color: #f44336;
+}
+
+.device-popup .battery-medium {
+  color: #ff9800;
+}
+
+.device-popup .battery-high {
+  color: #4caf50;
+}
+
+/* Estilos para la información de señal */
+.device-popup .signal-weak {
+  color: #f44336;
+}
+
+.device-popup .signal-medium {
+  color: #ff9800;
+}
+
+.device-popup .signal-strong {
+  color: #4caf50;
 } 

@@ -1,4 +1,4 @@
-import { Device } from '../../types';
+import { Device } from '../../types/index';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -85,6 +85,14 @@ class CoordinateService {
                 longitude: coord.longitude,
                 speed: Math.floor(Math.random() * 100),
                 heading: Math.floor(Math.random() * 360),
+                altitude: Math.floor(Math.random() * 1000),
+                satellites: Math.floor(Math.random() * 12),
+                hdop: Math.random() * 2,
+                pdop: Math.random() * 3,
+                fix_quality: Math.floor(Math.random() * 5),
+                fix_type: '3D',
+                battery_level: Math.floor(Math.random() * 100),
+                signal_strength: Math.floor(Math.random() * 100)
             }));
 
             // Notificar a los suscriptores
@@ -120,6 +128,14 @@ class CoordinateService {
                 longitude: coord.longitude,
                 speed: Math.floor(Math.random() * 100),
                 heading: Math.floor(Math.random() * 360),
+                altitude: Math.floor(Math.random() * 1000),
+                satellites: Math.floor(Math.random() * 12),
+                hdop: Math.random() * 2,
+                pdop: Math.random() * 3,
+                fix_quality: Math.floor(Math.random() * 5),
+                fix_type: '3D',
+                battery_level: Math.floor(Math.random() * 100),
+                signal_strength: Math.floor(Math.random() * 100)
             };
 
             // Actualizar el dispositivo en la lista actual

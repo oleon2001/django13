@@ -16,10 +16,11 @@ import {
     ErrorOutline as ErrorOutlineIcon,
 } from '@mui/icons-material';
 import DeviceMap from '../components/DeviceMap';
+import { Device } from '../types';
 import { mockDevices } from '../data/mockData';
 
 const Tracking: React.FC = () => {
-    const [selectedDevice, setSelectedDevice] = useState<typeof mockDevices[0] | null>(null);
+    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const onlineDevices = mockDevices.filter((device) => device.status === 'online');
     const offlineDevices = mockDevices.filter((device) => device.status === 'offline');
 

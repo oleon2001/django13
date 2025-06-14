@@ -35,6 +35,7 @@ class ConcoxPosition(BasePosition):
         self.speed = data[13]  # km/h
         self.course = struct.unpack("<H", data[14:16])[0] / 10.0  # degrees
         
+        
         # Extract status
         status = struct.unpack("<H", data[16:18])[0]
         self.is_valid = bool(status & 0x0001)

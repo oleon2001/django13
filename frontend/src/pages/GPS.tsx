@@ -17,7 +17,7 @@ import { Device } from '../types';
 
 const GPS: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>(mockDevices);
-    const [selectedDevice, setSelectedDevice] = useState<Device | null>(mockDevices[0]);
+    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const [loading, setLoading] = useState(false);
 
     const handleDeviceSelect = (device: Device) => {

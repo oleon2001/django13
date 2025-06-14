@@ -12,6 +12,53 @@ export interface Device {
     longitude: number;
     speed: number;
     heading: number;
+    altitude?: number;
+    satellites?: number;
+    hdop?: number;
+    pdop?: number;
+    fix_quality?: number;
+    fix_type?: string;
+    battery_level?: number;
+    signal_strength?: number;
+    raw_data?: any;
+}
+
+export interface DeviceEvent {
+    id: number;
+    device: number;
+    type: 'TRACK' | 'ALARM' | 'STATUS' | 'MAINTENANCE';
+    timestamp: string;
+    position: {
+        latitude: number;
+        longitude: number;
+    };
+    speed: number;
+    course: number;
+    altitude: number;
+    odometer: number;
+    raw_data: any;
+}
+
+export interface DeviceData {
+    id: number;
+    device: number;
+    event: number;
+    timestamp: string;
+    data_type: string;
+    data: any;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface NetworkEvent {
+    id: number;
+    device: number;
+    event_type: 'CONNECT' | 'DISCONNECT' | 'TIMEOUT' | 'ERROR';
+    timestamp: string;
+    ip_address?: string;
+    port?: number;
+    protocol: string;
+    raw_data?: any;
 }
 
 export interface User {

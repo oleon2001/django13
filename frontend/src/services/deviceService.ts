@@ -1,5 +1,5 @@
 import api from './api';
-import { Device } from '../types';
+import { Device, DeviceEvent, DeviceData, NetworkEvent } from '../types';
 
 export const deviceService = {
   getAll: async (): Promise<Device[]> => {
@@ -16,15 +16,37 @@ export const deviceService = {
     imei: number,
     startTime?: string,
     endTime?: string
-  ): Promise<any> => {
+  ): Promise<DeviceEvent[]> => {
     const params = { startTime, endTime };
     const response = await api.get(`/gps/devices/${imei}/history/`, { params });
     return response.data;
   },
 
-  getEvents: async (imei: number, type?: string): Promise<any> => {
+  getEvents: async (imei: number, type?: string): Promise<DeviceEvent[]> => {
     const params = { type };
     const response = await api.get(`/gps/devices/${imei}/events/`, { params });
+    return response.data;
+  },
+
+  getDeviceData: async (
+    imei: number,
+    dataType?: string,
+    startTime?: string,
+    endTime?: string
+  ): Promise<DeviceData[]> => {
+    const params = { dataType, startTime, endTime };
+    const response = await api.get(`/gps/devices/${imei}/data/`, { params });
+    return response.data;
+  },
+
+  getNetworkEvents: async (
+    imei: number,
+    eventType?: string,
+    startTime?: string,
+    endTime?: string
+  ): Promise<NetworkEvent[]> => {
+    const params = { eventType, startTime, endTime };
+    const response = await api.get(`/gps/devices/${imei}/network-events/`, { params });
     return response.data;
   },
 
@@ -39,4 +61,18 @@ export const deviceService = {
     });
     return response.data;
   },
+
+  updateDevice: async (imei: number, data: Partial<Device>): Promise<Device> => {
+    const response = await api.patch(`/gps/devices/${imei}/`, data);
+    return response.data;
+  },
+
+  createDevice: async (data: Partial<Device>): Promise<Device> => {
+    const response = await api.post('/gps/devices/', data);
+    return response.data;
+  },
+
+  deleteDevice: async (imei: number): Promise<void> => {
+    await api.delete(`/gps/devices/${imei}/`);
+  }
 }; 

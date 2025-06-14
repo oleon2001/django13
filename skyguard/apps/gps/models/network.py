@@ -2,7 +2,84 @@
 Network models for the GPS application.
 """
 from django.db import models
+from django.contrib.gis.db import models as gis_models
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
 
+from .device import GPSDevice
+
+class NetworkEvent(models.Model):
+    """Model for network events."""
+    EVENT_TYPES = (
+        ('CONNECT', 'Connection'),
+        ('DISCONNECT', 'Disconnection'),
+        ('TIMEOUT', 'Timeout'),
+        ('ERROR', 'Error'),
+    )
+
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='network_events')
+    event_type = models.CharField(max_length=10, choices=EVENT_TYPES)
+    timestamp = models.DateTimeField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    port = models.IntegerField(null=True, blank=True)
+    protocol = models.CharField(max_length=20)
+    raw_data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('network event')
+        verbose_name_plural = _('network events')
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.event_type} at {self.timestamp}"
+
+class NetworkSession(models.Model):
+    """Model for network sessions."""
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='sessions')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField()
+    port = models.IntegerField()
+    protocol = models.CharField(max_length=20)
+    bytes_sent = models.BigIntegerField(default=0)
+    bytes_received = models.BigIntegerField(default=0)
+    packets_sent = models.IntegerField(default=0)
+    packets_received = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('network session')
+        verbose_name_plural = _('network sessions')
+        ordering = ['-start_time']
+
+    def __str__(self):
+        return f"Session {self.device} from {self.start_time}"
+
+class NetworkMessage(models.Model):
+    """Model for network messages."""
+    MESSAGE_TYPES = (
+        ('COMMAND', 'Command'),
+        ('RESPONSE', 'Response'),
+        ('ALERT', 'Alert'),
+        ('DATA', 'Data'),
+    )
+
+    session = models.ForeignKey(NetworkSession, on_delete=models.CASCADE, related_name='messages')
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES)
+    timestamp = models.DateTimeField()
+    direction = models.CharField(max_length=10, choices=(('IN', 'Incoming'), ('OUT', 'Outgoing')))
+    raw_data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('network message')
+        verbose_name_plural = _('network messages')
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.message_type} at {self.timestamp}"
 
 class CellTower(models.Model):
     """Model for storing cell tower information."""

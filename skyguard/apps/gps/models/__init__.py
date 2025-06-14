@@ -1,21 +1,33 @@
 """
 GPS models package.
 """
-
-from skyguard.apps.gps.models.device import (
+from .base import BaseDevice, BaseLocation, BaseEvent, BaseGeoFence
+from .device import (
     GPSDevice,
+    SimCard,
     GPSLocation,
     GPSEvent,
+    GeoFence,
+    GeoFenceEvent
 )
-from skyguard.apps.gps.models.network import (
-    CellTower,
-    WiFiAccessPoint,
+from .network import (
+    NetworkEvent,
+    NetworkSession,
+    NetworkMessage
 )
 
 __all__ = [
+    'BaseDevice',
+    'BaseLocation',
+    'BaseEvent',
+    'BaseGeoFence',
     'GPSDevice',
+    'SimCard',
     'GPSLocation',
     'GPSEvent',
-    'CellTower',
-    'WiFiAccessPoint',
+    'GeoFence',
+    'GeoFenceEvent',
+    'NetworkEvent',
+    'NetworkSession',
+    'NetworkMessage'
 ] 
