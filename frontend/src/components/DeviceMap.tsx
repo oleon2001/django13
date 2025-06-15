@@ -1,98 +1,60 @@
-import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Device } from '../types/index';
 import 'leaflet/dist/leaflet.css';
-import { Device } from '../types';
-import './DeviceMap.css';
+import L, { LatLngTuple } from 'leaflet';
+
+// Fix for default marker icons in Leaflet with Next.js
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface DeviceMapProps {
     devices: Device[];
-    selectedDevice?: Device;
+    selectedDevice: Device | undefined;
     onDeviceSelect: (device: Device) => void;
 }
 
 const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDeviceSelect }) => {
-    const mapRef = useRef<L.Map | null>(null);
-    const markersRef = useRef<L.Marker[]>([]);
+    const defaultCenter: LatLngTuple = [19.4326, -99.1332]; // Default to Mexico City
+    const center = selectedDevice 
+        ? [selectedDevice.latitude, selectedDevice.longitude] as LatLngTuple
+        : defaultCenter;
 
-    useEffect(() => {
-        if (!mapRef.current) {
-            mapRef.current = L.map('map').setView([-12.0464, -77.0428], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(mapRef.current);
-        }
-
-        // Limpiar marcadores existentes
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        // Crear nuevos marcadores
-        devices.forEach(device => {
-            if (device.latitude && device.longitude) {
-                const marker = L.marker([device.latitude, device.longitude])
-                    .bindPopup(`
-                        <div class="device-popup">
-                            <h3>${device.name || 'Dispositivo'}</h3>
-                            <p><strong>IMEI:</strong> ${device.imei}</p>
-                            <p><strong>Protocolo:</strong> ${device.protocol}</p>
-                            <p><strong>Estado:</strong> 
-                                <span class="status-${device.status === 'online' ? 'online' : 'offline'}">
-                                    ${device.status === 'online' ? 'En línea' : 'Desconectado'}
-                                </span>
-                            </p>
-                            <p><strong>Velocidad:</strong> ${device.speed || 0} km/h</p>
-                            <p><strong>Dirección:</strong> ${device.heading || 0}°</p>
-                            <p><strong>Altitud:</strong> ${device.altitude || 0} m</p>
-                            <p><strong>Satélites:</strong> ${device.satellites || 0}</p>
-                            <p><strong>Batería:</strong> 
-                                <span class="battery-${getBatteryLevelClass(device.battery_level)}">
-                                    ${device.battery_level || 0}%
-                                </span>
-                            </p>
-                            <p><strong>Señal:</strong> 
-                                <span class="signal-${getSignalLevelClass(device.signal_strength)}">
-                                    ${device.signal_strength || 0}%
-                                </span>
-                            </p>
-                            <p><strong>Última actualización:</strong> ${new Date(device.lastUpdate).toLocaleString()}</p>
+    return (
+        <MapContainer
+            center={center}
+            zoom={13}
+            style={{ height: '100%', width: '100%' }}
+        >
+            <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {devices.map(device => (
+                <Marker
+                    key={device.imei}
+                    position={[device.latitude, device.longitude] as LatLngTuple}
+                    eventHandlers={{
+                        click: () => onDeviceSelect(device),
+                    }}
+                >
+                    <Popup>
+                        <div>
+                            <h3>{device.name}</h3>
+                            <p>IMEI: {device.imei}</p>
+                            <p>Status: {device.status}</p>
+                            <p>Speed: {device.speed} km/h</p>
+                            <p>Last Update: {new Date(device.lastUpdate).toLocaleString()}</p>
                         </div>
-                    `);
-                marker.on('click', () => onDeviceSelect(device));
-                marker.addTo(mapRef.current!);
-                    markersRef.current.push(marker);
-            }
-        });
-
-        // Centrar el mapa en el dispositivo seleccionado o en el primer dispositivo válido
-        if (selectedDevice && selectedDevice.latitude && selectedDevice.longitude) {
-            mapRef.current.setView([selectedDevice.latitude, selectedDevice.longitude], 15);
-        } else if (devices.length > 0 && devices[0].latitude && devices[0].longitude) {
-            mapRef.current.setView([devices[0].latitude, devices[0].longitude], 13);
-        }
-
-        return () => {
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
-        };
-    }, [devices, selectedDevice, onDeviceSelect]);
-
-    const getBatteryLevelClass = (level?: number): string => {
-        if (!level) return 'low';
-        if (level > 70) return 'high';
-        if (level > 30) return 'medium';
-        return 'low';
-    };
-
-    const getSignalLevelClass = (level?: number): string => {
-        if (!level) return 'weak';
-        if (level > 70) return 'strong';
-        if (level > 30) return 'medium';
-        return 'weak';
-    };
-
-    return <div id="map" className="device-map" />;
+                    </Popup>
+                </Marker>
+            ))}
+        </MapContainer>
+    );
 };
 
 export default DeviceMap; 

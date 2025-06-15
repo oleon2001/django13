@@ -1,6 +1,23 @@
 @import './assets/styles/theme.css';
 @import './assets/css/site.css';
 @import './assets/css/login.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+.leaflet-container {
+    width: 100%;
+    height: 100%;
+}
+
+.loading {
+    @apply flex items-center justify-center h-full w-full text-gray-500;
+}
+
+.error {
+    @apply flex items-center justify-center h-full w-full text-red-500;
+}
 
 body {
   margin: 0;

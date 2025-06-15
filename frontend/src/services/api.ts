@@ -1,5 +1,4 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { Device } from '../types';
 import authService from './auth';
 
 interface ErrorResponse {
@@ -75,20 +74,5 @@ api.interceptors.response.use(
         }
     }
 );
-
-export const deviceService = {
-    getDevices: async () => {
-        const response = await api.get('/gps/devices/');
-        return response.data as Device[];
-    },
-    getDevice: async (id: string) => {
-        const response = await api.get(`/gps/devices/${id}/`);
-        return response.data as Device;
-    },
-    updateDevice: async (id: string, data: Partial<Device>) => {
-        const response = await api.patch(`/gps/devices/${id}/`, data);
-        return response.data as Device;
-    },
-};
 
 export default api; 

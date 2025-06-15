@@ -2,156 +2,99 @@ import { Device } from '../../types/index';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-interface CoordinateResponse {
-    id: number;
-    latitude: number;
-    longitude: number;
-    timestamp: string;
-    device_id: string;
-}
-
 class CoordinateService {
-    private static instance: CoordinateService;
-    private updateInterval: NodeJS.Timeout | null = null;
     private subscribers: ((devices: Device[]) => void)[] = [];
     private currentDevices: Device[] = [];
+    private updateInterval: NodeJS.Timeout | null = null;
 
-    private constructor() {
-        // Inicializar con datos de prueba
-        this.generateTestData();
+    constructor() {
+        this.startUpdates();
     }
 
-    public static getInstance(): CoordinateService {
-        if (!CoordinateService.instance) {
-            CoordinateService.instance = new CoordinateService();
-        }
-        return CoordinateService.instance;
-    }
-
-    // Suscribirse a actualizaciones de coordenadas
-    public subscribe(callback: (devices: Device[]) => void): () => void {
-        this.subscribers.push(callback);
-        // Enviar datos actuales inmediatamente
-        callback(this.currentDevices);
-        
-        // Retornar función para desuscribirse
-        return () => {
-            this.subscribers = this.subscribers.filter(cb => cb !== callback);
-        };
-    }
-
-    // Notificar a todos los suscriptores
-    private notifySubscribers() {
-        this.subscribers.forEach(callback => callback(this.currentDevices));
-    }
-
-    // Iniciar actualizaciones automáticas
-    public startAutoUpdate(interval: number = 5000) {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
-        this.updateInterval = setInterval(() => {
-            this.generateTestData();
-        }, interval);
-    }
-
-    // Detener actualizaciones automáticas
-    public stopAutoUpdate() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-        }
-    }
-
-    // Generar datos de prueba
-    public async generateTestData(deviceId: string = 'test_device', points: number = 10): Promise<Device[]> {
+    private async fetchCoordinates(): Promise<Device[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/coordinates/generate_test_data/?device_id=${deviceId}&points=${points}`);
-            if (!response.ok) {
-                throw new Error('Error generating test data');
-            }
-            const data: CoordinateResponse[] = await response.json();
+            const response = await fetch(`${API_BASE_URL}/coordinates/`);
+            const data = await response.json();
             
             // Transformar los datos al formato Device
-            this.currentDevices = data.map((coord, index) => ({
+            this.currentDevices = data.map((coord: any, index: number) => ({
                 id: coord.id,
                 imei: 123456789012345 + index,
                 name: `Dispositivo ${coord.device_id}`,
                 protocol: 'GT06',
                 status: 'online',
-                lastUpdate: coord.timestamp,
-                lastSeen: coord.timestamp,
+                lastUpdate: new Date().toISOString(),
+                lastSeen: new Date().toISOString(),
                 latitude: coord.latitude,
                 longitude: coord.longitude,
-                speed: Math.floor(Math.random() * 100),
-                heading: Math.floor(Math.random() * 360),
-                altitude: Math.floor(Math.random() * 1000),
-                satellites: Math.floor(Math.random() * 12),
-                hdop: Math.random() * 2,
-                pdop: Math.random() * 3,
-                fix_quality: Math.floor(Math.random() * 5),
-                fix_type: '3D',
-                battery_level: Math.floor(Math.random() * 100),
-                signal_strength: Math.floor(Math.random() * 100)
+                speed: coord.speed || 0,
+                heading: coord.heading || 0,
+                altitude: coord.altitude || 0,
+                satellites: coord.satellites || 0,
+                hdop: coord.hdop || 0,
+                pdop: coord.pdop || 0,
+                fix_quality: coord.fix_quality || 0,
+                fix_type: coord.fix_type || 'none',
+                battery_level: coord.battery_level || 100,
+                signal_strength: coord.signal_strength || 5,
+                connection_status: 'ONLINE',
+                route: coord.route || 1,
+                economico: coord.economico || 1,
+                current_ip: coord.current_ip || '192.168.1.1',
+                current_port: coord.current_port || 8080,
+                total_connections: coord.total_connections || 1,
+                error_count: coord.error_count || 0,
+                last_error: coord.last_error || undefined,
+                harness: {
+                    id: 1,
+                    name: 'Default Harness',
+                    in00: 'PANIC',
+                    in01: 'IGNITION',
+                    out00: 'MOTOR'
+                },
+                sim_card: {
+                    iccid: 12345678901234567890,
+                    phone: '+1234567890',
+                    provider: 1,
+                    provider_name: 'Test Provider'
+                }
             }));
-
-            // Notificar a los suscriptores
-            this.notifySubscribers();
             return this.currentDevices;
         } catch (error) {
-            console.error('Error generating test data:', error);
-            return [];
+            console.error('Error fetching coordinates:', error);
+            return this.currentDevices;
         }
     }
 
-    // Obtener la última coordenada
-    public async getLatestCoordinate(deviceId?: string): Promise<Device | null> {
-        try {
-            const url = deviceId 
-                ? `${API_BASE_URL}/coordinates/get_latest/?device_id=${deviceId}`
-                : `${API_BASE_URL}/coordinates/get_latest/`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Error getting latest coordinate');
-            }
-            const coord: CoordinateResponse = await response.json();
-            
-            const device: Device = {
-                id: coord.id,
-                imei: 123456789012345,
-                name: `Dispositivo ${coord.device_id}`,
-                protocol: 'GT06',
-                status: 'online',
-                lastUpdate: coord.timestamp,
-                lastSeen: coord.timestamp,
-                latitude: coord.latitude,
-                longitude: coord.longitude,
-                speed: Math.floor(Math.random() * 100),
-                heading: Math.floor(Math.random() * 360),
-                altitude: Math.floor(Math.random() * 1000),
-                satellites: Math.floor(Math.random() * 12),
-                hdop: Math.random() * 2,
-                pdop: Math.random() * 3,
-                fix_quality: Math.floor(Math.random() * 5),
-                fix_type: '3D',
-                battery_level: Math.floor(Math.random() * 100),
-                signal_strength: Math.floor(Math.random() * 100)
-            };
+    private startUpdates() {
+        // Actualizar cada 5 segundos
+        this.updateInterval = setInterval(async () => {
+            const devices = await this.fetchCoordinates();
+            this.notifySubscribers(devices);
+        }, 5000);
+    }
 
-            // Actualizar el dispositivo en la lista actual
-            const index = this.currentDevices.findIndex(d => d.id === device.id);
-            if (index !== -1) {
-                this.currentDevices[index] = device;
-            } else {
-                this.currentDevices.push(device);
-            }
+    private notifySubscribers(devices: Device[]) {
+        this.subscribers.forEach(callback => callback(devices));
+    }
 
-            // Notificar a los suscriptores
-            this.notifySubscribers();
-            return device;
-        } catch (error) {
-            console.error('Error getting latest coordinate:', error);
-            return null;
+    public subscribe(callback: (devices: Device[]) => void): () => void {
+        this.subscribers.push(callback);
+        // Notificar inmediatamente con los datos actuales
+        callback(this.currentDevices);
+        return () => {
+            this.subscribers = this.subscribers.filter(cb => cb !== callback);
+        };
+    }
+
+    public async getLatestCoordinates(): Promise<Device[]> {
+        return this.fetchCoordinates();
+    }
+
+    public stopUpdates() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
         }
     }
 
@@ -162,4 +105,4 @@ class CoordinateService {
 }
 
 // Exportar una instancia única del servicio
-export const coordinateService = CoordinateService.getInstance(); 
+export const coordinateService = new CoordinateService(); 

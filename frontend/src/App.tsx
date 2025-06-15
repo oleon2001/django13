@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import Drivers from './pages/Drivers';
 import Parking from './pages/Parking';
 import Sensors from './pages/Sensors';
+import GPSPage from './pages/GPSPage';
 import './App.css';
 
 // Componente para rutas protegidas
@@ -136,6 +137,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/gps-page" element={<GPSPage />} />
         </Routes>
       </AuthProvider>
     </Router>

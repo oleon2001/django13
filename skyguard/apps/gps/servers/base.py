@@ -3,7 +3,7 @@ Base server class for GPS protocols.
 """
 import socket
 import struct
-import SocketServer
+import socketserver
 import threading
 import sys
 import os
@@ -12,10 +12,10 @@ from django.conf import settings
 from django.db import transaction
 from django.contrib.gis.geos import Point
 
-from skyguard.apps.gps.models import Device, Location
+from skyguard.apps.gps.models import GPSDevice, GPSLocation
 
 
-class BaseGPSRequestHandler(SocketServer.BaseRequestHandler):
+class BaseGPSRequestHandler(socketserver.BaseRequestHandler):
     """Base class for GPS protocol handlers."""
     
     def setup(self):
@@ -42,7 +42,7 @@ class BaseGPSRequestHandler(SocketServer.BaseRequestHandler):
             return
 
         with transaction.atomic():
-            location = Location.objects.create(
+            location = GPSLocation.objects.create(
                 device=self.device,
                 position=position,
                 speed=speed,
@@ -70,7 +70,7 @@ class BaseGPSServer:
         if not handler_class:
             raise ValueError("handler_class must be provided")
             
-        self.server = SocketServer.ThreadingTCPServer((host, port), handler_class)
+        self.server = socketserver.ThreadingTCPServer((host, port), handler_class)
         self.port = self.server.server_address[1]
         
     def start(self):

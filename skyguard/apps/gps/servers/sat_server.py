@@ -7,7 +7,7 @@ from pytz import utc
 from django.contrib.gis.geos import Point
 
 from skyguard.apps.gps.servers.base import BaseGPSRequestHandler, BaseGPSServer
-from skyguard.apps.gps.models import Device, Location
+from skyguard.apps.gps.models import GPSDevice, GPSLocation
 
 
 class SATRequestHandler(BaseGPSRequestHandler):
@@ -30,12 +30,11 @@ class SATRequestHandler(BaseGPSRequestHandler):
         
         # Get or create device
         try:
-            self.device = Device.objects.get(imei=self.imei)
-        except Device.DoesNotExist:
-            self.device = Device.objects.create(
+            self.device = GPSDevice.objects.get(imei=self.imei)
+        except GPSDevice.DoesNotExist:
+            self.device = GPSDevice.objects.create(
                 imei=self.imei,
-                name=f"SAT-{self.imei}",
-                is_active=True
+                name=f"SAT-{self.imei}"
             )
         
         # Process remaining data
@@ -65,8 +64,7 @@ class SATRequestHandler(BaseGPSRequestHandler):
                 speed=0,
                 course=0,
                 altitude=0,
-                satellites=0,
-                accuracy=0
+                satellites=0
             )
             
             # Move to next record

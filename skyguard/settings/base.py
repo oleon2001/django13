@@ -238,4 +238,10 @@ LOGGING = {
             'propagate': True,
         },
     },
-} 
+}
+
+# GPS Device Settings
+GPS_DEVICE_TOKEN = os.environ.get('GPS_DEVICE_TOKEN', 'your-secure-token-here')
+GPS_UPDATE_INTERVAL = 60  # seconds
+GPS_MAX_RETRIES = 3
+GPS_TIMEOUT = 30  # seconds 

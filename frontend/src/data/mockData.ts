@@ -13,6 +13,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0428,
         speed: 65,
         heading: 180,
+        altitude: 100,
+        satellites: 8,
+        hdop: 1.2,
+        pdop: 2.1,
+        fix_quality: 4,
+        fix_type: '3D',
+        battery_level: 85,
+        signal_strength: 90,
+        connection_status: 'ONLINE',
+        route: 1,
+        economico: 1001,
+        current_ip: '192.168.1.100',
+        current_port: 8080,
+        total_connections: 150,
+        error_count: 0,
+        last_error: undefined,
+        harness: {
+            id: 1,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 12345678901234567890,
+            phone: '+51987654321',
+            provider: 1,
+            provider_name: 'Claro'
+        }
     },
     {
         id: 2,
@@ -26,6 +55,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0328,
         speed: 0,
         heading: 90,
+        altitude: 95,
+        satellites: 6,
+        hdop: 1.5,
+        pdop: 2.3,
+        fix_quality: 3,
+        fix_type: '2D',
+        battery_level: 45,
+        signal_strength: 60,
+        connection_status: 'OFFLINE',
+        route: 2,
+        economico: 1002,
+        current_ip: '192.168.1.101',
+        current_port: 8080,
+        total_connections: 120,
+        error_count: 2,
+        last_error: 'Connection timeout',
+        harness: {
+            id: 2,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 98765432109876543210,
+            phone: '+51987654322',
+            provider: 2,
+            provider_name: 'Movistar'
+        }
     },
     {
         id: 3,
@@ -39,6 +97,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0528,
         speed: 45,
         heading: 270,
+        altitude: 100,
+        satellites: 8,
+        hdop: 1.2,
+        pdop: 2.1,
+        fix_quality: 4,
+        fix_type: '3D',
+        battery_level: 85,
+        signal_strength: 90,
+        connection_status: 'ONLINE',
+        route: 3,
+        economico: 1003,
+        current_ip: '192.168.1.102',
+        current_port: 8080,
+        total_connections: 150,
+        error_count: 0,
+        last_error: undefined,
+        harness: {
+            id: 3,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 45678901234567890123,
+            phone: '+51987654323',
+            provider: 3,
+            provider_name: 'Entel'
+        }
     },
     {
         id: 4,
@@ -52,6 +139,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0300,
         speed: 38,
         heading: 120,
+        altitude: 90,
+        satellites: 7,
+        hdop: 1.3,
+        pdop: 2.2,
+        fix_quality: 4,
+        fix_type: '3D',
+        battery_level: 75,
+        signal_strength: 80,
+        connection_status: 'ONLINE',
+        route: 4,
+        economico: 1004,
+        current_ip: '192.168.1.103',
+        current_port: 8080,
+        total_connections: 120,
+        error_count: 0,
+        last_error: undefined,
+        harness: {
+            id: 4,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 11122233344455567890,
+            phone: '+51987654324',
+            provider: 4,
+            provider_name: 'Claro'
+        }
     },
     {
         id: 5,
@@ -65,6 +181,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0500,
         speed: 0,
         heading: 0,
+        altitude: 85,
+        satellites: 5,
+        hdop: 1.4,
+        pdop: 2.0,
+        fix_quality: 3,
+        fix_type: '2D',
+        battery_level: 35,
+        signal_strength: 50,
+        connection_status: 'OFFLINE',
+        route: 5,
+        economico: 1005,
+        current_ip: '192.168.1.104',
+        current_port: 8080,
+        total_connections: 100,
+        error_count: 1,
+        last_error: 'Connection timeout',
+        harness: {
+            id: 5,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 22233344455566678901,
+            phone: '+51987654325',
+            provider: 5,
+            provider_name: 'Movistar'
+        }
     },
     {
         id: 6,
@@ -78,6 +223,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0000,
         speed: 52,
         heading: 60,
+        altitude: 90,
+        satellites: 7,
+        hdop: 1.3,
+        pdop: 2.2,
+        fix_quality: 4,
+        fix_type: '3D',
+        battery_level: 75,
+        signal_strength: 80,
+        connection_status: 'ONLINE',
+        route: 6,
+        economico: 1006,
+        current_ip: '192.168.1.105',
+        current_port: 8080,
+        total_connections: 120,
+        error_count: 0,
+        last_error: undefined,
+        harness: {
+            id: 6,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 33344455566677789012,
+            phone: '+51987654326',
+            provider: 6,
+            provider_name: 'Entel'
+        }
     },
     {
         id: 7,
@@ -91,6 +265,35 @@ export const mockDevices: Device[] = [
         longitude: -71.5375,
         speed: 0,
         heading: 0,
+        altitude: 80,
+        satellites: 5,
+        hdop: 1.4,
+        pdop: 2.0,
+        fix_quality: 3,
+        fix_type: '2D',
+        battery_level: 25,
+        signal_strength: 40,
+        connection_status: 'OFFLINE',
+        route: 7,
+        economico: 1007,
+        current_ip: '192.168.1.106',
+        current_port: 8080,
+        total_connections: 100,
+        error_count: 1,
+        last_error: 'Connection timeout',
+        harness: {
+            id: 7,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 44455566677788890123,
+            phone: '+51987654327',
+            provider: 7,
+            provider_name: 'Claro'
+        }
     },
     {
         id: 8,
@@ -104,6 +307,35 @@ export const mockDevices: Device[] = [
         longitude: -77.0400,
         speed: 70,
         heading: 200,
+        altitude: 100,
+        satellites: 8,
+        hdop: 1.2,
+        pdop: 2.1,
+        fix_quality: 4,
+        fix_type: '3D',
+        battery_level: 85,
+        signal_strength: 90,
+        connection_status: 'ONLINE',
+        route: 8,
+        economico: 1008,
+        current_ip: '192.168.1.107',
+        current_port: 8080,
+        total_connections: 150,
+        error_count: 0,
+        last_error: undefined,
+        harness: {
+            id: 8,
+            name: 'Default Harness',
+            in00: 'PANIC',
+            in01: 'IGNITION',
+            out00: 'MOTOR'
+        },
+        sim_card: {
+            iccid: 55566677788899901234,
+            phone: '+51987654328',
+            provider: 8,
+            provider_name: 'Movistar'
+        }
     },
 ];
 

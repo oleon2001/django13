@@ -1,72 +1,73 @@
 import React from 'react';
-import { Device } from '../types';
-import './DeviceList.css';
+import { Device } from '../types/index';
 
 interface DeviceListProps {
     devices: Device[];
-    selectedDevice?: Device;
+    selectedDevice: Device | undefined;
     onDeviceSelect: (device: Device) => void;
 }
 
-const DeviceList: React.FC<DeviceListProps> = ({
-    devices,
-    selectedDevice,
-    onDeviceSelect,
-}) => {
-    const getStatusClass = (status: string) => {
-        return status === 'online' ? 'status-online' : 'status-offline';
-    };
-
-    const getBatteryClass = (level?: number) => {
-        if (!level) return 'battery-low';
-        if (level > 70) return 'battery-high';
-        if (level > 30) return 'battery-medium';
-        return 'battery-low';
-    };
-
-    const getSignalClass = (level?: number) => {
-        if (!level) return 'signal-weak';
-        if (level > 70) return 'signal-strong';
-        if (level > 30) return 'signal-medium';
-        return 'signal-weak';
+const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDeviceSelect }) => {
+    const getStatusColor = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'online':
+                return 'text-green-500';
+            case 'offline':
+                return 'text-red-500';
+            default:
+                return 'text-yellow-500';
+        }
     };
 
     return (
-        <div className="device-list">
-            <h2>Dispositivos</h2>
-            <div className="device-list-content">
-                {devices.map((device) => (
+        <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">GPS Devices</h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+                {devices.map(device => (
                     <div
                         key={device.imei}
-                        className={`device-item ${selectedDevice?.imei === device.imei ? 'selected' : ''}`}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                            selectedDevice?.imei === device.imei ? 'bg-blue-50' : ''
+                        }`}
                         onClick={() => onDeviceSelect(device)}
                     >
-                        <div className="device-header">
-                            <h3>{device.name || 'Dispositivo'}</h3>
-                            <span className={`status-indicator ${getStatusClass(device.status)}`}>
-                                {device.status === 'online' ? 'En línea' : 'Desconectado'}
-                            </span>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-900">{device.name || `Device ${device.imei}`}</h4>
+                                <p className="text-sm text-gray-500">IMEI: {device.imei}</p>
+                                {device.lastUpdate && (
+                                    <div className="text-sm text-gray-500">
+                                        Last seen: {new Date(device.lastUpdate).toLocaleString()}
+                                    </div>
+                                )}
                         </div>
-                        <div className="device-details">
-                            <p><strong>IMEI:</strong> {device.imei}</p>
-                            <p><strong>Protocolo:</strong> {device.protocol}</p>
-                            <p><strong>Velocidad:</strong> {device.speed || 0} km/h</p>
-                            <p><strong>Dirección:</strong> {device.heading || 0}°</p>
-                            <p><strong>Altitud:</strong> {device.altitude || 0} m</p>
-                            <p><strong>Satélites:</strong> {device.satellites || 0}</p>
-                            <p>
-                                <strong>Batería:</strong>
-                                <span className={getBatteryClass(device.battery_level)}>
-                                    {device.battery_level || 0}%
+                            <div className="flex items-center">
+                                <span className={`text-sm ${getStatusColor(device.status)}`}>
+                                    {device.status}
                                 </span>
-                            </p>
-                            <p>
-                                <strong>Señal:</strong>
-                                <span className={getSignalClass(device.signal_strength)}>
-                                    {device.signal_strength || 0}%
-                                </span>
-                            </p>
-                            <p><strong>Última actualización:</strong> {new Date(device.lastUpdate).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <p className="text-gray-500">Speed</p>
+                                <p className="font-medium">{device.speed || 0} km/h</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Battery</p>
+                                <p className="font-medium">{device.battery_level || 0}%</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Signal</p>
+                                <p className="font-medium">{device.signal_strength || 0}/5</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500">Last Seen</p>
+                                <p className="font-medium">
+                                    {new Date(device.lastUpdate).toLocaleTimeString()}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 ))}

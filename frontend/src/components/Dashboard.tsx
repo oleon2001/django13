@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/index';
+import { deviceService } from '../services/deviceService';
 import DeviceMap from './DeviceMap';
 import DeviceList from './DeviceList';
-import { deviceService } from '../services/deviceService';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>([]);
-    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>();
+    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -19,17 +19,14 @@ const Dashboard: React.FC = () => {
                 setDevices(data);
                 setError(null);
             } catch (err) {
-                setError('Error al cargar los dispositivos');
-                console.error('Error fetching devices:', err);
+                setError('Error loading devices');
+                console.error('Error loading devices:', err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchDevices();
-        const interval = setInterval(fetchDevices, 30000); // Actualizar cada 30 segundos
-
-        return () => clearInterval(interval);
     }, []);
 
     const handleDeviceSelect = (device: Device) => {
@@ -37,25 +34,39 @@ const Dashboard: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="dashboard-loading">Cargando dispositivos...</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="dashboard-error">{error}</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-red-500">{error}</div>
+            </div>
+        );
     }
 
     return (
-        <div className="dashboard">
-            <DeviceList
-                devices={devices}
-                selectedDevice={selectedDevice}
-                onDeviceSelect={handleDeviceSelect}
-            />
-            <DeviceMap
-                devices={devices}
-                selectedDevice={selectedDevice}
-                onDeviceSelect={handleDeviceSelect}
-            />
+        <div className="h-screen flex flex-col">
+            <div className="flex-1 flex">
+                <div className="w-1/4 border-r border-gray-200">
+                    <DeviceList
+                        devices={devices}
+                        selectedDevice={selectedDevice}
+                        onDeviceSelect={handleDeviceSelect}
+                    />
+                </div>
+                <div className="flex-1">
+                    <DeviceMap
+                        devices={devices}
+                        selectedDevice={selectedDevice}
+                        onDeviceSelect={handleDeviceSelect}
+                    />
+                </div>
+            </div>
         </div>
     );
 };
