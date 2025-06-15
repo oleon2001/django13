@@ -2,39 +2,56 @@ import api from './api';
 
 export interface Report {
   id: number;
-  date: string;
+  title: string;
   type: string;
-  description: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  data?: any;
 }
 
-export const reportService = {
-  getAll: async () => {
-    const response = await api.get('/reports/');
-    return response.data;
-  },
+class ReportService {
+  async getAll(): Promise<Report[]> {
+    try {
+      const response = await api.get('/reports/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      return [];
+    }
+  }
 
-  getById: async (id: number) => {
-    const response = await api.get(`/reports/${id}/`);
-    return response.data;
-  },
+  async getById(id: number): Promise<Report | null> {
+    try {
+      const response = await api.get(`/reports/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      return null;
+    }
+  }
 
-  create: async (data: Omit<Report, 'id'>) => {
-    const response = await api.post('/reports/', data);
-    return response.data;
-  },
+  async create(data: Partial<Report>): Promise<Report | null> {
+    try {
+      const response = await api.post('/reports/', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating report:', error);
+      return null;
+    }
+  }
 
-  delete: async (id: number) => {
-    await api.delete(`/reports/${id}/`);
-  },
+  async download(id: number): Promise<Blob | null> {
+    try {
+      const response = await api.get(`/reports/${id}/download/`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      return null;
+    }
+  }
+}
 
-  getByDate: async (date: string) => {
-    const response = await api.get(`/reports/date/${date}/`);
-    return response.data;
-  },
-
-  generateReport: async (type: string, params: Record<string, any>) => {
-    const response = await api.post('/reports/generate/', { type, params });
-    return response.data;
-  },
-}; 
+export const reportService = new ReportService(); 

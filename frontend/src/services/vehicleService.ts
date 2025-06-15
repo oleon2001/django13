@@ -2,39 +2,76 @@ import api from './api';
 
 export interface Vehicle {
   id: number;
+  name: string;
   plate: string;
   model: string;
-  status: 'active' | 'inactive' | 'maintenance';
+  brand: string;
+  year: number;
+  status: string;
   lastUpdate: string;
+  device_id?: number;
 }
 
-export const vehicleService = {
-  getAll: async () => {
-    const response = await api.get('/vehicles/');
-    return response.data;
-  },
+class VehicleService {
+  async getAll(): Promise<Vehicle[]> {
+    try {
+      const response = await api.get('/vehicles/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+      return [];
+    }
+  }
 
-  getById: async (id: number) => {
-    const response = await api.get(`/vehicles/${id}/`);
-    return response.data;
-  },
+  async getById(id: number): Promise<Vehicle | null> {
+    try {
+      const response = await api.get(`/vehicles/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching vehicle:', error);
+      return null;
+    }
+  }
 
-  create: async (data: Omit<Vehicle, 'id' | 'lastUpdate'>) => {
-    const response = await api.post('/vehicles/', data);
-    return response.data;
-  },
+  async create(data: Partial<Vehicle>): Promise<Vehicle | null> {
+    try {
+      const response = await api.post('/vehicles/', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating vehicle:', error);
+      return null;
+    }
+  }
 
-  update: async (id: number, data: Partial<Vehicle>) => {
-    const response = await api.put(`/vehicles/${id}/`, data);
-    return response.data;
-  },
+  async update(id: number, data: Partial<Vehicle>): Promise<Vehicle | null> {
+    try {
+      const response = await api.put(`/vehicles/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating vehicle:', error);
+      return null;
+    }
+  }
 
-  delete: async (id: number) => {
-    await api.delete(`/vehicles/${id}/`);
-  },
+  async delete(id: number): Promise<boolean> {
+    try {
+      await api.delete(`/vehicles/${id}/`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      return false;
+    }
+  }
 
-  getStatus: async (id: number) => {
-    const response = await api.get(`/vehicles/${id}/status/`);
-    return response.data;
-  },
-}; 
+  async assignDevice(vehicleId: number, deviceId: number): Promise<boolean> {
+    try {
+      await api.post(`/vehicles/${vehicleId}/assign-device/`, { device_id: deviceId });
+      return true;
+    } catch (error) {
+      console.error('Error assigning device to vehicle:', error);
+      return false;
+    }
+  }
+}
+
+export const vehicleService = new VehicleService(); 

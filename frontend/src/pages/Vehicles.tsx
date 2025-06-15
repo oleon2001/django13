@@ -1,117 +1,155 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Table as MuiTable,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
+    Box,
+    Paper,
+    Typography,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip,
+    IconButton,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
-import { mockVehicles } from '../data/mockData';
-// import { Vehicle, Column } from '../types'; // Ya no se necesita Column si definimos la tabla aquí
-// import './Vehicles.css'; // Eliminar este import
+import {
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { vehicleService, Vehicle } from '../services/vehicleService';
 
 const Vehicles: React.FC = () => {
-  // const columns: Column<Vehicle>[] = [
-  //   {
-  //     header: 'ID',
-  //     accessor: (vehicle: Vehicle) => vehicle.id,
-  //   },
-  //   {
-  //     header: 'Nombre',
-  //     accessor: (vehicle: Vehicle) => vehicle.device.name,
-  //   },
-  //   {
-  //     header: 'Placa',
-  //     accessor: (vehicle: Vehicle) => vehicle.plate,
-  //   },
-  //   {
-  //     header: 'Modelo',
-  //     accessor: (vehicle: Vehicle) => vehicle.model,
-  //   },
-  //   {
-  //     header: 'Estado',
-  //     accessor: (vehicle: Vehicle) => (
-  //       <span className={`status status-${vehicle.status}`}>
-  //         {vehicle.status === 'active' && 'Activo'}
-  //         {vehicle.status === 'maintenance' && 'En Mantenimiento'}
-  //         {vehicle.status === 'inactive' && 'Inactivo'}
-  //       </span>
-  //     ),
-  //   },
-  //   {
-  //     header: 'Última Actualización',
-  //     accessor: (vehicle: Vehicle) => new Date(vehicle.device.lastUpdate).toLocaleString(),
-  //   },
-  // ];
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  const getStatusChipColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'maintenance': return 'warning';
-      case 'inactive': return 'error';
-      default: return 'default';
+    useEffect(() => {
+        fetchVehicles();
+    }, []);
+
+    const fetchVehicles = async () => {
+        try {
+            setLoading(true);
+            const data = await vehicleService.getAll();
+            setVehicles(data);
+            setError(null);
+        } catch (err) {
+            setError('Error loading vehicles');
+            console.error('Error loading vehicles:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEdit = (vehicleId: number) => {
+        // TODO: Implement edit functionality
+        console.log('Edit vehicle:', vehicleId);
+    };
+
+    const handleDelete = (vehicleId: number) => {
+        // TODO: Implement delete functionality
+        console.log('Delete vehicle:', vehicleId);
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active':
+                return 'success';
+            case 'maintenance':
+                return 'warning';
+            case 'inactive':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
     }
-  };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active': return 'Activo';
-      case 'maintenance': return 'En Mantenimiento';
-      case 'inactive': return 'Inactivo';
-      default: return status;
-    }
-  };
+    return (
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom>
+                Gestión de Vehículos
+            </Typography>
 
-  return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom component="h1">
-        Gestión de Vehículos
-      </Typography>
+            {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            )}
 
-      <TableContainer component={Paper}>
-        <MuiTable sx={{ minWidth: 650 }} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Nombre Dispositivo</TableCell>
-              <TableCell>Placa</TableCell>
-              <TableCell>Modelo</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell>Última Actualización</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {mockVehicles.map((vehicle) => (
-              <TableRow
-                key={vehicle.id}
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-              >
-                <TableCell component="th" scope="row">
-                  {vehicle.id}
-                </TableCell>
-                <TableCell>{vehicle.device.name}</TableCell>
-                <TableCell>{vehicle.plate}</TableCell>
-                <TableCell>{vehicle.model}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={getStatusText(vehicle.status)}
-                    color={getStatusChipColor(vehicle.status)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{new Date(vehicle.device.lastUpdate).toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </MuiTable>
-      </TableContainer>
-    </Box>
-  );
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Nombre</TableCell>
+                            <TableCell>Placa</TableCell>
+                            <TableCell>Marca</TableCell>
+                            <TableCell>Modelo</TableCell>
+                            <TableCell>Año</TableCell>
+                            <TableCell>Estado</TableCell>
+                            <TableCell>Última Actualización</TableCell>
+                            <TableCell>Acciones</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {vehicles.length > 0 ? (
+                            vehicles.map((vehicle) => (
+                                <TableRow key={vehicle.id}>
+                                    <TableCell>{vehicle.name}</TableCell>
+                                    <TableCell>{vehicle.plate}</TableCell>
+                                    <TableCell>{vehicle.brand}</TableCell>
+                                    <TableCell>{vehicle.model}</TableCell>
+                                    <TableCell>{vehicle.year}</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={vehicle.status}
+                                            color={getStatusColor(vehicle.status)}
+                                            size="small"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Date(vehicle.lastUpdate).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleEdit(vehicle.id)}
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleDelete(vehicle.id)}
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={8} align="center">
+                                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                                        No hay vehículos registrados en este momento.
+                                        Los vehículos se pueden asociar a dispositivos GPS cuando estén disponibles.
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
+    );
 };
 
 export default Vehicles; 

@@ -19,10 +19,20 @@ interface DeviceMapProps {
 }
 
 const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDeviceSelect }) => {
-    const defaultCenter: LatLngTuple = [19.4326, -99.1332]; // Default to Mexico City
-    const center = selectedDevice 
+    const defaultCenter: LatLngTuple = [-12.0464, -77.0428]; // Default to Lima, Peru
+    
+    // Filter devices that have valid coordinates
+    const devicesWithLocation = devices.filter(device => 
+        device.latitude && device.longitude && 
+        !isNaN(device.latitude) && !isNaN(device.longitude)
+    );
+    
+    // Determine center based on selected device or first device with location
+    const center = selectedDevice && selectedDevice.latitude && selectedDevice.longitude
         ? [selectedDevice.latitude, selectedDevice.longitude] as LatLngTuple
-        : defaultCenter;
+        : devicesWithLocation.length > 0 
+            ? [devicesWithLocation[0].latitude!, devicesWithLocation[0].longitude!] as LatLngTuple
+            : defaultCenter;
 
     return (
         <MapContainer
@@ -34,21 +44,25 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            {devices.map(device => (
+            {devicesWithLocation.map(device => (
                 <Marker
                     key={device.imei}
-                    position={[device.latitude, device.longitude] as LatLngTuple}
+                    position={[device.latitude!, device.longitude!] as LatLngTuple}
                     eventHandlers={{
                         click: () => onDeviceSelect(device),
                     }}
                 >
                     <Popup>
                         <div>
-                            <h3>{device.name}</h3>
-                            <p>IMEI: {device.imei}</p>
-                            <p>Status: {device.status}</p>
-                            <p>Speed: {device.speed} km/h</p>
-                            <p>Last Update: {new Date(device.lastUpdate).toLocaleString()}</p>
+                            <h3>{device.name || `Device ${device.imei}`}</h3>
+                            <p><strong>IMEI:</strong> {device.imei}</p>
+                            <p><strong>Estado:</strong> {device.connection_status || 'OFFLINE'}</p>
+                            <p><strong>Velocidad:</strong> {device.speed || 0} km/h</p>
+                            <p><strong>Batería:</strong> {device.battery_level || 0}%</p>
+                            <p><strong>Señal:</strong> {device.signal_strength || 0}%</p>
+                            {device.lastUpdate && (
+                                <p><strong>Última actualización:</strong> {new Date(device.lastUpdate).toLocaleString()}</p>
+                            )}
                         </div>
                     </Popup>
                 </Marker>
