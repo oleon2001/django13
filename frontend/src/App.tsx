@@ -14,6 +14,7 @@ import Drivers from './pages/Drivers';
 import Parking from './pages/Parking';
 import Sensors from './pages/Sensors';
 import GPSPage from './pages/GPSPage';
+import DeviceManagement from './pages/DeviceManagement';
 import './App.css';
 
 // Componente para rutas protegidas
@@ -138,6 +139,14 @@ const App: React.FC = () => {
             }
           />
           <Route path="/gps-page" element={<GPSPage />} />
+          <Route
+            path="/devices"
+            element={
+              <ProtectedRoute>
+                <DeviceManagement />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </AuthProvider>
     </Router>

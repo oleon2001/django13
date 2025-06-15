@@ -27,6 +27,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import RouteIcon from '@mui/icons-material/Route';
+import DevicesIcon from '@mui/icons-material/Devices';
 import { useAuth } from '../../hooks/useAuth'; // Import useAuth hook
 import logo from '../../assets/img/logofalkon.png';
 
@@ -47,6 +48,7 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
   const navItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'GPS', icon: <LocationOnIcon />, path: '/gps' },
+    { text: 'Gestión de Dispositivos', icon: <DevicesIcon />, path: '/devices' },
     { text: 'Monitoreo', icon: <MonitorHeartIcon />, path: '/monitoring' },
     { text: 'Rastreo', icon: <TrackChangesIcon />, path: '/tracking' },
     { text: 'Vehículos', icon: <DirectionsCarIcon />, path: '/vehicles' },

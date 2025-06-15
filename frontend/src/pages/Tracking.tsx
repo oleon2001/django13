@@ -1,116 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Grid,
-    Paper,
-    Typography,
-    Card,
-    CardContent,
     Box,
-    List,
-    ListItem,
-    ListItemText,
-    Chip,
+    Typography,
+    Paper,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
-import {
-    CheckCircleOutline as CheckCircleOutlineIcon,
-    ErrorOutline as ErrorOutlineIcon,
-} from '@mui/icons-material';
 import DeviceMap from '../components/DeviceMap';
 import { Device } from '../types';
-import { mockDevices } from '../data/mockData';
+import { deviceService } from '../services/deviceService';
 
 const Tracking: React.FC = () => {
+    const [devices, setDevices] = useState<Device[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
-    const onlineDevices = mockDevices.filter((device) => device.status === 'online');
-    const offlineDevices = mockDevices.filter((device) => device.status === 'offline');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleDeviceSelect = (device: typeof mockDevices[0]) => {
+    useEffect(() => {
+        fetchDevices();
+    }, []);
+
+    const fetchDevices = async () => {
+        try {
+            setLoading(true);
+            const data = await deviceService.getAll();
+            // Filter only registered and connected devices
+            const activeDevices = data.filter(device => 
+                device.connection_status === 'ONLINE' || 
+                device.connection_status === 'SLEEPING'
+            );
+            setDevices(activeDevices);
+            if (activeDevices.length > 0) {
+                setSelectedDevice(activeDevices[0]);
+            }
+            setError(null);
+        } catch (err) {
+            setError('Error loading devices');
+            console.error('Error loading devices:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeviceSelect = (device: Device) => {
         setSelectedDevice(device);
     };
 
-    const getStatusChipColor = (status: string) => {
-        return status === 'online' ? 'success' : 'error';
-    };
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box p={3}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom component="h1">
-                Rastreo de Vehículos
+        <Box p={3}>
+            <Typography variant="h4" gutterBottom>
+                Device Tracking
             </Typography>
-            <Grid container spacing={3} sx={{ height: 'calc(100vh - 120px)' }}>
-                <Grid item xs={12} md={3}>
-                    <Paper
-                        sx={{
-                            height: '100%',
-                            overflow: 'auto',
-                            p: 2,
-                        }}
-                    >
-                        <Typography variant="h6" gutterBottom>
-                            Estado de Dispositivos
-                        </Typography>
-                        <Card sx={{ mb: 2, bgcolor: 'success.main', color: 'white' }}>
-                            <CardContent>
-                                <Box display="flex" alignItems="center" justifyContent="space-between">
-                                    <Typography variant="h4">{onlineDevices.length}</Typography>
-                                    <CheckCircleOutlineIcon sx={{ fontSize: 40 }} />
-                                </Box>
-                                <Typography>Online</Typography>
-                            </CardContent>
-                        </Card>
-                        <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
-                            <CardContent>
-                                <Box display="flex" alignItems="center" justifyContent="space-between">
-                                    <Typography variant="h4">{offlineDevices.length}</Typography>
-                                    <ErrorOutlineIcon sx={{ fontSize: 40 }} />
-                                </Box>
-                                <Typography>Offline</Typography>
-                            </CardContent>
-                        </Card>
 
-                        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-                            Seleccionar Dispositivo
-                        </Typography>
-                        <List dense>
-                            {mockDevices.map((device) => (
-                                <ListItem
-                                    key={device.id}
-                                    button
-                                    selected={selectedDevice?.id === device.id}
-                                    onClick={() => handleDeviceSelect(device)}
-                                >
-                                    <ListItemText
-                                        primary={device.name}
-                                        secondary={
-                                            <Chip
-                                                label={device.status}
-                                                color={getStatusChipColor(device.status)}
-                                                size="small"
-                                                sx={{ mt: 0.5 }}
-                                            />
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={9}>
-                    <Paper
-                        sx={{
-                            height: '100%',
-                            overflow: 'hidden',
-                            p: 2,
-                        }}
-                    >
-                        <DeviceMap
-                            devices={mockDevices}
-                            selectedDevice={selectedDevice}
-                            onDeviceSelect={handleDeviceSelect}
-                        />
-                    </Paper>
-                </Grid>
-            </Grid>
+            <Paper sx={{ height: 'calc(100vh - 200px)' }}>
+                <DeviceMap
+                    devices={devices}
+                    selectedDevice={selectedDevice}
+                    onDeviceSelect={handleDeviceSelect}
+                />
+            </Paper>
         </Box>
     );
 };

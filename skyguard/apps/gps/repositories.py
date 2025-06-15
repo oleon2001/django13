@@ -19,6 +19,10 @@ class GPSDeviceRepository(IDeviceRepository):
         except GPSDevice.DoesNotExist:
             return None
     
+    def get_all_devices(self) -> List[GPSDevice]:
+        """Get all GPS devices."""
+        return list(GPSDevice.objects.all())
+    
     def save_device(self, device: GPSDevice) -> None:
         """Save a GPS device."""
         device.save()

@@ -441,3 +441,125 @@ def cleanup_sessions(request):
         })
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_devices(request):
+    """Get all GPS devices."""
+    try:
+        repository = GPSDeviceRepository()
+        devices = repository.get_all_devices()
+        
+        devices_data = []
+        for device in devices:
+            try:
+                device_data = {
+                    'id': device.id,
+                    'imei': device.imei,
+                    'name': device.name,
+                    'serial': device.serial,
+                    'model': device.model,
+                    'software_version': device.software_version,
+                    'route': device.route,
+                    'economico': device.economico,
+                    'position': {
+                        'latitude': device.position.y,
+                        'longitude': device.position.x
+                    } if device.position else None,
+                    'speed': device.speed,
+                    'course': device.course,
+                    'altitude': device.altitude,
+                    'odometer': device.odometer,
+                    'connection_status': device.connection_status,
+                    'current_ip': device.current_ip,
+                    'current_port': device.current_port,
+                    'last_connection': device.last_connection.isoformat() if device.last_connection else None,
+                    'last_heartbeat': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                    'total_connections': device.total_connections,
+                    'created_at': device.created_at.isoformat() if device.created_at else None,
+                    'updated_at': device.updated_at.isoformat() if device.updated_at else None
+                }
+                devices_data.append(device_data)
+            except Exception as device_error:
+                # Log the specific device that caused the error
+                print(f"Error serializing device {device.imei}: {device_error}")
+                continue
+        
+        return Response({'devices': devices_data})
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+def test_devices(request):
+    """Test endpoint without authentication."""
+    try:
+        repository = GPSDeviceRepository()
+        devices = repository.get_all_devices()
+        
+        # Simple response without complex serialization
+        return Response({
+            'message': 'Success',
+            'device_count': len(devices),
+            'devices': [{'id': d.id, 'imei': d.imei, 'name': d.name} for d in devices[:5]]  # Only first 5 for testing
+        })
+    except Exception as e:
+        import traceback
+        return Response({
+            'error': str(e), 
+            'type': type(e).__name__,
+            'traceback': traceback.format_exc()
+        }, status=500)
+
+
+@api_view(['GET'])
+def list_devices_no_auth(request):
+    """Get all GPS devices without authentication (for debugging)."""
+    try:
+        repository = GPSDeviceRepository()
+        devices = repository.get_all_devices()
+        
+        devices_data = []
+        for device in devices:
+            try:
+                device_data = {
+                    'id': device.id,
+                    'imei': device.imei,
+                    'name': device.name,
+                    'serial': device.serial,
+                    'model': device.model,
+                    'software_version': device.software_version,
+                    'route': device.route,
+                    'economico': device.economico,
+                    'position': {
+                        'latitude': device.position.y,
+                        'longitude': device.position.x
+                    } if device.position else None,
+                    'speed': device.speed,
+                    'course': device.course,
+                    'altitude': device.altitude,
+                    'odometer': device.odometer,
+                    'connection_status': device.connection_status,
+                    'current_ip': device.current_ip,
+                    'current_port': device.current_port,
+                    'last_connection': device.last_connection.isoformat() if device.last_connection else None,
+                    'last_heartbeat': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                    'total_connections': device.total_connections,
+                    'created_at': device.created_at.isoformat() if device.created_at else None,
+                    'updated_at': device.updated_at.isoformat() if device.updated_at else None
+                }
+                devices_data.append(device_data)
+            except Exception as device_error:
+                # Log the specific device that caused the error
+                print(f"Error serializing device {device.imei}: {device_error}")
+                continue
+        
+        return Response({'devices': devices_data})
+    except Exception as e:
+        import traceback
+        return Response({
+            'error': str(e), 
+            'type': type(e).__name__,
+            'traceback': traceback.format_exc()
+        }, status=500)

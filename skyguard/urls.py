@@ -23,9 +23,9 @@ urlpatterns = [
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     # App URLs
-    path('gps/', include('skyguard.apps.gps.urls')),
-    path('tracking/', include('skyguard.apps.tracking.urls')),
-    path('monitoring/', include('skyguard.apps.monitoring.urls')),
+    path('api/gps/', include('skyguard.apps.gps.urls')),
+    path('api/tracking/', include('skyguard.apps.tracking.urls')),
+    path('api/monitoring/', include('skyguard.apps.monitoring.urls')),
     path('api/', include('skyguard.apps.coordinates.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

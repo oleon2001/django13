@@ -8,6 +8,9 @@ from . import views
 app_name = 'gps'
 
 urlpatterns = [
+    # Device list endpoint
+    path('devices/', views.list_devices, name='list_devices'),
+    
     # Location and event processing endpoints
     path('location/', views.process_location, name='process_location'),
     path('event/', views.process_event, name='process_event'),
@@ -35,4 +38,8 @@ urlpatterns = [
     
     # User endpoints
     path('users/me/', views.get_current_user, name='current-user'),
+    
+    # Test endpoints
+    path('test-devices/', views.test_devices, name='test-devices'),
+    path('devices-debug/', views.list_devices_no_auth, name='list-devices-debug'),
 ]

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Grid,
     Paper,
@@ -10,220 +10,181 @@ import {
     ListItem,
     ListItemText,
     Divider,
-    LinearProgress,
     Chip,
     ListItemIcon,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
 import {
     Speed as SpeedIcon,
-    LocationOn as LocationOnIcon,
     CheckCircleOutline as CheckCircleOutlineIcon,
-    ErrorOutline as ErrorOutlineIcon,
     WarningAmber as WarningAmberIcon,
 } from '@mui/icons-material';
-import { mockDevices, mockVehicles, mockAlerts } from '../data/mockData';
+import { deviceService } from '../services/deviceService';
+import { Device } from '../types';
 import DeviceMap from '../components/DeviceMap';
 
 const Dashboard: React.FC = () => {
-    const [selectedDevice, setSelectedDevice] = useState(mockDevices[0]);
-    const onlineDevices = mockDevices.filter(device => device.status === 'online');
-    const activeAlerts = mockAlerts.filter(alert => alert.status === 'active');
+    const [devices, setDevices] = useState<Device[]>([]);
+    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleDeviceSelect = (device: typeof mockDevices[0]) => {
-        setSelectedDevice(device);
-    };
+    useEffect(() => {
+        fetchDevices();
+    }, []);
 
-    const getAlertChipColor = (severity: string) => {
-        switch (severity) {
-            case 'high': return 'error';
-            case 'medium': return 'warning';
-            case 'low': return 'info';
-            default: return 'default';
+    const fetchDevices = async () => {
+        try {
+            setLoading(true);
+            const data = await deviceService.getAll();
+            // Filter only registered and connected devices
+            const activeDevices = data.filter(device => 
+                device.connection_status === 'ONLINE' || 
+                device.connection_status === 'SLEEPING'
+            );
+            setDevices(activeDevices);
+            if (activeDevices.length > 0) {
+                setSelectedDevice(activeDevices[0]);
+            }
+            setError(null);
+        } catch (err) {
+            setError('Error loading devices');
+            console.error('Error loading devices:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
-    return (
-      <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom component="h1">
-                Panel de Control
-        </Typography>
+    const handleDeviceSelect = (device: Device) => {
+        setSelectedDevice(device);
+    };
 
-        <Grid container spacing={3} sx={{ flexGrow: 1, minHeight: 0 }}>
-                {/* Mapa de Dispositivos */}
-                <Grid item xs={12} md={8}>
-            <Paper sx={{ height: 500, p: 2 }}>
-              <DeviceMap
-                key={Date.now()}
-                            devices={mockDevices}
-                selectedDevice={selectedDevice}
-                onDeviceSelect={handleDeviceSelect}
-              />
-            </Paper>
-          </Grid>
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box p={3}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
+
+    const onlineDevices = devices.filter(device => device.connection_status === 'ONLINE');
+    const sleepingDevices = devices.filter(device => device.connection_status === 'SLEEPING');
+
+    return (
+        <Box p={3}>
+            <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <Typography variant="h4" gutterBottom>
+                        Dashboard
+                    </Typography>
+                </Grid>
 
                 <Grid item xs={12} md={4}>
-                    <Grid container spacing={3}>
-            <Grid item xs={12}>
-                            <Card sx={{ height: '100%' }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Estado General
-                    </Typography>
-                                    <List>
-                                        <ListItem disablePadding>
-                                            <ListItemText
-                                                primary="Dispositivos Activos"
-                                                secondary={`${onlineDevices.length} de ${mockDevices.length}`}
-                                            />
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={(onlineDevices.length / mockDevices.length) * 100}
-                                                color="success"
-                                                sx={{ width: 100, height: 8, borderRadius: 5 }}
-                                            />
-                                        </ListItem>
-                                        <ListItem disablePadding>
-                                            <ListItemText
-                                                primary="Vehículos en Servicio"
-                                                secondary={`${mockVehicles.filter(v => v.status === 'active').length} de ${mockVehicles.length}`}
-                                            />
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={(mockVehicles.filter(v => v.status === 'active').length / mockVehicles.length) * 100}
-                                                color="success"
-                                                sx={{ width: 100, height: 8, borderRadius: 5 }}
-                                            />
-                                        </ListItem>
-                                        <ListItem disablePadding>
-                                            <ListItemText
-                                                primary="Alertas Activas"
-                                                secondary={activeAlerts.length}
-                                            />
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={(activeAlerts.length / mockAlerts.length) * 100}
-                                                color="error"
-                                                sx={{ width: 100, height: 8, borderRadius: 5 }}
-                                            />
-                                        </ListItem>
-                                    </List>
-                                </CardContent>
-                            </Card>
-                        </Grid>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                Device Status
+                            </Typography>
+                            <List>
+                                <ListItem>
+                                    <ListItemIcon>
+                                        <CheckCircleOutlineIcon color="success" />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary="Online Devices"
+                                        secondary={onlineDevices.length}
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemIcon>
+                                        <WarningAmberIcon color="warning" />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary="Sleeping Devices"
+                                        secondary={sleepingDevices.length}
+                                    />
+                                </ListItem>
+                            </List>
+                        </CardContent>
+                    </Card>
+                </Grid>
 
-                        <Grid item xs={12}>
-                            <Card sx={{ height: '100%' }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Alertas Recientes
-                    </Typography>
-                                    <List sx={{ maxHeight: 300, overflowY: 'auto' }}>
-                                        {activeAlerts.length > 0 ? (activeAlerts.map(alert => (
-                                            <React.Fragment key={alert.id}>
-                                                <ListItem
-                                                    secondaryAction={
-                                                        <Chip
-                                                            label={alert.severity}
-                                                            color={getAlertChipColor(alert.severity)}
-                                                            size="small"
-                                                            icon={
-                                                                alert.severity === 'high' ? <ErrorOutlineIcon fontSize="small" /> :
-                                                                alert.severity === 'medium' ? <WarningAmberIcon fontSize="small" /> :
-                                                                <CheckCircleOutlineIcon fontSize="small" />
-                                                            }
-                                                        />
-                                                    }
-                                                >
-                                                    <ListItemText
-                                                        primary={alert.message}
-                                                        secondary={new Date(alert.timestamp).toLocaleString()}
+                <Grid item xs={12}>
+                    <Paper sx={{ height: 'calc(100vh - 300px)' }}>
+                        <DeviceMap
+                            devices={devices}
+                            selectedDevice={selectedDevice}
+                            onDeviceSelect={handleDeviceSelect}
+                        />
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                Active Devices
+                            </Typography>
+                            <List>
+                                {devices.map((device) => (
+                                    <React.Fragment key={device.imei}>
+                                        <ListItem>
+                                            <ListItemIcon>
+                                                {device.connection_status === 'ONLINE' ? (
+                                                    <CheckCircleOutlineIcon color="success" />
+                                                ) : (
+                                                    <WarningAmberIcon color="warning" />
+                                                )}
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={device.name || `Device ${device.imei}`}
+                                                secondary={
+                                                    <>
+                                                        <Typography component="span" variant="body2">
+                                                            IMEI: {device.imei}
+                                                        </Typography>
+                                                        <br />
+                                                        <Typography component="span" variant="body2">
+                                                            Last Update: {new Date(device.lastUpdate).toLocaleString()}
+                                                        </Typography>
+                                                    </>
+                                                }
+                                            />
+                                            <Box>
+                                                <Chip
+                                                    label={device.connection_status}
+                                                    color={device.connection_status === 'ONLINE' ? 'success' : 'warning'}
+                                                    size="small"
+                                                    sx={{ mr: 1 }}
+                                                />
+                                                {device.speed !== undefined && (
+                                                    <Chip
+                                                        icon={<SpeedIcon />}
+                                                        label={`${device.speed} km/h`}
+                                                        size="small"
                                                     />
-                                                </ListItem>
-                                                <Divider variant="inset" component="li" />
-                                            </React.Fragment>
-                                        ))) : (
-                                            <ListItem>
-                                                <ListItemText primary="No hay alertas activas." />
-                                            </ListItem>
-                                        )}
-                                    </List>
-                                </CardContent>
-                            </Card>
-                  </Grid>
-                  </Grid>
+                                                )}
+                                            </Box>
+                                        </ListItem>
+                                        <Divider />
+                                    </React.Fragment>
+                                ))}
+                            </List>
+                        </CardContent>
+                    </Card>
                 </Grid>
-
-                {/* Detalles del Dispositivo Seleccionado */}
-        {selectedDevice && (
-          <Grid item xs={12}>
-                        <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                            <CardContent sx={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                                <Typography variant="h6" gutterBottom>
-                                    Detalles del Dispositivo: {selectedDevice.name}
-                                </Typography>
-              <Grid container spacing={2}>
-                                    <Grid item xs={12} md={6}>
-                                        
-                                        <List dense>
-                                            <ListItem>
-                                                <ListItemIcon><SpeedIcon /></ListItemIcon>
-                                                <ListItemText
-                                                    primary="Velocidad"
-                                                    secondary={`${selectedDevice.speed} km/h`}
-                                                />
-                                            </ListItem>
-                                            <ListItem>
-                                                <ListItemIcon><LocationOnIcon /></ListItemIcon>
-                                                <ListItemText
-                                                    primary="Ubicación (Lat, Lon)"
-                                                    secondary={`${selectedDevice.latitude}, ${selectedDevice.longitude}`}
-                                                />
-                                            </ListItem>
-                                            <ListItem>
-                                                <ListItemText
-                                                    primary="Última Actualización"
-                                                    secondary={new Date(selectedDevice.lastUpdate).toLocaleString()}
-                                                />
-                                            </ListItem>
-                                            <ListItem>
-                                                <ListItemText
-                                                    primary="Última Vista"
-                                                    secondary={new Date(selectedDevice.lastSeen).toLocaleString()}
-                                                />
-                                            </ListItem>
-                                        </List>
-                </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <List dense>
-                                            <ListItem>
-                                                <ListItemIcon><SpeedIcon /></ListItemIcon>
-                                                <ListItemText
-                                                    primary="Velocidad"
-                                                    secondary={`${selectedDevice.speed} km/h`}
-                                                />
-                                            </ListItem>
-                                            <ListItem>
-                                                <ListItemText
-                                                    primary="Protocolo"
-                                                    secondary={selectedDevice.protocol}
-                                                />
-                                            </ListItem>
-                                            <ListItem>
-                                                <ListItemText
-                                                    primary="IMEI"
-                                                    secondary={selectedDevice.imei}
-                                                />
-                                            </ListItem>
-                                        </List>
-                </Grid>
-              </Grid>
-                            </CardContent>
-                        </Card>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
-  );
+            </Grid>
+        </Box>
+    );
 };
 
 export default Dashboard; 

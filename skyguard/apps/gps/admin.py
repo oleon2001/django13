@@ -27,32 +27,26 @@ from .models import (
 
 
 @admin.register(GPSDevice)
-class GPSDeviceAdmin(admin.ModelAdmin):
+class GPSDeviceAdmin(GISModelAdmin):
     """Admin configuration for GPSDevice model."""
-    list_display = ('imei', 'name', 'connection_status', 'route', 'economico', 'last_connection')
-    list_filter = ('connection_status', 'route', 'model', 'created_at')
-    search_fields = ('imei', 'name', 'economico')
-    readonly_fields = ('created_at', 'updated_at', 'last_connection', 'total_connections')
+    list_display = ('imei', 'name', 'model', 'route', 'economico', 'connection_status')
+    list_filter = ('model', 'route', 'connection_status')
+    search_fields = ('imei', 'name', 'serial')
+    readonly_fields = ('imei', 'created_at', 'updated_at')
     fieldsets = (
-        ('Basic Information', {
+        ('Información Básica', {
             'fields': ('imei', 'name', 'serial', 'model', 'software_version')
         }),
-        ('Route & Economic', {
-            'fields': ('route', 'economico', 'harness')
-        }),
-        ('Location', {
+        ('Ubicación', {
             'fields': ('position', 'speed', 'course', 'altitude', 'odometer')
         }),
-        ('Hardware', {
-            'fields': ('inputs', 'outputs', 'alarm_mask', 'alarms')
-        }),
-        ('Connection', {
+        ('Conexión', {
             'fields': ('connection_status', 'current_ip', 'current_port', 'last_connection', 'total_connections')
         }),
-        ('SIM Card', {
-            'fields': ('sim_card',)
+        ('Ruta', {
+            'fields': ('route', 'economico')
         }),
-        ('Timestamps', {
+        ('Otros', {
             'fields': ('created_at', 'updated_at')
         }),
     )
