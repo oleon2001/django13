@@ -38,8 +38,4 @@ urlpatterns = [
     
     # User endpoints
     path('users/me/', views.get_current_user, name='current-user'),
-    
-    # Test endpoints
-    path('test-devices/', views.test_devices, name='test-devices'),
-    path('devices-debug/', views.list_devices_no_auth, name='list-devices-debug'),
 ]
