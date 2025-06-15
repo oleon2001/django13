@@ -1,188 +1,416 @@
 import React, { useState, useEffect } from 'react';
 import {
+    Box,
     Grid,
     Paper,
     Typography,
-    Box,
     Card,
     CardContent,
+    Chip,
+    IconButton,
+    Tooltip,
+    Alert,
+    CircularProgress,
+    Divider,
     List,
     ListItem,
     ListItemText,
-    Divider,
-    Chip,
     ListItemIcon,
-    CircularProgress,
-    Alert,
+    ListItemSecondaryAction,
+    Avatar,
+    Badge,
 } from '@mui/material';
 import {
+    Refresh as RefreshIcon,
+    GpsFixed as GpsFixedIcon,
     Speed as SpeedIcon,
-    CheckCircleOutline as CheckCircleOutlineIcon,
-    WarningAmber as WarningAmberIcon,
+    Battery80 as BatteryIcon,
+    SignalCellular4Bar as SignalIcon,
+    DirectionsCar as CarIcon,
+    Warning as WarningIcon,
+    CheckCircle as CheckCircleIcon,
+    Error as ErrorIcon,
+    Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
+import { deviceService } from '../services/deviceService';
 import DeviceMap from '../components/DeviceMap';
 
 const Dashboard: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-    useEffect(() => {
-        fetchDevices();
-    }, []);
-
-    const fetchDevices = async () => {
+    const fetchDevices = async (showRefreshing = false) => {
         try {
-            setLoading(true);
+            if (showRefreshing) setRefreshing(true);
+            else setLoading(true);
+            
             const data = await deviceService.getAll();
-            // Filter only registered and connected devices
-            const activeDevices = data.filter(device => 
-                device.connection_status === 'ONLINE' || 
-                device.connection_status === 'SLEEPING'
-            );
-            setDevices(activeDevices);
-            if (activeDevices.length > 0) {
-                setSelectedDevice(activeDevices[0]);
-            }
+            setDevices(data);
+            setLastUpdate(new Date());
             setError(null);
         } catch (err) {
             setError('Error loading devices');
             console.error('Error loading devices:', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
+
+    useEffect(() => {
+        fetchDevices();
+        
+        // Auto-refresh every 30 seconds
+        const interval = setInterval(() => {
+            fetchDevices(true);
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleDeviceSelect = (device: Device) => {
         setSelectedDevice(device);
     };
 
-    if (loading) {
+    const handleRefresh = () => {
+        fetchDevices(true);
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'online':
+                return <CheckCircleIcon color="success" />;
+            case 'offline':
+                return <ErrorIcon color="error" />;
+            default:
+                return <WarningIcon color="warning" />;
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'online':
+                return 'success';
+            case 'offline':
+                return 'error';
+            default:
+                return 'warning';
+        }
+    };
+
+    // Calculate statistics
+    const onlineDevices = devices.filter(d => d.connection_status === 'ONLINE').length;
+    const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
+    const totalDevices = devices.length;
+
+    if (loading && !refreshing) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-                <CircularProgress />
+                <CircularProgress size={60} />
             </Box>
         );
     }
-
-    if (error) {
-        return (
-            <Box p={3}>
-                <Alert severity="error">{error}</Alert>
-            </Box>
-        );
-    }
-
-    const onlineDevices = devices.filter(device => device.connection_status === 'ONLINE');
-    const sleepingDevices = devices.filter(device => device.connection_status === 'SLEEPING');
 
     return (
-        <Box p={3}>
-            <Grid container spacing={3}>
-                <Grid item xs={12}>
-                    <Typography variant="h4" gutterBottom>
+        <Box sx={{ flexGrow: 1, p: 3, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
                         Dashboard
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Última actualización: {lastUpdate.toLocaleTimeString()}
                     </Typography>
-                </Grid>
+                    <Tooltip title="Actualizar datos">
+                        <IconButton 
+                            onClick={handleRefresh} 
+                            disabled={refreshing}
+                            color="primary"
+                        >
+                            <RefreshIcon sx={{ 
+                                animation: refreshing ? 'spin 1s linear infinite' : 'none' 
+                            }} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
 
-                <Grid item xs={12} md={4}>
+            {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                </Alert>
+            )}
+
+            {/* Statistics Cards */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={4}>
                     <Card>
                         <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Device Status
-                            </Typography>
-                            <List>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <CheckCircleOutlineIcon color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Online Devices"
-                                        secondary={onlineDevices.length}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <WarningAmberIcon color="warning" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Sleeping Devices"
-                                        secondary={sleepingDevices.length}
-                                    />
-                                </ListItem>
-                            </List>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        Total Dispositivos
+                                    </Typography>
+                                    <Typography variant="h4" component="div">
+                                        {totalDevices}
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                    <CarIcon />
+                                </Avatar>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
 
-                <Grid item xs={12}>
-                    <Paper sx={{ height: 'calc(100vh - 300px)' }}>
-                        <DeviceMap
-                            devices={devices}
-                            selectedDevice={selectedDevice}
-                            onDeviceSelect={handleDeviceSelect}
-                        />
-                    </Paper>
-                </Grid>
-
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={6} md={4}>
                     <Card>
                         <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Active Devices
-                            </Typography>
-                            <List>
-                                {devices.map((device) => (
-                                    <React.Fragment key={device.imei}>
-                                        <ListItem>
-                                            <ListItemIcon>
-                                                {device.connection_status === 'ONLINE' ? (
-                                                    <CheckCircleOutlineIcon color="success" />
-                                                ) : (
-                                                    <WarningAmberIcon color="warning" />
-                                                )}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={device.name || `Device ${device.imei}`}
-                                                secondary={
-                                                    <>
-                                                        <Typography component="span" variant="body2">
-                                                            IMEI: {device.imei}
-                                                        </Typography>
-                                                        <br />
-                                                        <Typography component="span" variant="body2">
-                                                            Last Update: {new Date(device.lastUpdate).toLocaleString()}
-                                                        </Typography>
-                                                    </>
-                                                }
-                                            />
-                                            <Box>
-                                                <Chip
-                                                    label={device.connection_status}
-                                                    color={device.connection_status === 'ONLINE' ? 'success' : 'warning'}
-                                                    size="small"
-                                                    sx={{ mr: 1 }}
-                                                />
-                                                {device.speed !== undefined && (
-                                                    <Chip
-                                                        icon={<SpeedIcon />}
-                                                        label={`${device.speed} km/h`}
-                                                        size="small"
-                                                    />
-                                                )}
-                                            </Box>
-                                        </ListItem>
-                                        <Divider />
-                                    </React.Fragment>
-                                ))}
-                            </List>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        En Línea
+                                    </Typography>
+                                    <Typography variant="h4" component="div" color="success.main">
+                                        {onlineDevices}
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'success.main' }}>
+                                    <CheckCircleIcon />
+                                </Avatar>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        Fuera de Línea
+                                    </Typography>
+                                    <Typography variant="h4" component="div" color="error.main">
+                                        {offlineDevices}
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'error.main' }}>
+                                    <ErrorIcon />
+                                </Avatar>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
             </Grid>
+
+            {/* Main Content */}
+            <Grid container spacing={3}>
+                {/* Device List */}
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                            <Typography variant="h6" component="h2">
+                                Dispositivos GPS
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {totalDevices} dispositivos registrados
+                            </Typography>
+                        </Box>
+                        
+                        <Box sx={{ flex: 1, overflow: 'auto' }}>
+                            {devices.length > 0 ? (
+                                <List>
+                                    {devices.map((device, index) => (
+                                        <React.Fragment key={device.imei}>
+                                            <ListItem
+                                                button
+                                                selected={selectedDevice?.imei === device.imei}
+                                                onClick={() => handleDeviceSelect(device)}
+                                                sx={{
+                                                    '&.Mui-selected': {
+                                                        bgcolor: 'primary.light',
+                                                        '&:hover': {
+                                                            bgcolor: 'primary.light',
+                                                        },
+                                                    },
+                                                }}
+                                            >
+                                                <ListItemIcon>
+                                                    <Badge
+                                                        color={getStatusColor(device.connection_status || 'OFFLINE')}
+                                                        variant="dot"
+                                                    >
+                                                        <CarIcon />
+                                                    </Badge>
+                                                </ListItemIcon>
+                                                
+                                                <ListItemText
+                                                    primary={
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <Typography variant="subtitle2">
+                                                                {device.name || `Device ${device.imei}`}
+                                                            </Typography>
+                                                            <Chip
+                                                                label={device.connection_status || 'OFFLINE'}
+                                                                size="small"
+                                                                color={getStatusColor(device.connection_status || 'OFFLINE')}
+                                                                variant="outlined"
+                                                            />
+                                                        </Box>
+                                                    }
+                                                    secondary={
+                                                        <Box>
+                                                            <Typography variant="caption" display="block">
+                                                                IMEI: {device.imei}
+                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    <SpeedIcon fontSize="small" />
+                                                                    <Typography variant="caption">
+                                                                        {device.speed || 0} km/h
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    <BatteryIcon fontSize="small" />
+                                                                    <Typography variant="caption">
+                                                                        {device.battery_level || 0}%
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    <SignalIcon fontSize="small" />
+                                                                    <Typography variant="caption">
+                                                                        {device.signal_strength || 0}%
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Box>
+                                                    }
+                                                />
+                                                
+                                                <ListItemSecondaryAction>
+                                                    <Tooltip title="Ver en mapa">
+                                                        <IconButton
+                                                            edge="end"
+                                                            onClick={() => handleDeviceSelect(device)}
+                                                        >
+                                                            <VisibilityIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </ListItemSecondaryAction>
+                                            </ListItem>
+                                            {index < devices.length - 1 && <Divider />}
+                                        </React.Fragment>
+                                    ))}
+                                </List>
+                            ) : (
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <GpsFixedIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                                    <Typography variant="h6" color="text.secondary">
+                                        No hay dispositivos
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Los dispositivos aparecerán aquí cuando se conecten
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* Map */}
+                <Grid item xs={12} md={8}>
+                    <Paper sx={{ height: '600px', p: 2 }}>
+                        <Box sx={{ height: '100%' }}>
+                            <DeviceMap
+                                devices={devices}
+                                selectedDevice={selectedDevice}
+                                onDeviceSelect={handleDeviceSelect}
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Device Details Panel */}
+            {selectedDevice && (
+                <Paper sx={{ mt: 3, p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                        Detalles del Dispositivo: {selectedDevice.name || `Device ${selectedDevice.imei}`}
+                    </Typography>
+                    
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <List>
+                                <ListItem>
+                                    <ListItemIcon><CarIcon /></ListItemIcon>
+                                    <ListItemText 
+                                        primary="IMEI" 
+                                        secondary={selectedDevice.imei} 
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemIcon><GpsFixedIcon /></ListItemIcon>
+                                    <ListItemText
+                                        primary="Ubicación" 
+                                        secondary={
+                                            selectedDevice.latitude && selectedDevice.longitude
+                                                ? `${selectedDevice.latitude.toFixed(6)}, ${selectedDevice.longitude.toFixed(6)}`
+                                                : 'No disponible'
+                                        }
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemIcon><SpeedIcon /></ListItemIcon>
+                                    <ListItemText
+                                        primary="Velocidad" 
+                                        secondary={`${selectedDevice.speed || 0} km/h`} 
+                                    />
+                                </ListItem>
+                            </List>
+                </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <List>
+                                        <ListItem>
+                                    <ListItemIcon><BatteryIcon /></ListItemIcon>
+                                            <ListItemText
+                                        primary="Batería" 
+                                        secondary={`${selectedDevice.battery_level || 0}%`} 
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemIcon><SignalIcon /></ListItemIcon>
+                                    <ListItemText 
+                                        primary="Señal" 
+                                        secondary={`${selectedDevice.signal_strength || 0}%`} 
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemIcon>{getStatusIcon(selectedDevice.connection_status || 'OFFLINE')}</ListItemIcon>
+                                    <ListItemText 
+                                        primary="Estado" 
+                                        secondary={selectedDevice.connection_status || 'OFFLINE'} 
+                                    />
+                                        </ListItem>
+                            </List>
+                </Grid>
+            </Grid>
+                </Paper>
+            )}
+
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
         </Box>
     );
 };

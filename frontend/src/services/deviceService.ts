@@ -214,4 +214,9 @@ export const deviceService = {
     });
     return response.data;
   },
+
+  testConnection: async (imei: number): Promise<any> => {
+    const response = await api.post(`/api/gps/devices/${imei}/test-connection/`);
+    return response.data;
+  },
 }; 
