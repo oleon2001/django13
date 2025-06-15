@@ -8,8 +8,12 @@ from . import views
 app_name = 'gps'
 
 urlpatterns = [
-    # Device list endpoint
+    # Device CRUD endpoints
     path('devices/', views.list_devices, name='list_devices'),
+    path('devices/create/', views.create_device, name='create_device'),
+    path('devices/<int:imei>/', views.update_device, name='update_device'),
+    path('devices/<int:imei>/delete/', views.delete_device, name='delete_device'),
+    path('devices/<int:imei>/test-connection/', views.test_device_connection, name='test_device_connection'),
     
     # Location and event processing endpoints
     path('location/', views.process_location, name='process_location'),

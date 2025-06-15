@@ -83,6 +83,7 @@ class GPSDevice(BaseDevice):
     error_count = models.IntegerField(_('error count'), default=0)
     connection_quality = models.FloatField(_('connection quality'), default=0.0)
     last_heartbeat = models.DateTimeField(_('last heartbeat'), null=True, blank=True)
+    is_active = models.BooleanField(_('is active'), default=True)
 
     objects = models.Manager()
 
