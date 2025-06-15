@@ -23,6 +23,10 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
+import LocalParkingIcon from '@mui/icons-material/LocalParking';
+import SensorsIcon from '@mui/icons-material/Sensors';
+import RouteIcon from '@mui/icons-material/Route';
 import { useAuth } from '../../hooks/useAuth'; // Import useAuth hook
 import logo from '../../assets/img/logofalkon.png';
 
@@ -46,6 +50,10 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
     { text: 'Monitoreo', icon: <MonitorHeartIcon />, path: '/monitoring' },
     { text: 'Rastreo', icon: <TrackChangesIcon />, path: '/tracking' },
     { text: 'Vehículos', icon: <DirectionsCarIcon />, path: '/vehicles' },
+    { text: 'Choferes', icon: <PersonIcon />, path: '/drivers' },
+    { text: 'Estacionamientos', icon: <LocalParkingIcon />, path: '/parking' },
+    { text: 'Sensores', icon: <SensorsIcon />, path: '/sensors' },
+    { text: 'Rutas', icon: <RouteIcon />, path: '/routes' },
     { text: 'Reportes', icon: <BarChartIcon />, path: '/reports' },
     { text: 'Configuración', icon: <SettingsIcon />, path: '/settings' },
   ];

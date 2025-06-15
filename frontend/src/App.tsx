@@ -10,6 +10,9 @@ import Tracking from './pages/Tracking';
 import Vehicles from './pages/Vehicles';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Drivers from './pages/Drivers';
+import Parking from './pages/Parking';
+import Sensors from './pages/Sensors';
 import './App.css';
 
 // Componente para rutas protegidas
@@ -90,6 +93,30 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Vehicles />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/drivers"
+            element={
+              <ProtectedRoute>
+                <Drivers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/parking"
+            element={
+              <ProtectedRoute>
+                <Parking />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sensors"
+            element={
+              <ProtectedRoute>
+                <Sensors />
               </ProtectedRoute>
             }
           />

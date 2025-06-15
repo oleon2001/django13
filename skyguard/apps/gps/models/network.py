@@ -15,24 +15,45 @@ class NetworkEvent(models.Model):
         ('DISCONNECT', 'Disconnection'),
         ('TIMEOUT', 'Timeout'),
         ('ERROR', 'Error'),
+        ('RECONNECT', 'Reconnection'),
+        ('AUTH_FAIL', 'Authentication Failed'),
+        ('PROTOCOL_ERROR', 'Protocol Error'),
     )
 
     device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='network_events')
-    event_type = models.CharField(max_length=10, choices=EVENT_TYPES)
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
     timestamp = models.DateTimeField()
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    port = models.IntegerField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField()
+    port = models.IntegerField()
     protocol = models.CharField(max_length=20)
+    session_id = models.CharField(max_length=50, null=True, blank=True)
+    duration = models.DurationField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
     raw_data = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = _('network event')
         verbose_name_plural = _('network events')
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['device', 'timestamp']),
+            models.Index(fields=['event_type', 'timestamp']),
+        ]
 
     def __str__(self):
-        return f"{self.event_type} at {self.timestamp}"
+        return f"{self.device.imei} - {self.event_type} at {self.timestamp}"
+
+    def save(self, *args, **kwargs):
+        # Actualizar estadísticas del dispositivo
+        if self.event_type == 'CONNECT':
+            self.device.total_connections += 1
+            self.device.last_connection = self.timestamp
+            if not self.device.first_connection:
+                self.device.first_connection = self.timestamp
+            self.device.save()
+        super().save(*args, **kwargs)
 
 class NetworkSession(models.Model):
     """Model for network sessions."""
