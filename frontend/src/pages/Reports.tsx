@@ -104,9 +104,19 @@ const Reports: React.FC = () => {
 
     const handleDownload = async (reportId: number) => {
         try {
-            // TODO: Implement download functionality when backend is ready
-            console.log('Download report:', reportId);
-            // await reportService.download(reportId);
+            const blob = await reportService.download(reportId);
+            if (blob) {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reporte_${reportId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                setError('No se pudo descargar el reporte');
+            }
         } catch (err) {
             setError('Error al descargar el reporte');
         }
@@ -127,9 +137,7 @@ const Reports: React.FC = () => {
 
     const handleCreateReport = async () => {
         try {
-            // TODO: Implement report generation when backend is ready
-            console.log('Generate report:', newReportType);
-            // await reportService.generate(newReportType);
+            await reportService.create({ type: newReportType });
             handleCloseDialog();
             fetchReports();
         } catch (err) {
@@ -466,9 +474,6 @@ const Reports: React.FC = () => {
                             <MenuItem value="daily">Reporte Diario</MenuItem>
                         </Select>
                     </FormControl>
-                    <Alert severity="info" sx={{ borderRadius: 2 }}>
-                        Esta funcionalidad estará disponible cuando el backend esté completamente implementado.
-                    </Alert>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancelar</Button>

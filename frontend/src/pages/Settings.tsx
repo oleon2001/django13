@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { SnackbarCloseReason } from '@mui/material/Snackbar';
+import authService from '../services/auth';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -69,15 +70,6 @@ function TabPanel(props: TabPanelProps) {
     );
 }
 
-const mockUser = {
-    username: 'admin',
-    email: 'admin@skyguard.com',
-    fullName: 'Administrador del Sistema',
-    phone: '+1 234 567 8900',
-    location: 'Ciudad, País',
-    avatar: '',
-};
-
 const Settings: React.FC = () => {
     const [tabValue, setTabValue] = useState(0);
     const [showPasswords, setShowPasswords] = useState({
@@ -86,11 +78,11 @@ const Settings: React.FC = () => {
         confirm: false,
     });
     const [formData, setFormData] = useState({
-        username: mockUser.username,
-        email: mockUser.email,
-        fullName: mockUser.fullName,
-        phone: mockUser.phone,
-        location: mockUser.location,
+        username: '',
+        email: '',
+        fullName: '',
+        phone: '',
+        location: '',
         oldPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -109,6 +101,22 @@ const Settings: React.FC = () => {
     });
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const user = await authService.getCurrentUser();
+                setFormData(prev => ({
+                    ...prev,
+                    username: user.username,
+                    email: user.email,
+                }));
+            } catch (err) {
+                setError('No se pudo cargar el perfil de usuario');
+            }
+        };
+        fetchUser();
+    }, []);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);

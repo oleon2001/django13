@@ -1,5 +1,5 @@
 import React from 'react';
-import { Device } from '../types/index';
+import { Device } from '../types';
 
 interface DeviceListProps {
     devices: Device[];
@@ -17,6 +17,11 @@ const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDevi
             default:
                 return 'text-yellow-500';
         }
+    };
+
+    const formatDate = (date: string | undefined) => {
+        if (!date) return 'Never';
+        return new Date(date).toLocaleString();
     };
 
     return (
@@ -39,10 +44,10 @@ const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDevi
                                 <p className="text-sm text-gray-500">IMEI: {device.imei}</p>
                                 {device.lastUpdate && (
                                     <div className="text-sm text-gray-500">
-                                        Last seen: {new Date(device.lastUpdate).toLocaleString()}
+                                        Last seen: {formatDate(device.lastUpdate)}
                                     </div>
                                 )}
-                        </div>
+                            </div>
                             <div className="flex items-center">
                                 <span className={`text-sm ${getStatusColor(device.status)}`}>
                                     {device.status}
@@ -65,7 +70,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDevi
                             <div>
                                 <p className="text-gray-500">Last Seen</p>
                                 <p className="font-medium">
-                                    {new Date(device.lastUpdate).toLocaleTimeString()}
+                                    {formatDate(device.lastUpdate)}
                                 </p>
                             </div>
                         </div>

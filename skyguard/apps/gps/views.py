@@ -45,6 +45,7 @@ def process_location(request):
     """
     try:
         # Get device IMEI from request
+        
         imei = request.POST.get('imei')
         if not imei:
             return JsonResponse({'error': 'IMEI is required'}, status=400)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Device } from '../types/index';
+import { Device } from '../types';
 import { coordinateService } from '../services/shared/coordinateService';
 import DeviceList from '../components/DeviceList';
 import DeviceMap from '../components/DeviceMap';

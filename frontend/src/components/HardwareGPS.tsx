@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Device } from '../types/index';
+import { Device } from '../types';
 import { gpsConnectionService, GPSConfig } from '../services/hardware/gpsConnection';
 
 const HardwareGPS: React.FC = () => {
@@ -14,6 +14,11 @@ const HardwareGPS: React.FC = () => {
     const [command, setCommand] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    const formatDate = (date: string | undefined) => {
+        if (!date) return 'Never';
+        return new Date(date).toLocaleString();
+    };
 
     useEffect(() => {
         // Suscribirse a actualizaciones del dispositivo
@@ -220,9 +225,9 @@ const HardwareGPS: React.FC = () => {
                                 <p><span className="font-medium">Nombre:</span> {device.name}</p>
                                 <p><span className="font-medium">IMEI:</span> {device.imei}</p>
                                 <p><span className="font-medium">Estado:</span> {device.status}</p>
-                                <p><span className="font-medium">Velocidad:</span> {device.speed} km/h</p>
-                                <p><span className="font-medium">Batería:</span> {device.battery_level}%</p>
-                                <p><span className="font-medium">Última actualización:</span> {new Date(device.lastUpdate).toLocaleString()}</p>
+                                <p><span className="font-medium">Velocidad:</span> {device.speed || 0} km/h</p>
+                                <p><span className="font-medium">Batería:</span> {device.battery_level || 0}%</p>
+                                <p><span className="font-medium">Última actualización:</span> {formatDate(device.lastUpdate)}</p>
                             </div>
                         </div>
                     )}
@@ -232,11 +237,11 @@ const HardwareGPS: React.FC = () => {
                         <div className="bg-white shadow rounded-lg p-4 h-full">
                             <h2 className="text-lg font-semibold mb-4">Ubicación del Dispositivo</h2>
                             <div className="bg-gray-100 rounded p-4">
-                                <p><span className="font-medium">Latitud:</span> {device.latitude}</p>
-                                <p><span className="font-medium">Longitud:</span> {device.longitude}</p>
-                                <p><span className="font-medium">Altitud:</span> {device.altitude} m</p>
-                                <p><span className="font-medium">Satélites:</span> {device.satellites}</p>
-                                <p><span className="font-medium">HDOP:</span> {device.hdop}</p>
+                                <p><span className="font-medium">Latitud:</span> {device.latitude || 'N/A'}</p>
+                                <p><span className="font-medium">Longitud:</span> {device.longitude || 'N/A'}</p>
+                                <p><span className="font-medium">Altitud:</span> {device.altitude || 'N/A'} m</p>
+                                <p><span className="font-medium">Satélites:</span> {device.satellites || 'N/A'}</p>
+                                <p><span className="font-medium">HDOP:</span> {device.hdop || 'N/A'}</p>
                             </div>
                         </div>
                     )}

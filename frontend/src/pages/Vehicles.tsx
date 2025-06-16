@@ -21,7 +21,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     Avatar,
     Divider,
     Stack,
@@ -39,6 +38,7 @@ import {
     FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { vehicleService, Vehicle } from '../services/vehicleService';
+import { VehicleForm } from '../components/VehicleForm';
 
 const Vehicles: React.FC = () => {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -104,10 +104,8 @@ const Vehicles: React.FC = () => {
     const handleDelete = async (vehicleId: number) => {
         if (window.confirm('¿Está seguro de que desea eliminar este vehículo?')) {
             try {
-                // TODO: Implement delete functionality when backend is ready
-                console.log('Delete vehicle:', vehicleId);
-                // await vehicleService.delete(vehicleId);
-                // fetchVehicles();
+                await vehicleService.delete(vehicleId);
+                fetchVehicles();
             } catch (err) {
                 setError('Error al eliminar el vehículo');
             }
@@ -407,18 +405,23 @@ const Vehicles: React.FC = () => {
             )}
 
             {/* Add/Edit Dialog */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {selectedVehicle ? 'Editar Vehículo' : 'Agregar Nuevo Vehículo'}
-                </DialogTitle>
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>{selectedVehicle ? 'Editar Vehículo' : 'Agregar Vehículo'}</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Esta funcionalidad estará disponible cuando el backend esté completamente implementado.
-                    </Typography>
+                    <VehicleForm
+                        initialData={selectedVehicle || undefined}
+                        onSave={async (data: Partial<Vehicle>) => {
+                            if (selectedVehicle?.id) {
+                                await vehicleService.update(selectedVehicle.id, data);
+                            } else {
+                                await vehicleService.create(data);
+                            }
+                            fetchVehicles();
+                            handleCloseDialog();
+                        }}
+                        onCancel={handleCloseDialog}
+                    />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cerrar</Button>
-                </DialogActions>
             </Dialog>
         </Box>
     );

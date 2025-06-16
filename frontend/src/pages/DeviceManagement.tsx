@@ -197,9 +197,8 @@ const DeviceManagement: React.FC = () => {
     const handleTestConnection = async (imei: number) => {
         setTestingConnection(imei);
         try {
-            // TODO: Implement connection test when backend is ready
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate test
-            console.log('Test connection for device:', imei);
+            await deviceService.testConnection(imei);
+            // Puedes mostrar un mensaje de éxito si lo deseas
         } catch (err) {
             setError('Error al probar la conexión');
         } finally {

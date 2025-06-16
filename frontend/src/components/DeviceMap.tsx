@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Device } from '../types/index';
+import { Device } from '../types';
 import 'leaflet/dist/leaflet.css';
 import L, { LatLngTuple } from 'leaflet';
 

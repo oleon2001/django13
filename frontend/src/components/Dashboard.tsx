@@ -32,7 +32,7 @@ import {
     Error as ErrorIcon,
     Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { Device } from '../types/index';
+import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
 import DeviceMap from './DeviceMap';
 

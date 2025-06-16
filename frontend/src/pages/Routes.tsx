@@ -24,23 +24,12 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { ROUTE_CHOICES } from '../types';
-
-interface Route {
-    id: number;
-    name: string;
-    description: string;
-    startPoint: string;
-    endPoint: string;
-    distance: number;
-    estimatedTime: number;
-    active: boolean;
-}
+import { routeService, Route as RouteType } from '../services/routeService';
 
 const Routes: React.FC = () => {
-    const [routes, setRoutes] = useState<Route[]>([]);
+    const [routes, setRoutes] = useState<RouteType[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
-    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+    const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -51,22 +40,19 @@ const Routes: React.FC = () => {
     });
 
     useEffect(() => {
-        // TODO: Implementar la carga de rutas desde el backend
-        // Por ahora usamos datos de ejemplo
-        const mockRoutes: Route[] = ROUTE_CHOICES.map(route => ({
-            id: route.value,
-            name: route.label,
-            description: `Descripción de ${route.label}`,
-            startPoint: 'Punto de inicio',
-            endPoint: 'Punto final',
-            distance: Math.floor(Math.random() * 100),
-            estimatedTime: Math.floor(Math.random() * 120),
-            active: true,
-        }));
-        setRoutes(mockRoutes);
+        fetchRoutes();
     }, []);
 
-    const handleOpenDialog = (route?: Route) => {
+    const fetchRoutes = async () => {
+        try {
+            const data = await routeService.getAll();
+            setRoutes(data);
+        } catch (error) {
+            setRoutes([]);
+        }
+    };
+
+    const handleOpenDialog = (route?: RouteType) => {
         if (route) {
             setSelectedRoute(route);
             setFormData({
@@ -99,13 +85,12 @@ const Routes: React.FC = () => {
     const handleSubmit = async () => {
         try {
             if (selectedRoute) {
-                // TODO: Implementar actualización de ruta
-                console.log('Actualizando ruta:', { ...selectedRoute, ...formData });
+                await routeService.update(selectedRoute.id, formData);
             } else {
-                // TODO: Implementar creación de ruta
-                console.log('Creando nueva ruta:', formData);
+                await routeService.create(formData);
             }
             handleCloseDialog();
+            fetchRoutes();
         } catch (error) {
             console.error('Error al guardar la ruta:', error);
         }
@@ -113,8 +98,8 @@ const Routes: React.FC = () => {
 
     const handleDelete = async (routeId: number) => {
         try {
-            // TODO: Implementar eliminación de ruta
-            console.log('Eliminando ruta:', routeId);
+            await routeService.delete(routeId);
+            fetchRoutes();
         } catch (error) {
             console.error('Error al eliminar la ruta:', error);
         }

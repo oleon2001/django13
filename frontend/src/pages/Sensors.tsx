@@ -85,7 +85,7 @@ const Sensors: React.FC = () => {
             const data = await sensorService.getPressureSensors(selectedDeviceId);
             const extendedSensors: ExtendedPressureSensor[] = data.map(sensor => ({
                 id: sensor.id,
-                deviceId: sensor.device,
+                deviceId: sensor.device_id,
                 name: sensor.name,
                 currentPressure: sensor.latest_reading?.psi1 || 0,
                 lastUpdate: sensor.latest_reading?.date || new Date().toISOString()

@@ -1,4 +1,4 @@
-import { Device } from '../../types/index';
+import { Device } from '../../types';
 
 export interface GPSConfig {
     host: string;
@@ -78,30 +78,31 @@ class GPSConnectionService {
             id: parseInt(data.deviceId),
             imei: data.imei,
             name: `GPS ${data.deviceId}`,
+            serial_number: `SN${data.deviceId}`,
             protocol: 'GT06',
             status: 'online',
             lastUpdate: new Date().toISOString(),
             lastSeen: new Date().toISOString(),
             latitude: data.latitude,
             longitude: data.longitude,
-            speed: data.speed || 0,
-            heading: data.heading || 0,
-            altitude: data.altitude || 0,
-            satellites: data.satellites || 0,
-            hdop: data.hdop || 0,
-            pdop: data.pdop || 0,
-            fix_quality: data.fix_quality || 0,
-            fix_type: data.fix_type || 'none',
-            battery_level: data.battery_level || 100,
-            signal_strength: data.signal_strength || 5,
+            speed: data.speed,
+            heading: data.heading,
+            altitude: data.altitude,
+            satellites: data.satellites,
+            hdop: data.hdop,
+            pdop: data.pdop,
+            fix_quality: data.fixQuality,
+            fix_type: data.fixType,
+            battery_level: data.batteryLevel,
+            signal_strength: data.signalStrength,
             connection_status: 'ONLINE',
-            route: data.route || 1,
-            economico: data.economico || 1,
-            current_ip: data.current_ip || '192.168.1.1',
-            current_port: data.current_port || 8080,
-            total_connections: data.total_connections || 1,
-            error_count: data.error_count || 0,
-            last_error: data.last_error || undefined,
+            route: data.route,
+            economico: data.economico,
+            current_ip: data.ip,
+            current_port: data.port,
+            total_connections: data.totalConnections,
+            error_count: data.errorCount,
+            last_error: data.lastError,
             harness: {
                 id: 1,
                 name: 'Default Harness',
@@ -110,10 +111,10 @@ class GPSConnectionService {
                 out00: 'MOTOR'
             },
             sim_card: {
-                iccid: 12345678901234567890,
-                phone: '+1234567890',
-                provider: 1,
-                provider_name: 'Test Provider'
+                iccid: data.iccid,
+                phone: data.phone,
+                provider: data.provider,
+                provider_name: data.providerName
             }
         };
         this.currentDevice = device;

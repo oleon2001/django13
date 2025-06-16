@@ -113,11 +113,11 @@ const Drivers: React.FC = () => {
     const activeDrivers = drivers.filter(d => d.is_active);
     const validLicenses = drivers.filter(d => d.is_license_valid).length;
 
-    const getStatusChipColor = (isActive: boolean) => {
+    const getStatusChipColor = (isActive: boolean | undefined) => {
         return isActive ? 'success' : 'error';
     };
 
-    const getLicenseChipColor = (isValid: boolean) => {
+    const getLicenseChipColor = (isValid: boolean | undefined) => {
         return isValid ? 'success' : 'warning';
     };
 
@@ -296,7 +296,7 @@ const Drivers: React.FC = () => {
                                             <ListItem>
                                                 <ListItemText
                                                     primary="Fecha de Nacimiento"
-                                                    secondary={new Date(selectedDriver.birth_date).toLocaleDateString()}
+                                                    secondary={selectedDriver.birth_date ? new Date(selectedDriver.birth_date).toLocaleDateString() : 'No especificada'}
                                                 />
                                             </ListItem>
                                             <ListItem>
@@ -332,7 +332,7 @@ const Drivers: React.FC = () => {
                                 fullWidth
                                 label="Nombre"
                                 value={editingDriver?.name || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, name: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, name: e.target.value }))}
                             />
                         </Grid>
                         <Grid item xs={12} md={4}>
@@ -340,7 +340,7 @@ const Drivers: React.FC = () => {
                                 fullWidth
                                 label="Apellido Paterno"
                                 value={editingDriver?.middle_name || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, middle_name: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, middle_name: e.target.value }))}
                             />
                         </Grid>
                         <Grid item xs={12} md={4}>
@@ -348,7 +348,7 @@ const Drivers: React.FC = () => {
                                 fullWidth
                                 label="Apellido Materno"
                                 value={editingDriver?.last_name || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, last_name: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, last_name: e.target.value }))}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -357,7 +357,7 @@ const Drivers: React.FC = () => {
                                 label="Fecha de Nacimiento"
                                 type="date"
                                 value={editingDriver?.birth_date || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, birth_date: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, birth_date: e.target.value }))}
                                 InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
@@ -367,7 +367,7 @@ const Drivers: React.FC = () => {
                                 select
                                 label="Estado Civil"
                                 value={editingDriver?.civil_status || 'SOL'}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, civil_status: e.target.value as any }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, civil_status: e.target.value as string }))}
                             >
                                 <MenuItem value="SOL">Soltero</MenuItem>
                                 <MenuItem value="CAS">Casado</MenuItem>
@@ -380,7 +380,7 @@ const Drivers: React.FC = () => {
                                 fullWidth
                                 label="Nómina"
                                 value={editingDriver?.payroll || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, payroll: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, payroll: e.target.value }))}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -388,7 +388,7 @@ const Drivers: React.FC = () => {
                                 fullWidth
                                 label="Teléfono"
                                 value={editingDriver?.phone || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, phone: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, phone: e.target.value }))}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -398,7 +398,7 @@ const Drivers: React.FC = () => {
                                 multiline
                                 rows={2}
                                 value={editingDriver?.address || ''}
-                                onChange={(e) => setEditingDriver(prev => ({ ...prev, address: e.target.value }))}
+                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, address: e.target.value }))}
                             />
                         </Grid>
                     </Grid>
