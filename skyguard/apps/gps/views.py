@@ -521,18 +521,25 @@ def list_devices(request):
         return Response({'error': str(e)}, status=500)
 
 
-@api_view(['PATCH'])
+@api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def update_device(request, imei):
-    """Actualizar dispositivo GPS existente."""
+    """Actualizar o eliminar dispositivo GPS existente."""
     try:
         device = GPSDevice.objects.get(imei=imei)
         
         # Verificar que el usuario es el propietario
         if device.owner != request.user:
-            return Response({'error': 'Not authorized to update this device'}, status=403)
+            return Response({'error': 'Not authorized to modify this device'}, status=403)
         
-        # Actualizar campos permitidos
+        if request.method == 'DELETE':
+            device_name = device.name
+            device.delete()
+            return Response({
+                'message': f'Device {device_name} deleted successfully'
+            })
+        
+        # PATCH method
         if 'name' in request.data:
             device.name = request.data['name']
         if 'route' in request.data:
@@ -545,37 +552,12 @@ def update_device(request, imei):
         device.save()
         
         return Response({
-            'id': device.id,
             'imei': device.imei,
             'name': device.name,
             'route': device.route,
             'economico': device.economico,
             'is_active': device.is_active,
             'updated_at': device.updated_at.isoformat()
-        })
-        
-    except GPSDevice.DoesNotExist:
-        return Response({'error': 'Device not found'}, status=404)
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
-
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def delete_device(request, imei):
-    """Eliminar dispositivo GPS."""
-    try:
-        device = GPSDevice.objects.get(imei=imei)
-        
-        # Verificar que el usuario es el propietario
-        if device.owner != request.user:
-            return Response({'error': 'Not authorized to delete this device'}, status=403)
-            
-        device_name = device.name
-        device.delete()
-        
-        return Response({
-            'message': f'Device {device_name} deleted successfully'
         })
         
     except GPSDevice.DoesNotExist:
