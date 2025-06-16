@@ -444,10 +444,41 @@ def cleanup_sessions(request):
         return Response({'error': str(e)}, status=500)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def list_devices(request):
-    """Get all GPS devices."""
+    """Get all GPS devices or create a new one."""
+    if request.method == 'POST':
+        try:
+            imei = request.data.get('imei')
+            name = request.data.get('name')
+            
+            if not imei or len(str(imei)) != 15:
+                return Response({'error': 'IMEI must be 15 digits'}, status=400)
+                
+            if GPSDevice.objects.filter(imei=int(imei)).exists():
+                return Response({'error': 'Device already exists'}, status=409)
+                
+            device = GPSDevice.objects.create(
+                imei=int(imei),
+                name=name or f'Device_{imei}',
+                owner=request.user,
+                is_active=True,
+                connection_status='OFFLINE'
+            )
+            
+            return Response({
+                'imei': device.imei,
+                'name': device.name,
+                'connection_status': device.connection_status,
+                'created_at': device.created_at.isoformat(),
+                'updated_at': device.updated_at.isoformat()
+            }, status=201)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    # GET method
     try:
         repository = GPSDeviceRepository()
         devices = repository.get_all_devices()
@@ -456,7 +487,6 @@ def list_devices(request):
         for device in devices:
             try:
                 device_data = {
-                    'id': device.id,
                     'imei': device.imei,
                     'name': device.name,
                     'serial': device.serial,
@@ -483,46 +513,10 @@ def list_devices(request):
                 }
                 devices_data.append(device_data)
             except Exception as device_error:
-                # Log the specific device that caused the error
                 print(f"Error serializing device {device.imei}: {device_error}")
                 continue
         
         return Response({'devices': devices_data})
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_device(request):
-    """Crear nuevo dispositivo GPS desde el frontend."""
-    try:
-        imei = request.data.get('imei')
-        name = request.data.get('name')
-        
-        if not imei or len(str(imei)) != 15:
-            return Response({'error': 'IMEI must be 15 digits'}, status=400)
-            
-        if GPSDevice.objects.filter(imei=int(imei)).exists():
-            return Response({'error': 'Device already exists'}, status=409)
-            
-        device = GPSDevice.objects.create(
-            imei=int(imei),
-            name=name or f'Device_{imei}',
-            owner=request.user,
-            is_active=True,
-            connection_status='OFFLINE'
-        )
-        
-        return Response({
-            'id': device.id,
-            'imei': device.imei,
-            'name': device.name,
-            'connection_status': device.connection_status,
-            'created_at': device.created_at.isoformat(),
-            'updated_at': device.updated_at.isoformat()
-        }, status=201)
-        
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 

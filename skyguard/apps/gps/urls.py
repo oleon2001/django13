@@ -9,8 +9,7 @@ app_name = 'gps'
 
 urlpatterns = [
     # Device CRUD endpoints
-    path('devices/', views.list_devices, name='list_devices'),
-    path('devices/create/', views.create_device, name='create_device'),
+    path('devices/', views.list_devices, name='list_devices'),  # GET for list, POST for create
     path('devices/<int:imei>/', views.update_device, name='update_device'),
     path('devices/<int:imei>/delete/', views.delete_device, name='delete_device'),
     path('devices/<int:imei>/test-connection/', views.test_device_connection, name='test_device_connection'),
