@@ -1,9 +1,9 @@
-from models import User, SGAvl, SimCard, GeoFence, ServerSMS
+from skyguard.gps.tracker.models import User, SGAvl, SimCard, GeoFence, ServerSMS
 from django import forms
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.safestring import mark_safe
-from forms import *
+from skyguard.gps.tracker.forms import *
 
 class SGAvlAdmin(admin.ModelAdmin):
 	fieldsets = [

@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',  # GeoDjango
+    'django.contrib.sites',  # Habilita el framework de sites
     # Third party apps
     'rest_framework',
     'corsheaders',
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'skyguard.apps.tracking',
     'skyguard.apps.monitoring',
     'skyguard.apps.coordinates',  # New coordinates app
+    'skyguard.gps.tracker',  # GPS tracker models
 ]
 
 MIDDLEWARE = [

@@ -10,7 +10,7 @@ from django.contrib.sites.models import Site
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.contrib.sites.managers import CurrentSiteManager
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from datetime import datetime,date,time
 
 # Create your models here.
@@ -88,13 +88,13 @@ class Device(models.Model):
 	course = models.SmallIntegerField(_('course'), default = 0, editable = False)
 	date = models.DateTimeField(_('date'), null = True, editable = False)
 	lastLog = models.DateTimeField(_('last update'), null = True, editable = False)
-	owner = models.ForeignKey(User, null = True, default = None, blank = True)
+	owner = models.ForeignKey(settings.AUTH_USER_MODEL, null = True, default = None, blank = True, on_delete=models.SET_NULL)
 	icon = models.CharField(_('icon'), max_length = 64, default = 'camion100sff.png')
 	type = models.CharField(_('type'), max_length = 64, default = 'tracker.SGAvl', editable = False)
 	odom = models.IntegerField(_('odometer'), default = 0, editable = False, null = True)
 	altitude = models.IntegerField(_('altitude'), editable = False, null = True, default = 0)
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 
 	class Meta:
 		unique_together = (('name','owner'),)
@@ -114,7 +114,7 @@ class SimCard(models.Model):
 		return u'{0}'.format(self.phone)
 
 class SGAvl(Device):
-	serial = models.IntegerField(_('serial'), max_length = 10, default=0)#, editable = False)
+	serial = models.IntegerField(_('serial'), default=0)#, editable = False)
 	model = models.SmallIntegerField(_('model'), default = 0, choices = MODEL_CHOICES)#, editable = False)
 	swversion = models.CharField(_('version'), max_length = 4, default ='----')#, editable = False)
 	inputs = models.IntegerField(_('inputs'), default = 0, editable = False)
@@ -125,14 +125,14 @@ class SGAvl(Device):
 	newOutputs = models.IntegerField(_('new outputs'), null = True, blank = True, editable = False)
 	newInflags = models.CharField(_('new inbputs'), max_length = 32, blank = True, editable = False)
 	lastFwUpdate = models.DateTimeField(_('last firmware update'), null = True, blank = True)#, editable = False)
-	harness = models.ForeignKey('tracker.SGHarness', null = False, blank = False)
+	harness = models.ForeignKey('tracker.SGHarness', null = False, blank = False, on_delete=models.CASCADE)
 	comments = models.TextField(_('Comments'), null = True, blank = True)
 	sim = models.OneToOneField(SimCard, blank = True, null = True, on_delete=models.SET_NULL, related_name = 'avl')
 
 	ruta = models.IntegerField(null = True,blank = True, choices = RUTA_CHOICES)
 	economico = models.IntegerField(null = True, blank = True)
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 
 	def __unicode__(self):
 		return u"%s(%s): %015d - %s"%(self.model,self.swversion,self.imei,self.name)
@@ -163,7 +163,7 @@ def nowtz():
     return datetime.now(tz = pytz.UTC)
     
 class ServerSMS(models.Model):
-    imei = models.ForeignKey(SGAvl,null=False)
+    imei = models.ForeignKey(SGAvl,null=False, on_delete=models.CASCADE)
     command = models.SmallIntegerField('Command', default = 0, choices = AVL_COMMANDS)
     direction = models.SmallIntegerField('Command', default = 0, choices = AVL_DIRECTION)
     status = models.SmallIntegerField('Command', default = 0, choices = AVL_STATUS)
@@ -256,7 +256,7 @@ class SGHarness(models.Model):
 		verbose_name_plural = _('devices')
 
 class AccelLog(models.Model):
-	imei = models.ForeignKey('tracker.Device', null = False)
+	imei = models.ForeignKey('tracker.Device', null = False, on_delete=models.CASCADE)
 	position = models.PointField(editable = False)
 	date = models.DateTimeField(null = False, editable = False)
 	duration = models.DecimalField(null = False, max_digits=6, decimal_places =4, default = 0.0)
@@ -268,7 +268,7 @@ class AccelLog(models.Model):
 	errExit = models.DecimalField(null = False, max_digits=6, decimal_places =4, default = 0.0)
 	exit = models.DecimalField(null = False, max_digits=6, decimal_places =4, default = 0.0)
 	
-	objects = models.GeoManager()
+	objects = models.Manager()
 
 	def __unicode__(self):
 		return u"{0}-{1}".format(self.id, self.imei)
@@ -278,7 +278,7 @@ class AccelLog(models.Model):
 
 
 class Event(models.Model):
-	imei = models.ForeignKey('tracker.Device', null = False)
+	imei = models.ForeignKey('tracker.Device', null = False, on_delete=models.CASCADE)
 	type = models.CharField(max_length = 16)
 	position = models.PointField(null = True, editable = False)
 	speed = models.SmallIntegerField(default = 0, editable = False)
@@ -287,7 +287,7 @@ class Event(models.Model):
 	odom = models.IntegerField(_('odometer'), editable = False, null = True, default = 0)
 	altitude = models.IntegerField(_('altitude'), editable = False, null = True, default = 0)
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 
 	def __unicode__(self):
 		return u"{0}-{1}".format(self.id, self.imei)
@@ -297,8 +297,8 @@ class GsmEvent(Event):
 	text = models.CharField(max_length=180)
 
 class IOEvent(Event):
-	inputs = models.IntegerField(max_length = 16)
-	outputs= models.IntegerField(max_length = 16)
+	inputs = models.IntegerField()
+	outputs = models.IntegerField()
 	indelta= models.IntegerField(default = 0, editable = False, null = False)
 	outdelta= models.IntegerField(default = 0, editable = False, null = False)
 	alarmdelta= models.IntegerField(default = 0, editable = False, null = False)
@@ -310,22 +310,22 @@ class ResetEvent(Event):
 class GeoFence(models.Model):
 	name = models.CharField(_('name'), max_length = 32, unique = True)
 	fence = models.PolygonField(_('polygon'), null = False)
-	owner = models.ForeignKey(User, null = False, blank = False)
+	owner = models.ForeignKey(settings.AUTH_USER_MODEL, null = False, blank = False, on_delete=models.CASCADE, related_name='tracker_geofence_set')
 	base = models.IntegerField(null = True,blank = True, choices = RUTA_CHOICES)
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 	def __unicode__(self):
 		return u"{0}".format(self.name)
 
 class PsiWeightLog(models.Model):
-	imei = models.ForeignKey('tracker.Device', null = False)
+	imei = models.ForeignKey('tracker.Device', null = False, on_delete=models.CASCADE)
 	sensor = models.CharField(_('sensor serial'),max_length = 32,null =False)
 	date = models.DateTimeField(null = False, editable = False)
 	psi1 = models.DecimalField(_('Psi1'), max_digits = 20, decimal_places=6, editable = False)
 	psi2 = models.DecimalField(_('Psi1'), max_digits = 20, decimal_places=6, editable = False)
 
 class PsiCal(models.Model):
-	imei = models.ForeignKey('tracker.Device', null = False)
+	imei = models.ForeignKey('tracker.Device', null = False, on_delete=models.CASCADE)
 	sensor = models.CharField(_('sensor serial'),max_length = 32,null =False)
 	offpsi1 = models.DecimalField(_('Psi1'), max_digits = 10, decimal_places=6, editable = False)
 	offpsi2 = models.DecimalField(_('Psi1'), max_digits = 10, decimal_places=6, editable = False)
@@ -347,8 +347,8 @@ def SensorSetup():
 
 class Tracking(models.Model):
 	tracking = models.CharField(_("tracking"), max_length = 40, unique = True)
-	imei = models.ForeignKey('tracker.Device', null = False)
-	stopFence = models.ForeignKey(GeoFence, related_name = 'stop_set')
+	imei = models.ForeignKey('tracker.Device', null = False, on_delete=models.CASCADE)
+	stopFence = models.ForeignKey(GeoFence, related_name = 'stop_set', on_delete=models.CASCADE)
 	fences = models.ManyToManyField(GeoFence, related_name = 'events_set')
 	start = models.DateTimeField(null = False, editable = False, db_index = True)
 	stop = models.DateTimeField(null = True, editable = False, db_index = True)
@@ -356,7 +356,7 @@ class Tracking(models.Model):
 		return u"{0}".format(self.tracking)
 
 class AlarmLog(models.Model):
-	imei = models.ForeignKey('tracker.Device', null=False)
+	imei = models.ForeignKey('tracker.Device', null=False, on_delete=models.CASCADE)
 	sensor = models.CharField(_('sensor serial'), max_length=32, null=False)
 	date = models.DateTimeField(null=False, editable=False)
 	cksum = models.IntegerField()
@@ -390,10 +390,10 @@ class Tarjetas(models.Model):
 class Overlays(models.Model):
 	name = models.CharField(_('name'), max_length = 32, unique = True)
 	geometry = models.LineStringField(_('line'), null = False)
-	owner = models.ForeignKey(User, null = False, blank = False)
+	owner = models.ForeignKey(settings.AUTH_USER_MODEL, null = False, blank = False, on_delete=models.CASCADE)
 	base = models.IntegerField(null = True,blank = True, choices = RUTA_CHOICES)
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 	def __unicode__(self):
 		return u"{0}".format(self.name)
 
@@ -402,7 +402,7 @@ class AddressCache(models.Model):
 	date = models.DateTimeField(null=False, editable=False)
 	text = models.TextField(null = False, default = "N/D", editable = True )
 
-	objects = models.GeoManager()
+	objects = models.Manager()
 
 	def __unicode__(self):
 		return u"[{0:.4f}:{1:.4f}]{2}".format(self.position.y,self.position.x, self.text)
@@ -440,7 +440,7 @@ class TicketsLog(models.Model):
 	
 class TicketDetails(models.Model):
 	id = models.AutoField("Folio",primary_key=True)
-	imei = models.ForeignKey('tracker.Device', null=False)
+	imei = models.ForeignKey('tracker.Device', null=False, on_delete=models.CASCADE)
 	date = models.DateTimeField(_('Inicio'),null=True)
 	chofer = models.CharField(_('Nombre'), max_length = 80)
 	total = models.IntegerField()
