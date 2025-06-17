@@ -24,11 +24,11 @@ def create_test_device():
             imei='123456789012345',
             defaults={
                 'name': 'Test Device',
-                'serial': 'TEST123',
-                'model': 'GT06N',
+                'serial': '12356',
+                'model': '60',
                 'software_version': '1.0',
-                'route': 'RUTA1',
-                'economico': 'ECO123',
+                'route': '1',
+                'economico': '1234567890',
                 'connection_status': 'connected',
                 'current_ip': '127.0.0.1',
                 'current_port': 8000
