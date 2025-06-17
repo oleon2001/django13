@@ -1,2 +1,0 @@
-notas:
-titulo: indicadores de continuidad

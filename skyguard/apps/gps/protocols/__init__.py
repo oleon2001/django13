@@ -7,8 +7,13 @@ from skyguard.apps.gps.protocols.meiligao import MeiligaoProtocol, MeiligaoPosit
 from skyguard.apps.gps.protocols.catm1 import CatM1Protocol, CatM1Position
 from skyguard.apps.gps.protocols.cyacd import CYACDProtocol, CYACDPosition
 from skyguard.apps.gps.protocols.bluetooth import BluetoothProtocol, BluetoothPosition
-from skyguard.apps.gps.protocols.handler import GPSProtocolHandler
 from skyguard.apps.gps.protocols.manchester import manchester
+from skyguard.apps.gps.protocols.handler import GPSProtocolHandler
+from skyguard.apps.gps.protocols.handlers import (
+    ConcoxProtocolHandler,
+    MeiligaoProtocolHandler,
+    WialonProtocolHandler
+)
 
 __all__ = [
     'BaseProtocol',
@@ -24,4 +29,8 @@ __all__ = [
     'BluetoothProtocol',
     'BluetoothPosition',
     'GPSProtocolHandler',
+    'ConcoxProtocolHandler',
+    'MeiligaoProtocolHandler',
+    'WialonProtocolHandler',
+    'manchester'
 ] 

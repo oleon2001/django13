@@ -403,7 +403,7 @@ class HardwareConfiguration:
                 "url": "http://tu-servidor.com/api/gps/receive/",
                 "method": "POST",
                 "headers": {
-                    "X-Device-Token": "tu_token_secreto",
+                    "X-Device-Token": "",
                     "Content-Type": "application/x-www-form-urlencoded"
                 },
                 "interval": 30  # segundos

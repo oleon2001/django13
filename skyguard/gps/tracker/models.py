@@ -341,9 +341,9 @@ def SensorSetup():
 				w = PsiWeightLog.objects.filter(sensor=r.sensor).order_by('-date')[0]
 				i.sensor=w.sensor
 				i.save()
-				print i.sensor, w.date
+				print(i.sensor, w.date)
 			except:
-				print i.sensor
+				print(i.sensor)
 
 class Tracking(models.Model):
 	tracking = models.CharField(_("tracking"), max_length = 40, unique = True)
@@ -474,7 +474,7 @@ def SensorHell(avls):
 			status = datetime.now() - i.latest.date
 		else:
 			status = "NEVER"
-		print i.avl.name,"{0:9s}".format( i.name), status
+		print(i.avl.name,"{0:9s}".format( i.name), status)
 	return hell
 
 padd = """

@@ -74,13 +74,15 @@ class DeviceConnectionService:
         """Register a device error."""
         NetworkEvent.objects.create(
             device=device,
-            event_type='ERROR',
+            type='OTHER',
             timestamp=timezone.now(),
-            ip_address=device.current_ip,
-            port=device.current_port,
-            protocol=device.protocol if hasattr(device, 'protocol') else 'unknown',
-            session_id=session_id,
-            error_message=error_message
+            data={
+                'error_message': error_message,
+                'session_id': session_id,
+                'ip_address': getattr(device, 'current_ip', None),
+                'port': getattr(device, 'current_port', None),
+                'protocol': getattr(device, 'protocol', None),
+            }
         )
         device.record_error(error_message)
 

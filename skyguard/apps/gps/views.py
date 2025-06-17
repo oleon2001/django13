@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
 from django.conf import settings
+import logging
 
 from skyguard.apps.gps.services import GPSService
 from skyguard.apps.gps.services.connection import DeviceConnectionService
@@ -29,6 +30,8 @@ from skyguard.core.exceptions import (
     InvalidLocationDataError,
     InvalidEventDataError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
@@ -452,6 +455,7 @@ def list_devices(request):
         try:
             imei = request.data.get('imei')
             name = request.data.get('name')
+            protocol = request.data.get('protocol', 'concox')  # Default to concox if not specified
             
             if not imei or len(str(imei)) != 15:
                 return Response({'error': 'IMEI must be 15 digits'}, status=400)
@@ -464,13 +468,15 @@ def list_devices(request):
                 name=name or f'Device_{imei}',
                 owner=request.user,
                 is_active=True,
-                connection_status='OFFLINE'
+                connection_status='OFFLINE',
+                protocol=protocol
             )
             
             return Response({
                 'imei': device.imei,
                 'name': device.name,
                 'connection_status': device.connection_status,
+                'protocol': device.protocol,
                 'created_at': device.created_at.isoformat(),
                 'updated_at': device.updated_at.isoformat()
             }, status=201)
@@ -569,33 +575,42 @@ def update_device(request, imei):
 def test_device_connection(request, imei):
     """
     Probar conectividad con un dispositivo GPS.
-    
-    Args:
-        imei: IMEI del dispositivo a probar
-        
-    Returns:
-        Response con el estado de la conexión y detalles adicionales
     """
     try:
+        logger.info(f"Testing connection for device IMEI: {imei}")
+        
         # Buscar el dispositivo
         try:
             device = GPSDevice.objects.get(imei=imei)
+            logger.info(f"Found device: {device.name} (Protocol: {device.protocol})")
         except GPSDevice.DoesNotExist:
+            logger.error(f"Device not found: {imei}")
             return Response({'error': 'Device not found'}, status=404)
             
-        # Verificar permisos (solo el propietario o staff)
+        # Verificar permisos
         if not request.user.is_staff and device.owner != request.user:
+            logger.warning(f"Permission denied for user {request.user} on device {imei}")
             return Response({'error': 'Permission denied'}, status=403)
             
-        # Obtener el servicio de conexión
+        # Verificar protocolo
+        if not device.protocol:
+            logger.error(f"Device {imei} has no protocol configured")
+            return Response({
+                'success': False,
+                'message': 'Device protocol not configured',
+                'status': 'ERROR',
+                'error': 'Protocol must be configured before testing connection'
+            }, status=400)
+            
+        # Obtener servicios
         repository = GPSDeviceRepository()
         connection_service = DeviceConnectionService(repository)
         
-        # Verificar el último heartbeat
+        # Verificar heartbeat
         if device.last_heartbeat:
             time_since_heartbeat = timezone.now() - device.last_heartbeat
-            if time_since_heartbeat.total_seconds() < 300:  # 5 minutos
-                # Dispositivo está en línea
+            if time_since_heartbeat.total_seconds() < 300:
+                logger.info(f"Device {imei} is online (last heartbeat: {device.last_heartbeat})")
                 device.update_connection_status('ONLINE')
                 return Response({
                     'success': True,
@@ -611,21 +626,23 @@ def test_device_connection(request, imei):
                     }
                 })
                 
-        # Si no hay heartbeat reciente, intentar conexión
+        # Intentar conexión
         try:
-            # Obtener el handler del protocolo
+            logger.info(f"Attempting to get protocol handler for {device.protocol}")
             handler = GPSProtocolHandler().get_handler(device.protocol)
             
-            # Enviar comando de ping
+            logger.info(f"Sending ping to device {imei}")
             ping_result = handler.send_ping(device)
+            logger.info(f"Ping result: {ping_result}")
             
-            if ping_result.success:
+            if ping_result['success']:
+                logger.info(f"Device {imei} responded to ping")
                 device.update_connection_status('ONLINE')
                 return Response({
                     'success': True,
                     'message': 'Device responded to ping',
                     'status': 'ONLINE',
-                    'response_time': ping_result.response_time,
+                    'response_time': ping_result['response_time'],
                     'connection_details': {
                         'ip_address': device.current_ip,
                         'port': device.current_port,
@@ -634,17 +651,26 @@ def test_device_connection(request, imei):
                     }
                 })
             else:
+                logger.warning(f"Device {imei} did not respond to ping: {ping_result['error_message']}")
                 device.update_connection_status('OFFLINE')
                 return Response({
                     'success': False,
                     'message': 'Device did not respond to ping',
                     'status': 'OFFLINE',
                     'last_seen': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
-                    'error': ping_result.error_message
+                    'error': ping_result['error_message']
                 })
                 
+        except ValueError as ve:
+            logger.error(f"Protocol error for device {imei}: {str(ve)}")
+            return Response({
+                'success': False,
+                'message': 'Protocol error',
+                'status': 'ERROR',
+                'error': str(ve)
+            }, status=400)
         except Exception as e:
-            # Registrar el error
+            logger.error(f"Connection test failed for device {imei}: {str(e)}", exc_info=True)
             connection_service.register_error(device, str(e))
             return Response({
                 'success': False,
@@ -654,6 +680,7 @@ def test_device_connection(request, imei):
             }, status=500)
             
     except Exception as e:
+        logger.error(f"Unexpected error testing device {imei}: {str(e)}", exc_info=True)
         return Response({'error': f'Internal server error: {str(e)}'}, status=500)
 
 

@@ -69,7 +69,12 @@ export const deviceService = {
   },
 
   createDevice: async (data: Partial<Device>): Promise<Device> => {
-    const response = await api.post('/api/gps/devices/', data);
+    // Asegurarse de que el protocolo esté configurado
+    const deviceData = {
+      ...data,
+      protocol: data.protocol || 'concox' // Default to concox if not specified
+    };
+    const response = await api.post('/api/gps/devices/', deviceData);
     return response.data;
   },
 

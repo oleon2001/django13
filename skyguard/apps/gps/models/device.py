@@ -52,6 +52,12 @@ class GPSDevice(BaseDevice):
         ('ERROR', 'Error'),
     )
 
+    PROTOCOL_CHOICES = (
+        ('concox', 'Concox'),
+        ('meiligao', 'Meiligao'),
+        ('wialon', 'Wialon'),
+    )
+
     serial = models.IntegerField(_('serial'), default=0)
     model = models.SmallIntegerField(_('model'), default=0, choices=MODEL_CHOICES)
     software_version = models.CharField(_('version'), max_length=4, default='----')
@@ -63,6 +69,7 @@ class GPSDevice(BaseDevice):
     last_firmware_update = models.DateTimeField(_('last firmware update'), null=True, blank=True)
     comments = models.TextField(_('Comments'), null=True, blank=True)
     sim_card = models.OneToOneField('SimCard', on_delete=models.SET_NULL, null=True, blank=True, related_name='device')
+    protocol = models.CharField(_('protocol'), max_length=20, choices=PROTOCOL_CHOICES, default='concox')
 
     # Migrated fields from old backend
     route = models.IntegerField(_('route'), null=True, blank=True, choices=ROUTE_CHOICES)
