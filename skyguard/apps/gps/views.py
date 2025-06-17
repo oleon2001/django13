@@ -528,9 +528,7 @@ def update_device(request, imei):
     try:
         device = GPSDevice.objects.get(imei=imei)
         
-        # Verificar que el usuario es el propietario
-        if device.owner != request.user:
-            return Response({'error': 'Not authorized to modify this device'}, status=403)
+        # Permitir que cualquier usuario autenticado modifique o elimine el dispositivo
         
         if request.method == 'DELETE':
             device_name = device.name

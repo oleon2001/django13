@@ -46,6 +46,7 @@ import {
 } from '@mui/icons-material';
 import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
+import authService from '../services/auth';
 
 interface DeviceFormData {
     imei: string;
@@ -185,11 +186,25 @@ const DeviceManagement: React.FC = () => {
     const handleDelete = async (imei: number) => {
         if (window.confirm('¿Está seguro de que desea eliminar este dispositivo?')) {
             try {
+                // Verificar autenticación
+                if (!authService.isAuthenticated()) {
+                    setError('Debe iniciar sesión para eliminar dispositivos');
+                    window.location.href = '/login';
+                    return;
+                }
+
                 await deviceService.deleteDevice(imei);
-                fetchDevices();
-            } catch (err) {
+                await fetchDevices(); // Recargar la lista de dispositivos
+            } catch (err: any) {
                 console.error('Error deleting device:', err);
-                setError('Error al eliminar el dispositivo');
+                if (err.response?.status === 401) {
+                    setError('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+                    window.location.href = '/login';
+                } else if (err.response?.status === 403) {
+                    setError('No tiene permisos para eliminar dispositivos');
+                } else {
+                    setError('Error al eliminar el dispositivo: ' + (err.message || 'Error desconocido'));
+                }
             }
         }
     };

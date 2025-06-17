@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
 import authService from './auth';
 
 interface ErrorResponse {
@@ -19,10 +19,11 @@ const api = axios.create({
 
 // Interceptor para agregar el token JWT a las peticiones
 api.interceptors.request.use(
-    (config) => {
+    (config: InternalAxiosRequestConfig) => {
         const token = authService.getToken();
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers = new AxiosHeaders(config.headers);
+            config.headers.set('Authorization', `Bearer ${token}`);
         }
         return config;
     },
@@ -35,7 +36,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError<ErrorResponse>) => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
         // Si el error es 401 y no hemos intentado refrescar el token
         if (error.response?.status === 401 && !originalRequest._retry) {
@@ -47,7 +48,8 @@ api.interceptors.response.use(
                 
                 // Actualizar el token en la petición original
                 if (originalRequest.headers) {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    originalRequest.headers = new AxiosHeaders(originalRequest.headers);
+                    originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
                 }
                 
                 // Reintentar la petición original
