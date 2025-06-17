@@ -70,9 +70,16 @@ class GPSSimulator:
 
     def login(self):
         print("Enviando login...")
-        packet = struct.pack('>B', PKTID_LOGIN)
-        packet += struct.pack('>Q', int(IMEI))
-        packet += struct.pack('>Q', 0x1234567890)  # MAC ID ficticio
+        # Crear el paquete con el tamaño exacto
+        packet = bytearray(15)  # Inicializar con 15 bytes en cero
+        packet[0] = PKTID_LOGIN  # ID del paquete
+        # IMEI (8 bytes)
+        imei_bytes = struct.pack('<Q', int(IMEI))
+        packet[1:9] = imei_bytes
+        # MAC ID (6 bytes)
+        mac_bytes = struct.pack('<Q', 0x1234567890)[:6]
+        packet[9:15] = mac_bytes
+        
         response = self.send_packet(packet)
         
         if len(response) >= 5:
@@ -98,13 +105,13 @@ class GPSSimulator:
         inputs = 0x01  # Motor encendido
 
         # Crear paquete de posición
-        packet = struct.pack('>B', PKTID_PING)
-        packet += struct.pack('>L', self.session)
-        packet += struct.pack('>I', int(time.time()))
-        packet += struct.pack('>i', int(lat * 10000000))
-        packet += struct.pack('>i', int(lon * 10000000))
-        packet += struct.pack('>B', speed)
-        packet += struct.pack('>B', inputs)
+        packet = struct.pack('<B', PKTID_PING)
+        packet += struct.pack('<L', self.session)
+        packet += struct.pack('<I', int(time.time()))
+        packet += struct.pack('<i', int(lat * 10000000))
+        packet += struct.pack('<i', int(lon * 10000000))
+        packet += struct.pack('<B', speed)
+        packet += struct.pack('<B', inputs)
 
         try:
             response = self.send_packet(packet)

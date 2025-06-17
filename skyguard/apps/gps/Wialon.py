@@ -40,7 +40,7 @@ django.setup()
 from django.db import transaction, DatabaseError, IntegrityError, connection
 from django.contrib.gis.geos import Point
 from django.conf import settings
-from skyguard.gps.tracker.models import SGAvl
+from skyguard.gps.tracker.models import SGAvl, SGHarness
 from skyguard.apps.gps.models.protocols import UDPSession
 
 # Implementación directa de CRC-CCITT
@@ -139,7 +139,7 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			avl = SGAvl.objects.get(imei = imei)
 		except SGAvl.DoesNotExist:
 			print("Device not found. Creating...", file=self.stdout)
-			harness = tracker.SGHarness.objects.get(name = "default")
+			harness = SGHarness.objects.get(name = "default")
 			avl = SGAvl(imei=imei,name = "{:015d}".format(imei), harness = harness, comments ="")
 			avl.save()
 		#delete old sessions
