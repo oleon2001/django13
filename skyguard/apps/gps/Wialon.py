@@ -42,6 +42,7 @@ from django.contrib.gis.geos import Point
 from django.conf import settings
 from skyguard.gps.tracker.models import SGAvl, SGHarness
 from skyguard.apps.gps.models.protocols import UDPSession
+from skyguard.apps.gps.models.device import GPSDevice
 
 # Implementación directa de CRC-CCITT
 class CRCCCITT:
@@ -143,11 +144,19 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			avl = SGAvl(imei=imei,name = "{:015d}".format(imei), harness = harness, comments ="")
 			avl.save()
 		#delete old sessions
-		sessions = UDPSession.objects.filter(imei = avl)
+		try:
+			gps_device = GPSDevice.objects.get(imei=avl.imei)
+		except GPSDevice.DoesNotExist:
+			gps_device = GPSDevice.objects.create(
+				imei=avl.imei,
+				name=avl.name,
+				protocol='wialon'
+			)
+		sessions = UDPSession.objects.filter(device=gps_device)
 		if sessions:
 			sessions.delete()
 		expires = self.timeck + SESSION_EXPIRE
-		session = UDPSession(imei = avl, expires = expires, host = self.host, port = self.port)
+		session = UDPSession(device=gps_device, expires=expires, host=self.host, port=self.port)
 		session.save()
 		if not avl.comments or (not 'INFO OK' in avl.comments):
 			response = struct.pack("<BLB",RSPID_SESSION,session.session,CMDID_DEVINFO)	# Refresh dev info
@@ -167,7 +176,7 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			self.session.expires = self.timeck + SESSION_EXPIRE
 			self.session.host = self.host
 			self.session.port = self.port
-			self.avl = SGAvl.objects.get(imei = self.session.imei.imei)
+			self.avl = SGAvl.objects.get(imei = self.session.device.imei)
 			print("AVL:", self.avl, file=self.stdout)
 			self.session.save()
 		except UDPSession.DoesNotExist: 
