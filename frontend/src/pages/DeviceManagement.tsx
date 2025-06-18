@@ -212,10 +212,22 @@ const DeviceManagement: React.FC = () => {
     const handleTestConnection = async (imei: number) => {
         setTestingConnection(imei);
         try {
-            await deviceService.testConnection(imei);
-            // Puedes mostrar un mensaje de éxito si lo deseas
-        } catch (err) {
-            setError('Error al probar la conexión');
+            const result = await deviceService.testConnection(imei);
+            console.log('Test connection result:', result);
+            
+            // Actualizar la lista de dispositivos después de la prueba
+            await fetchDevices();
+            
+            // Mostrar mensaje de éxito o error
+            if (result.success) {
+                setError(null);
+                console.log(`✅ Dispositivo ${imei}: ${result.message}`);
+            } else {
+                setError(`Dispositivo ${imei}: ${result.message || result.error || 'Error desconocido'}`);
+            }
+        } catch (err: any) {
+            console.error('Error testing connection:', err);
+            setError(`Error al probar la conexión del dispositivo ${imei}: ${err.response?.data?.error || err.message || 'Error desconocido'}`);
         } finally {
             setTestingConnection(null);
         }
@@ -429,19 +441,19 @@ const DeviceManagement: React.FC = () => {
                                             </Typography>
                                         </Box>
                                         
-                                        {device.latitude && device.longitude && (
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <LocationIcon color="action" fontSize="small" />
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        Ubicación:
-                                                    </Typography>
-                                                </Box>
-                                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                    {device.latitude.toFixed(4)}, {device.longitude.toFixed(4)}
-                                                </Typography>
-                                            </Box>
-                                        )}
+                                                                {device.position && device.position.latitude && device.position.longitude && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <LocationIcon color="action" fontSize="small" />
+                                    <Typography variant="body2" color="text.secondary">
+                                        Ubicación:
+                                    </Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                    {device.position.latitude.toFixed(4)}, {device.position.longitude.toFixed(4)}
+                                </Typography>
+                            </Box>
+                        )}
                                         
                                         {device.speed !== undefined && (
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -485,17 +497,19 @@ const DeviceManagement: React.FC = () => {
                                             />
                                         </Box>
                                         
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Última actualización:
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                {device.lastUpdate ? 
-                                                    new Date(device.lastUpdate).toLocaleDateString() : 
-                                                    'N/A'
-                                                }
-                                            </Typography>
-                                        </Box>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                Última actualización:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                {device.last_heartbeat ? 
+                                    new Date(device.last_heartbeat).toLocaleDateString() : 
+                                    device.updated_at ? 
+                                        new Date(device.updated_at).toLocaleDateString() : 
+                                        'N/A'
+                                }
+                            </Typography>
+                        </Box>
                                     </Stack>
                                 </CardContent>
                                 <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>

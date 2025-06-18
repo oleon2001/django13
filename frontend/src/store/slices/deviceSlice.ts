@@ -15,29 +15,33 @@ const initialState: DeviceState = {
             id: 1,
             name: 'Bus 101',
             imei: 123456789012345,
-            serial_number: 'SN101',
-            status: 'active',
-            lastUpdate: new Date().toISOString(),
+            serial: 'SN101',
+            connection_status: 'ONLINE',
+            updated_at: new Date().toISOString(),
             speed: 45,
-            heading: 90,
-            protocol: 'GPS',
-            lastSeen: new Date().toISOString(),
-            latitude: 19.4326,
-            longitude: -99.1332
+            course: 180,
+            protocol: 'GT06',
+            last_heartbeat: new Date().toISOString(),
+            position: {
+                latitude: 19.4326,
+                longitude: -99.1332
+            }
         },
         {
             id: 2,
             name: 'Bus 102',
             imei: 987654321098765,
-            serial_number: 'SN102',
-            status: 'inactive',
-            lastUpdate: new Date().toISOString(),
+            serial: 'SN102',
+            connection_status: 'OFFLINE',
+            updated_at: new Date().toISOString(),
             speed: 0,
-            heading: 180,
-            protocol: 'GPS',
-            lastSeen: new Date().toISOString(),
-            latitude: 19.4270,
-            longitude: -99.1400
+            course: 0,
+            protocol: 'GT06',
+            last_heartbeat: new Date().toISOString(),
+            position: {
+                latitude: 19.4284,
+                longitude: -99.1276
+            }
         }
     ],
     selectedDevice: null,

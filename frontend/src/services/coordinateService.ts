@@ -8,6 +8,8 @@ interface CoordinateResponse {
     longitude: number;
     timestamp: string;
     device_id: string;
+    speed: number;
+    heading: number;
 }
 
 export const coordinateService = {
@@ -48,18 +50,20 @@ export const coordinateService = {
         const coord: CoordinateResponse = await response.json();
         
         return {
-            id: coord.id,
+            id: parseInt(coord.device_id),
             imei: 123456789012345,
             name: `Dispositivo ${coord.device_id}`,
-            serial_number: `SN${coord.device_id}`,
+            serial: `SN${coord.device_id}`,
             protocol: 'GT06',
-            status: 'online',
-            lastUpdate: coord.timestamp,
-            lastSeen: coord.timestamp,
-            latitude: coord.latitude,
-            longitude: coord.longitude,
-            speed: Math.floor(Math.random() * 100),
-            heading: Math.floor(Math.random() * 360),
+            connection_status: 'ONLINE',
+            last_heartbeat: coord.timestamp,
+            updated_at: coord.timestamp,
+            position: {
+                latitude: coord.latitude,
+                longitude: coord.longitude
+            },
+            speed: coord.speed,
+            course: coord.heading
         };
     },
 

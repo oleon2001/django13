@@ -447,6 +447,84 @@ def cleanup_sessions(request):
         return Response({'error': str(e)}, status=500)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_real_time_positions(request):
+    """Get real-time positions of all devices."""
+    try:
+        repository = GPSDeviceRepository()
+        devices = repository.get_all_devices()
+        
+        positions = []
+        for device in devices:
+            if device.position and device.is_online:
+                positions.append({
+                    'imei': device.imei,
+                    'name': device.name,
+                    'position': {
+                        'latitude': device.position.y,
+                        'longitude': device.position.x
+                    },
+                    'speed': device.speed,
+                    'course': device.course,
+                    'altitude': device.altitude,
+                    'last_update': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                    'connection_status': device.connection_status,
+                    'route': device.route,
+                    'economico': device.economico
+                })
+        
+        return Response({'positions': positions})
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_device_trail(request, imei):
+    """Get device position trail for the last period."""
+    try:
+        hours = int(request.GET.get('hours', 24))
+        
+        # Get device
+        repository = GPSDeviceRepository()
+        device = repository.get_device(imei)
+        if not device:
+            return Response({'error': 'Device not found'}, status=404)
+        
+        # Get trail from events/history
+        from skyguard.apps.gps.models import GPSEvent
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        start_time = timezone.now() - timedelta(hours=hours)
+        events = GPSEvent.objects.filter(
+            device=device,
+            timestamp__gte=start_time,
+            event_type='LOCATION'
+        ).order_by('timestamp')
+        
+        trail = []
+        for event in events:
+            if event.position:
+                trail.append({
+                    'latitude': event.position.y,
+                    'longitude': event.position.x,
+                    'speed': event.speed,
+                    'timestamp': event.timestamp.isoformat(),
+                    'course': event.course
+                })
+        
+        return Response({
+            'device_imei': imei,
+            'device_name': device.name,
+            'trail': trail,
+            'hours': hours
+        })
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def list_devices(request):

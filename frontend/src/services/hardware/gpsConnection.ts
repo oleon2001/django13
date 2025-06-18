@@ -75,18 +75,20 @@ class GPSConnectionService {
 
     private updateDevicePosition(data: any) {
         const device: Device = {
-            id: parseInt(data.deviceId),
+            id: data.deviceId,
             imei: data.imei,
             name: `GPS ${data.deviceId}`,
-            serial_number: `SN${data.deviceId}`,
+            serial: `SN${data.deviceId}`,
             protocol: 'GT06',
-            status: 'online',
-            lastUpdate: new Date().toISOString(),
-            lastSeen: new Date().toISOString(),
-            latitude: data.latitude,
-            longitude: data.longitude,
+            connection_status: 'ONLINE',
+            last_heartbeat: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            position: {
+                latitude: data.latitude,
+                longitude: data.longitude
+            },
             speed: data.speed,
-            heading: data.heading,
+            course: data.heading,
             altitude: data.altitude,
             satellites: data.satellites,
             hdop: data.hdop,
@@ -95,7 +97,6 @@ class GPSConnectionService {
             fix_type: data.fixType,
             battery_level: data.batteryLevel,
             signal_strength: data.signalStrength,
-            connection_status: 'ONLINE',
             route: data.route,
             economico: data.economico,
             current_ip: data.ip,
@@ -125,10 +126,10 @@ class GPSConnectionService {
         if (this.currentDevice) {
             this.currentDevice = {
                 ...this.currentDevice,
-                status: data.status,
+                connection_status: data.status,
                 battery_level: data.battery_level,
                 signal_strength: data.signal_strength,
-                lastUpdate: new Date().toISOString()
+                updated_at: new Date().toISOString()
             };
             this.notifySubscribers(this.currentDevice);
         }

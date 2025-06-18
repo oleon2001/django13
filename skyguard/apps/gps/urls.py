@@ -40,4 +40,8 @@ urlpatterns = [
     
     # User endpoints
     path('users/me/', views.get_current_user, name='current-user'),
+    
+    # Real-time position endpoints
+    path('positions/real-time/', views.get_real_time_positions, name='real_time_positions'),
+    path('devices/<int:imei>/trail/', views.get_device_trail, name='device_trail'),
 ]

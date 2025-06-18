@@ -2,20 +2,26 @@ import { ReactNode } from 'react';
 
 // Dispositivo GPS
 export interface Device {
-    id: number;
+    id?: number;
     name: string;
-    serial_number?: string;
+    serial?: string;
+    model?: string;
+    software_version?: string;
     imei: number;
-    status: string;
+    status?: string;
     protocol?: string;
     last_seen?: string;
     lastUpdate?: string;
     lastSeen?: string;
-    latitude?: number;
-    longitude?: number;
+    position?: {
+        latitude: number;
+        longitude: number;
+    };
     speed?: number;
     heading?: number;
+    course?: number;
     altitude?: number;
+    odometer?: number;
     satellites?: number;
     hdop?: number;
     pdop?: number;
@@ -28,9 +34,13 @@ export interface Device {
     economico?: number;
     current_ip?: string;
     current_port?: number;
+    last_connection?: string;
+    last_heartbeat?: string;
     total_connections?: number;
     error_count?: number;
     last_error?: string;
+    created_at?: string;
+    updated_at?: string;
     harness?: {
         id: number;
         name: string;

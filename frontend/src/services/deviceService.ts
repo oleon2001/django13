@@ -224,4 +224,36 @@ export const deviceService = {
     const response = await api.post(`/api/gps/devices/${imei}/test-connection/`);
     return response.data;
   },
+
+  // Real-time position methods
+  getRealTimePositions: async () => {
+    const response = await api.get('/api/gps/positions/real-time/');
+    return response.data;
+  },
+
+  getDeviceTrail: async (imei: number, hours: number = 24) => {
+    const response = await api.get(`/api/gps/devices/${imei}/trail/?hours=${hours}`);
+    return response.data;
+  },
+
+  // Polling method for real-time updates
+  startRealTimePolling: (callback: (positions: any[]) => void, interval: number = 5000) => {
+    const poll = async () => {
+      try {
+        const data = await deviceService.getRealTimePositions();
+        callback(data.positions || []);
+      } catch (error) {
+        console.error('Error polling real-time positions:', error);
+      }
+    };
+
+    // Initial call
+    poll();
+    
+    // Set up interval
+    const intervalId = setInterval(poll, interval);
+    
+    // Return cleanup function
+    return () => clearInterval(intervalId);
+  },
 }; 

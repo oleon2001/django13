@@ -81,14 +81,15 @@ class GPSSimulator:
         response = self.send_packet(packet)
         
         if len(response) >= 5:
-            self.session = struct.unpack('>L', response[1:5])[0]
+            self.session = struct.unpack('<L', response[1:5])[0]  # Cambié a little-endian
             self.connected = True
-            print(f"Login exitoso. Sesión: {self.session}")
-            print(f"Cliente conectado desde {self.client_ip}:{self.client_port}")
-            # Actualizar IP y puerto en la base de datos - COMENTADO: No necesario para protocolo Wialon
-            # self.update_device_connection()
+            print(f"✅ Login exitoso. Sesión: {self.session}")
+            print(f"🔗 Cliente conectado desde {self.client_ip}:{self.client_port}")
+            print(f"📡 Respuesta del servidor: {response.hex()}")
             return True
-        return False
+        else:
+            print(f"❌ Respuesta de login inválida: {response.hex() if response else 'Sin respuesta'}")
+            return False
 
     def send_position(self):
         if not self.connected:
@@ -96,16 +97,28 @@ class GPSSimulator:
             if not self.login():
                 return False
 
-        # Generar posición aleatoria cerca de un punto de referencia
-        lat = 19.4326 + random.uniform(-0.01, 0.01)  # Ciudad de México
-        lon = -99.1332 + random.uniform(-0.01, 0.01)
-        speed = random.randint(0, 120)
-        inputs = 0x01  # Motor encendido
+        # Generar posición aleatoria cerca de un punto de referencia (simulando movimiento)
+        # Crear un patrón de movimiento más realista
+        current_time = time.time()
+        
+        # Base: Ciudad de México
+        base_lat = 19.4326
+        base_lon = -99.1332
+        
+        # Simular movimiento en círculo para que sea más visible
+        angle = (current_time / 10) % (2 * 3.14159)  # Una vuelta cada 10 segundos
+        radius = 0.005  # Radio de movimiento
+        
+        lat = base_lat + radius * random.uniform(0.8, 1.2) * (0.5 + 0.5 * time.time() % 1)
+        lon = base_lon + radius * random.uniform(0.8, 1.2) * (0.5 + 0.5 * time.time() % 1)
+        
+        speed = random.randint(20, 80)  # Velocidad más realista
+        inputs = 0x03  # Motor encendido + IGN encendido
 
         # Crear paquete de posición
         packet = struct.pack('<B', PKTID_PING)
         packet += struct.pack('<L', self.session)
-        packet += struct.pack('<I', int(time.time()))
+        packet += struct.pack('<I', int(current_time))
         packet += struct.pack('<i', int(lat * 10000000))
         packet += struct.pack('<i', int(lon * 10000000))
         packet += struct.pack('<B', speed)
@@ -113,10 +126,11 @@ class GPSSimulator:
 
         try:
             response = self.send_packet(packet)
-            print(f"Posición enviada: {lat:.6f}, {lon:.6f}, Velocidad: {speed} km/h")
+            print(f"📍 Posición enviada: {lat:.6f}, {lon:.6f}, Velocidad: {speed} km/h")
+            print(f"   Sesión: {self.session}, Respuesta: {len(response)} bytes")
             return True
         except Exception as e:
-            print(f"Error al enviar posición: {e}")
+            print(f"❌ Error al enviar posición: {e}")
             self.connected = False
             return False
 
@@ -132,7 +146,7 @@ class GPSSimulator:
         try:
             while True:
                 self.send_position()
-                time.sleep(5)  # Enviar posición cada 5 segundos
+                time.sleep(3)  # Enviar posición cada 3 segundos para ver cambios más rápido
         except KeyboardInterrupt:
             print("\nSimulador detenido por el usuario")
         finally:

@@ -49,8 +49,8 @@ const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDevi
                                 )}
                             </div>
                             <div className="flex items-center">
-                                <span className={`text-sm ${getStatusColor(device.status)}`}>
-                                    {device.status}
+                                <span className={`text-sm ${getStatusColor(device.connection_status || 'OFFLINE')}`}>
+                                    {device.connection_status || 'OFFLINE'}
                                 </span>
                             </div>
                         </div>

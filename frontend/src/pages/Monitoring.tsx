@@ -502,8 +502,8 @@ const Monitoring: React.FC = () => {
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                        {selectedDevice.latitude && selectedDevice.longitude ? 
-                                                            `${selectedDevice.latitude.toFixed(6)}, ${selectedDevice.longitude.toFixed(6)}` : 
+                                                        {selectedDevice.position?.latitude && selectedDevice.position?.longitude ? 
+                                                            `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}` : 
                                                             'No disponible'
                                                         }
                                                     </Typography>

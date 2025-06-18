@@ -152,6 +152,20 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 				name=avl.name,
 				protocol='wialon'
 			)
+		
+		# Actualizar información de conexión del dispositivo GPS
+		gps_device.current_ip = self.host
+		gps_device.current_port = self.port
+		gps_device.connection_status = 'ONLINE'
+		gps_device.last_heartbeat = self.timeck
+		gps_device.last_connection = self.timeck
+		gps_device.last_log = self.timeck
+		gps_device.position = avl.position
+		gps_device.speed = avl.speed
+		gps_device.total_connections += 1
+		gps_device.save()
+		print(f"Updated GPS device connection: {self.host}:{self.port}", file=self.stdout)
+		
 		sessions = UDPSession.objects.filter(device=gps_device)
 		if sessions:
 			sessions.delete()
@@ -212,6 +226,22 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 		pos = self.UnpackPos(self.data[5:19])
 		print(" Inputs: " , pos['inputs'], file=self.stdout)
 		self.SetPos(pos)
+		
+		# Actualizar heartbeat del dispositivo GPS
+		try:
+			gps_device = GPSDevice.objects.get(imei=self.avl.imei)
+			gps_device.last_heartbeat = self.timeck
+			gps_device.position = pos["pos"]
+			gps_device.speed = pos["speed"]
+			gps_device.last_log = pos["date"]
+			gps_device.connection_status = 'ONLINE'
+			gps_device.current_ip = self.host
+			gps_device.current_port = self.port
+			gps_device.save()
+			print(f"Updated GPS device heartbeat and position", file=self.stdout)
+		except GPSDevice.DoesNotExist:
+			print(f"GPS device not found for IMEI {self.avl.imei}", file=self.stdout)
+		
 		response = struct.pack("<BLBB",RSPID_SESSION,self.session.session,CMDID_ACK,0)
 		#response = struct.pack("<BLB",RSPID_SESSION,self.session.session,CMDID_DATA)
 		time.sleep(SENDDELAY)
@@ -381,7 +411,7 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			for rec in records:
 				id = rec[0]
 				if id == RECID_TRACKS:
-				    self.UnpackTracks(rec[1:])
+					self.UnpackTracks(rec[1:])
 				elif id == RECID_PEOPLE:
 					self.UnpackPeople(rec[1:])
 				else:

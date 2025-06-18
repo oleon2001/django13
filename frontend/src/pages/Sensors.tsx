@@ -67,7 +67,7 @@ const Sensors: React.FC = () => {
                 device.connection_status === 'SLEEPING'
             );
             setDevices(activeDevices);
-            if (activeDevices.length > 0) {
+            if (activeDevices.length > 0 && activeDevices[0].id) {
                 setSelectedDeviceId(activeDevices[0].id);
             }
             setError(null);

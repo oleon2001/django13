@@ -237,8 +237,8 @@ const HardwareGPS: React.FC = () => {
                         <div className="bg-white shadow rounded-lg p-4 h-full">
                             <h2 className="text-lg font-semibold mb-4">Ubicación del Dispositivo</h2>
                             <div className="bg-gray-100 rounded p-4">
-                                <p><span className="font-medium">Latitud:</span> {device.latitude || 'N/A'}</p>
-                                <p><span className="font-medium">Longitud:</span> {device.longitude || 'N/A'}</p>
+                                <p><span className="font-medium">Latitud:</span> {device.position?.latitude || 'N/A'}</p>
+                                <p><span className="font-medium">Longitud:</span> {device.position?.longitude || 'N/A'}</p>
                                 <p><span className="font-medium">Altitud:</span> {device.altitude || 'N/A'} m</p>
                                 <p><span className="font-medium">Satélites:</span> {device.satellites || 'N/A'}</p>
                                 <p><span className="font-medium">HDOP:</span> {device.hdop || 'N/A'}</p>

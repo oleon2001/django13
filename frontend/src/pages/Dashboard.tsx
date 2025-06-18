@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Grid,
@@ -19,6 +19,8 @@ import {
     ListItemSecondaryAction,
     Avatar,
     Badge,
+    Switch,
+    FormControlLabel,
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
@@ -31,6 +33,8 @@ import {
     CheckCircle as CheckCircleIcon,
     Error as ErrorIcon,
     Visibility as VisibilityIcon,
+    PlayArrow as PlayIcon,
+    Pause as PauseIcon,
 } from '@mui/icons-material';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
@@ -38,11 +42,14 @@ import DeviceMap from '../components/DeviceMap';
 
 const Dashboard: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>([]);
+    const [realTimePositions, setRealTimePositions] = useState<any[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+    const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
+    const stopPollingRef = useRef<(() => void) | null>(null);
 
     const fetchDevices = async (showRefreshing = false) => {
         try {
@@ -64,14 +71,51 @@ const Dashboard: React.FC = () => {
 
     useEffect(() => {
         fetchDevices();
-        
-        // Auto-refresh every 30 seconds
-        const interval = setInterval(() => {
-            fetchDevices(true);
-        }, 30000);
-
-        return () => clearInterval(interval);
     }, []);
+
+    // Real-time polling effect
+    useEffect(() => {
+        if (isRealTimeEnabled) {
+            stopPollingRef.current = deviceService.startRealTimePolling(
+                (positions) => {
+                    setRealTimePositions(positions);
+                    setLastUpdate(new Date());
+                    
+                    // Update devices with real-time positions
+                    setDevices(prevDevices => 
+                        prevDevices.map(device => {
+                            const realtimePos = positions.find(pos => pos.imei === device.imei);
+                            if (realtimePos) {
+                                return {
+                                    ...device,
+                                    latitude: realtimePos.position.latitude,
+                                    longitude: realtimePos.position.longitude,
+                                    speed: realtimePos.speed,
+                                    course: realtimePos.course,
+                                    altitude: realtimePos.altitude,
+                                    connection_status: realtimePos.connection_status,
+                                    lastUpdate: realtimePos.last_update,
+                                };
+                            }
+                            return device;
+                        })
+                    );
+                },
+                3000 // Poll every 3 seconds
+            );
+        } else {
+            if (stopPollingRef.current) {
+                stopPollingRef.current();
+                stopPollingRef.current = null;
+            }
+        }
+
+        return () => {
+            if (stopPollingRef.current) {
+                stopPollingRef.current();
+            }
+        };
+    }, [isRealTimeEnabled]);
 
     const handleDeviceSelect = (device: Device) => {
         setSelectedDevice(device);
@@ -121,11 +165,31 @@ const Dashboard: React.FC = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1" fontWeight="bold">
-                        Dashboard
+                        Dashboard GPS
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={isRealTimeEnabled}
+                                onChange={(e) => setIsRealTimeEnabled(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {isRealTimeEnabled ? <PlayIcon color="success" /> : <PauseIcon color="disabled" />}
+                                <Typography variant="body2">
+                                    {isRealTimeEnabled ? 'En Vivo' : 'Pausado'}
+                                </Typography>
+                            </Box>
+                        }
+                    />
                     <Typography variant="body2" color="text.secondary">
                         Última actualización: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                    <Typography variant="body2" color="primary">
+                        Activos: {realTimePositions.length}
                     </Typography>
                     <Tooltip title="Actualizar datos">
                         <IconButton 
@@ -360,8 +424,8 @@ const Dashboard: React.FC = () => {
                                     <ListItemText
                                         primary="Ubicación" 
                                         secondary={
-                                            selectedDevice.latitude && selectedDevice.longitude
-                                                ? `${selectedDevice.latitude.toFixed(6)}, ${selectedDevice.longitude.toFixed(6)}`
+                                            selectedDevice.position?.latitude && selectedDevice.position?.longitude
+                                                ? `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}`
                                                 : 'No disponible'
                                         }
                                     />

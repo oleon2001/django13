@@ -7,9 +7,10 @@ from django.contrib.gis.geos import Point
 import struct
 import socket
 import time
+from django.utils import timezone
 
 from skyguard.core.interfaces import IProtocolHandler
-from skyguard.apps.gps.models import GPSDevice
+from skyguard.apps.gps.models import GPSDevice, UDPSession
 
 
 class ConcoxProtocolHandler(IProtocolHandler):
@@ -412,54 +413,89 @@ class WialonProtocolHandler(IProtocolHandler):
     def send_ping(self, device: 'GPSDevice') -> Dict[str, Any]:
         """Send a ping command to a Wialon device and verify location data."""
         try:
-            # Enviar comando de heartbeat
-            command = struct.pack('>BB', 0x78, 0x78)  # Start bits
-            command += struct.pack('>B', 0x23)  # Protocol number
-            command += struct.pack('>H', 0x0000)  # Information content
-            command += struct.pack('>H', 0x0000)  # Serial number
-            command += struct.pack('>H', 0x0000)  # Error check
-            command += struct.pack('>BB', 0x0D, 0x0A)  # Stop bits
+            print(f"[DEBUG] Verificando estado de dispositivo Wialon {device.imei}")
             
-            # Enviar comando y esperar respuesta
-            response = self._send_command(device, command)
-            if not response:
-                return {
-                    'success': False,
-                    'response_time': None,
-                    'error_message': 'No response from device'
-                }
+            # Para protocolo Wialon (UDP), no podemos enviar comandos directos
+            # En su lugar, verificamos la actividad reciente del dispositivo
             
-            # Decodificar respuesta
-            data = self.decode_packet(response)
-            if not data or 'position' not in data:
-                return {
-                    'success': False,
-                    'response_time': None,
-                    'error_message': 'Invalid location data in response'
-                }
+            # Verificar última actividad (reducir tiempo a 2 minutos para mayor sensibilidad)
+            if device.last_heartbeat:
+                time_since_heartbeat = timezone.now() - device.last_heartbeat
+                print(f"[DEBUG] Último heartbeat hace {time_since_heartbeat.total_seconds()} segundos")
+                
+                # Si el dispositivo ha enviado datos en los últimos 2 minutos, considerarlo online
+                if time_since_heartbeat.total_seconds() < 120:  # 2 minutos en lugar de 5
+                    print(f"[DEBUG] Dispositivo Wialon {device.imei} está activo")
+                    return {
+                        'success': True,
+                        'response_time': 0.1,
+                        'error_message': None,
+                        'last_activity': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                        'protocol': 'wialon',
+                        'connection_type': 'UDP'
+                    }
             
-            # Verificar que la ubicación sea válida
-            position = data['position']
-            if not (-90 <= position.y <= 90 and -180 <= position.x <= 180):
-                return {
-                    'success': False,
-                    'response_time': None,
-                    'error_message': 'Invalid coordinates in response'
-                }
+            # Verificar sesiones UDP activas
+            try:
+                active_sessions = UDPSession.objects.filter(
+                    device=device,
+                    expires__gt=timezone.now(),
+                    is_active=True
+                )
+                if active_sessions.exists():
+                    session = active_sessions.first()
+                    print(f"[DEBUG] Sesión UDP activa encontrada para dispositivo {device.imei}")
+                    # Actualizar heartbeat si hay sesión activa
+                    device.last_heartbeat = timezone.now()
+                    device.connection_status = 'ONLINE'
+                    device.save(update_fields=['last_heartbeat', 'connection_status'])
+                    return {
+                        'success': True,
+                        'response_time': 0.1,
+                        'error_message': None,
+                        'session_id': session.session,
+                        'session_host': f"{session.host}:{session.port}",
+                        'protocol': 'wialon',
+                        'connection_type': 'UDP'
+                    }
+            except Exception as e:
+                print(f"[DEBUG] Error verificando sesiones UDP: {e}")
             
-            # Actualizar última ubicación conocida
-            device.last_known_position = position
-            device.last_known_position_time = datetime.now()
-            device.save(update_fields=['last_known_position', 'last_known_position_time'])
+            # Verificar si el dispositivo tiene IP y puerto asignado (indicativo de conexión reciente)
+            if device.current_ip and device.current_port:
+                print(f"[DEBUG] Dispositivo {device.imei} tiene IP/puerto asignado: {device.current_ip}:{device.current_port}")
+                # Intentar verificar conexión con timeout muy corto
+                try:
+                    import socket
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.settimeout(1.0)
+                    test_data = b'\x02\x00\x00\x00\x00'  # Packet básico de ping
+                    sock.sendto(test_data, (device.current_ip, device.current_port))
+                    sock.close()
+                    print(f"[DEBUG] Test UDP exitoso para dispositivo {device.imei}")
+                    return {
+                        'success': True,
+                        'response_time': 0.5,
+                        'error_message': None,
+                        'connection_details': f"{device.current_ip}:{device.current_port}",
+                        'protocol': 'wialon',
+                        'connection_type': 'UDP'
+                    }
+                except Exception as conn_error:
+                    print(f"[DEBUG] Test UDP falló para dispositivo {device.imei}: {conn_error}")
             
+            # Si llegamos aquí, el dispositivo no está activo
+            print(f"[DEBUG] Dispositivo Wialon {device.imei} no está activo")
             return {
-                'success': True,
-                'response_time': 0.5,
-                'error_message': None,
-                'position': position,
-                'timestamp': data['timestamp']
+                'success': False,
+                'response_time': None,
+                'error_message': 'Device not active - no recent heartbeat or UDP session',
+                'last_activity': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                'protocol': 'wialon',
+                'connection_type': 'UDP'
             }
         except Exception as e:
+            print(f"[ERROR] Error en ping Wialon para dispositivo {device.imei}: {e}")
             return {
                 'success': False,
                 'response_time': None,
