@@ -447,6 +447,145 @@ def cleanup_sessions(request):
         return Response({'error': str(e)}, status=500)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def check_all_devices_status(request):
+    """Check status of all devices and update offline ones."""
+    try:
+        timeout_seconds = int(request.data.get('timeout', 300))  # Default 5 minutes
+        
+        # Calcular el tiempo límite
+        timeout_time = timezone.now() - timedelta(seconds=timeout_seconds)
+        
+        # Obtener dispositivos que están marcados como ONLINE
+        online_devices = GPSDevice.objects.filter(connection_status='ONLINE')
+        
+        devices_updated = []
+        devices_still_online = []
+        
+        for device in online_devices:
+            # Verificar si el dispositivo tiene heartbeat reciente
+            should_be_offline = False
+            reason = ""
+            
+            if device.last_heartbeat is None:
+                should_be_offline = True
+                reason = "No heartbeat recorded"
+            elif device.last_heartbeat < timeout_time:
+                time_since_heartbeat = timezone.now() - device.last_heartbeat
+                should_be_offline = True
+                reason = f"Last heartbeat {time_since_heartbeat.total_seconds():.0f}s ago"
+            
+            if should_be_offline:
+                try:
+                    device.update_connection_status('OFFLINE')
+                    devices_updated.append({
+                        'imei': device.imei,
+                        'name': device.name,
+                        'reason': reason
+                    })
+                    logger.info(f'Marked device {device.imei} as OFFLINE: {reason}')
+                except Exception as e:
+                    logger.error(f'Error updating device {device.imei}: {e}')
+            else:
+                time_since_heartbeat = timezone.now() - device.last_heartbeat
+                devices_still_online.append({
+                    'imei': device.imei,
+                    'name': device.name,
+                    'heartbeat_age_seconds': time_since_heartbeat.total_seconds()
+                })
+        
+        # Obtener estadísticas actualizadas
+        all_devices = GPSDevice.objects.all()
+        stats = {
+            'total': all_devices.count(),
+            'online': all_devices.filter(connection_status='ONLINE').count(),
+            'offline': all_devices.filter(connection_status='OFFLINE').count(),
+        }
+        
+        return Response({
+            'message': f'Device status check completed',
+            'timeout_seconds': timeout_seconds,
+            'devices_checked': online_devices.count(),
+            'devices_updated_to_offline': len(devices_updated),
+            'devices_still_online': len(devices_still_online),
+            'updated_devices': devices_updated,
+            'online_devices': devices_still_online,
+            'current_stats': stats
+        })
+        
+    except Exception as e:
+        logger.error(f'Error checking device status: {str(e)}', exc_info=True)
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_devices_activity_status(request):
+    """Get real-time activity status of all devices."""
+    try:
+        # Obtener parámetro de timeout
+        timeout_minutes = int(request.GET.get('timeout', 5))  # Default 5 minutos
+        timeout_time = timezone.now() - timedelta(minutes=timeout_minutes)
+        
+        # Obtener todos los dispositivos activos
+        devices = GPSDevice.objects.filter(is_active=True).order_by('imei')
+        
+        devices_status = []
+        stats = {'online': 0, 'offline': 0, 'total': 0}
+        
+        for device in devices:
+            # Determinar el estado real basado en heartbeat
+            is_really_online = False
+            heartbeat_age = None
+            
+            if device.last_heartbeat:
+                heartbeat_age = (timezone.now() - device.last_heartbeat).total_seconds()
+                is_really_online = device.last_heartbeat >= timeout_time
+            
+            # Actualizar estadísticas
+            stats['total'] += 1
+            if is_really_online:
+                stats['online'] += 1
+            else:
+                stats['offline'] += 1
+            
+            # Si el estado en BD no coincide con el estado real, marcarlo para actualización
+            needs_update = (device.connection_status == 'ONLINE') != is_really_online
+            
+            device_info = {
+                'imei': device.imei,
+                'name': device.name,
+                'connection_status_db': device.connection_status,
+                'connection_status_real': 'ONLINE' if is_really_online else 'OFFLINE',
+                'needs_update': needs_update,
+                'last_heartbeat': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
+                'heartbeat_age_seconds': heartbeat_age,
+                'current_ip': device.current_ip,
+                'current_port': device.current_port,
+                'total_connections': device.total_connections,
+                'position': {
+                    'latitude': device.position.y,
+                    'longitude': device.position.x
+                } if device.position else None,
+                'speed': device.speed,
+                'last_update': device.updated_at.isoformat() if device.updated_at else None
+            }
+            
+            devices_status.append(device_info)
+        
+        return Response({
+            'timestamp': timezone.now().isoformat(),
+            'timeout_minutes': timeout_minutes,
+            'stats': stats,
+            'devices': devices_status
+        })
+        
+    except Exception as e:
+        logger.error(f'Error getting devices activity status: {str(e)}', exc_info=True)
+        return Response({'error': str(e)}, status=500)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_real_time_positions(request):
@@ -684,27 +823,37 @@ def test_device_connection(request, imei):
         repository = GPSDeviceRepository()
         connection_service = DeviceConnectionService(repository)
         
-        # Verificar heartbeat
+        # Verificar heartbeat reciente (últimos 5 minutos)
+        heartbeat_timeout = 300  # 5 minutos en segundos
+        is_recent_heartbeat = False
+        
         if device.last_heartbeat:
             time_since_heartbeat = timezone.now() - device.last_heartbeat
-            if time_since_heartbeat.total_seconds() < 300:
-                logger.info(f"Device {imei} is online (last heartbeat: {device.last_heartbeat})")
+            is_recent_heartbeat = time_since_heartbeat.total_seconds() < heartbeat_timeout
+            
+            if is_recent_heartbeat:
+                logger.info(f"Device {imei} has recent heartbeat (last: {device.last_heartbeat})")
                 device.update_connection_status('ONLINE')
+                device.update_heartbeat()  # Actualizar el heartbeat
                 return Response({
                     'success': True,
-                    'message': 'Device is online',
+                    'message': f'Device is online (last heartbeat: {time_since_heartbeat.total_seconds():.0f}s ago)',
                     'last_seen': device.last_heartbeat.isoformat(),
                     'status': 'ONLINE',
+                    'heartbeat_age_seconds': time_since_heartbeat.total_seconds(),
                     'connection_details': {
                         'ip_address': device.current_ip,
                         'port': device.current_port,
                         'connection_duration': device.connection_duration.total_seconds() if device.connection_duration else None,
                         'total_connections': device.total_connections,
-                        'error_count': device.error_count
+                        'error_count': device.error_count,
+                        'protocol': device.protocol
                     }
                 })
-                
-        # Intentar conexión
+        
+        # Si no hay heartbeat reciente, intentar ping directo
+        logger.info(f"No recent heartbeat for device {imei}, attempting direct ping")
+        
         try:
             logger.info(f"Attempting to get protocol handler for {device.protocol}")
             handler = GPSProtocolHandler().get_handler(device.protocol)
@@ -713,30 +862,34 @@ def test_device_connection(request, imei):
             ping_result = handler.send_ping(device)
             logger.info(f"Ping result: {ping_result}")
             
-            if ping_result['success']:
+            if ping_result and ping_result.get('success'):
                 logger.info(f"Device {imei} responded to ping")
                 device.update_connection_status('ONLINE')
+                device.update_heartbeat()  # Actualizar heartbeat después del ping exitoso
                 return Response({
                     'success': True,
-                    'message': 'Device responded to ping',
+                    'message': 'Device responded to ping test',
                     'status': 'ONLINE',
-                    'response_time': ping_result['response_time'],
+                    'response_time': ping_result.get('response_time', 0),
                     'connection_details': {
                         'ip_address': device.current_ip,
                         'port': device.current_port,
                         'protocol': device.protocol,
-                        'total_connections': device.total_connections
+                        'total_connections': device.total_connections,
+                        'test_method': 'direct_ping'
                     }
                 })
             else:
-                logger.warning(f"Device {imei} did not respond to ping: {ping_result['error_message']}")
+                error_msg = ping_result.get('error_message', 'No response from device') if ping_result else 'Ping failed'
+                logger.warning(f"Device {imei} did not respond to ping: {error_msg}")
                 device.update_connection_status('OFFLINE')
                 return Response({
                     'success': False,
-                    'message': 'Device did not respond to ping',
+                    'message': f'Device did not respond to ping: {error_msg}',
                     'status': 'OFFLINE',
                     'last_seen': device.last_heartbeat.isoformat() if device.last_heartbeat else None,
-                    'error': ping_result['error_message']
+                    'heartbeat_age_seconds': time_since_heartbeat.total_seconds() if device.last_heartbeat else None,
+                    'error': error_msg
                 })
                 
         except ValueError as ve:

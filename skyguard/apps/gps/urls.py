@@ -38,6 +38,10 @@ urlpatterns = [
     path('sessions/active/', views.active_sessions, name='active_sessions'),
     path('sessions/cleanup/', views.cleanup_sessions, name='cleanup_sessions'),
     
+    # Device status management
+    path('devices/check-status/', views.check_all_devices_status, name='check_all_devices_status'),
+    path('devices/activity-status/', views.get_devices_activity_status, name='get_devices_activity_status'),
+    
     # User endpoints
     path('users/me/', views.get_current_user, name='current-user'),
     

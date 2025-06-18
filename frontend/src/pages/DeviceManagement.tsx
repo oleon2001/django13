@@ -44,9 +44,9 @@ import {
     Speed as SpeedIcon,
     Warning as WarningIcon,
 } from '@mui/icons-material';
-import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
 import authService from '../services/auth';
+import { useDeviceStatus } from '../hooks/useDeviceStatus';
 
 interface DeviceFormData {
     imei: string;
@@ -55,10 +55,26 @@ interface DeviceFormData {
 }
 
 const DeviceManagement: React.FC = () => {
-    const [devices, setDevices] = useState<Device[]>([]);
+    // Usar el hook personalizado para manejo de dispositivos
+    const {
+        devices,
+        loading,
+        error,
+        stats,
+        fetchDevices,
+        testDeviceConnection,
+        updateDevice,
+        createDevice,
+        deleteDevice,
+        checkAllDevicesStatus,
+        setError
+    } = useDeviceStatus({
+        checkInterval: 30000, // Verificar cada 30 segundos
+        heartbeatTimeout: 300000, // 5 minutos para considerar offline
+        autoRefresh: true
+    });
+
     const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -69,40 +85,11 @@ const DeviceManagement: React.FC = () => {
     });
     const [editingDevice, setEditingDevice] = useState<Device | null>(null);
     const [testingConnection, setTestingConnection] = useState<number | null>(null);
-
-    useEffect(() => {
-        fetchDevices();
-        // Auto-refresh every 30 seconds
-        const interval = setInterval(fetchDevices, 30000);
-        return () => clearInterval(interval);
-    }, []);
+    const [checkingAllDevices, setCheckingAllDevices] = useState(false);
 
     useEffect(() => {
         filterDevices();
     }, [devices, searchTerm, statusFilter]);
-
-    const fetchDevices = async () => {
-        try {
-            setLoading(true);
-            const data = await deviceService.getAll();
-            
-            // Ensure data is an array
-            if (Array.isArray(data)) {
-                setDevices(data);
-                setError(null);
-            } else {
-                console.error('Expected array but received:', data);
-                setDevices([]);
-                setError('Formato de datos inválido recibido del servidor');
-            }
-        } catch (err) {
-            setError('Error al cargar los dispositivos');
-            setDevices([]); // Ensure devices is always an array
-            console.error('Error loading devices:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const filterDevices = () => {
         let filtered = devices;
@@ -171,12 +158,11 @@ const DeviceManagement: React.FC = () => {
             };
 
             if (editingDevice) {
-                await deviceService.updateDevice(editingDevice.imei, deviceData);
+                await updateDevice(editingDevice.imei, deviceData);
             } else {
-                await deviceService.createDevice(deviceData);
+                await createDevice(deviceData);
             }
             handleCloseDialog();
-            fetchDevices();
         } catch (err) {
             console.error('Error saving device:', err);
             setError('Error al guardar el dispositivo');
@@ -193,8 +179,10 @@ const DeviceManagement: React.FC = () => {
                     return;
                 }
 
-                await deviceService.deleteDevice(imei);
-                await fetchDevices(); // Recargar la lista de dispositivos
+                const success = await deleteDevice(imei);
+                if (!success) {
+                    setError('Error al eliminar el dispositivo');
+                }
             } catch (err: any) {
                 console.error('Error deleting device:', err);
                 if (err.response?.status === 401) {
@@ -212,24 +200,45 @@ const DeviceManagement: React.FC = () => {
     const handleTestConnection = async (imei: number) => {
         setTestingConnection(imei);
         try {
-            const result = await deviceService.testConnection(imei);
+            const result = await testDeviceConnection(imei);
             console.log('Test connection result:', result);
-            
-            // Actualizar la lista de dispositivos después de la prueba
-            await fetchDevices();
             
             // Mostrar mensaje de éxito o error
             if (result.success) {
                 setError(null);
                 console.log(`✅ Dispositivo ${imei}: ${result.message}`);
             } else {
-                setError(`Dispositivo ${imei}: ${result.message || result.error || 'Error desconocido'}`);
+                setError(`Dispositivo ${imei}: ${result.message || 'Error desconocido'}`);
             }
         } catch (err: any) {
             console.error('Error testing connection:', err);
-            setError(`Error al probar la conexión del dispositivo ${imei}: ${err.response?.data?.error || err.message || 'Error desconocido'}`);
+            setError(`Error al probar la conexión del dispositivo ${imei}: ${err.message || 'Error desconocido'}`);
         } finally {
             setTestingConnection(null);
+        }
+    };
+
+    const handleCheckAllDevicesStatus = async () => {
+        setCheckingAllDevices(true);
+        try {
+            const result = await checkAllDevicesStatus(300); // 5 minutos de timeout
+            
+            if (result.success) {
+                if (result.devicesUpdated > 0) {
+                    setError(null);
+                    console.log(`✅ Verificación completada: ${result.devicesUpdated} dispositivos marcados como offline`);
+                } else {
+                    setError(null);
+                    console.log('✅ Verificación completada: Todos los dispositivos están actualizados');
+                }
+            } else {
+                setError(`Error en la verificación: ${result.message}`);
+            }
+        } catch (err: any) {
+            console.error('Error checking all devices:', err);
+            setError(`Error al verificar dispositivos: ${err.message || 'Error desconocido'}`);
+        } finally {
+            setCheckingAllDevices(false);
         }
     };
 
@@ -267,9 +276,7 @@ const DeviceManagement: React.FC = () => {
         return 'error';
     };
 
-    const onlineDevices = devices.filter(d => d.connection_status === 'ONLINE').length;
-    const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
-    const totalDevices = devices.length;
+    const { total: totalDevices, online: onlineDevices, offline: offlineDevices } = stats;
 
     if (loading) {
         return (
@@ -290,6 +297,16 @@ const DeviceManagement: React.FC = () => {
                     <IconButton onClick={fetchDevices} color="primary">
                         <RefreshIcon />
                     </IconButton>
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={checkingAllDevices ? <CircularProgress size={16} /> : <CheckCircleOutlineIcon />}
+                        onClick={handleCheckAllDevicesStatus}
+                        disabled={checkingAllDevices}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        {checkingAllDevices ? 'Verificando...' : 'Verificar Estado'}
+                    </Button>
                     <Button
                         variant="contained"
                         color="primary"

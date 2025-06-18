@@ -237,10 +237,23 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			gps_device.connection_status = 'ONLINE'
 			gps_device.current_ip = self.host
 			gps_device.current_port = self.port
+			
+			# Actualizar contadores de actividad
+			gps_device.total_packets_received += 1
+			if hasattr(gps_device, 'last_activity_update'):
+				time_since_update = self.timeck - gps_device.last_activity_update
+				if time_since_update.total_seconds() > 300:  # 5 minutos
+					gps_device.total_connections += 1
+			else:
+				gps_device.total_connections += 1
+			
+			gps_device.last_activity_update = self.timeck
 			gps_device.save()
-			print(f"Updated GPS device heartbeat and position", file=self.stdout)
+			print(f"Updated GPS device heartbeat and position - Status: ONLINE", file=self.stdout)
 		except GPSDevice.DoesNotExist:
 			print(f"GPS device not found for IMEI {self.avl.imei}", file=self.stdout)
+		except Exception as e:
+			print(f"Error updating GPS device: {e}", file=self.stdout)
 		
 		response = struct.pack("<BLBB",RSPID_SESSION,self.session.session,CMDID_ACK,0)
 		#response = struct.pack("<BLB",RSPID_SESSION,self.session.session,CMDID_DATA)
