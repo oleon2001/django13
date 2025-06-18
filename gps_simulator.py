@@ -45,8 +45,6 @@ class GPSSimulator:
         self.socket.bind((self.client_ip, self.client_port))
 
     def send_packet(self, packet):
-        checksum = calculate_crc(packet)
-        packet += struct.pack('>H', checksum)
         self.socket.sendto(packet, (SERVER_HOST, SERVER_PORT))
         response = self.socket.recvfrom(1024)
         return response[0]
@@ -87,8 +85,8 @@ class GPSSimulator:
             self.connected = True
             print(f"Login exitoso. Sesión: {self.session}")
             print(f"Cliente conectado desde {self.client_ip}:{self.client_port}")
-            # Actualizar IP y puerto en la base de datos
-            self.update_device_connection()
+            # Actualizar IP y puerto en la base de datos - COMENTADO: No necesario para protocolo Wialon
+            # self.update_device_connection()
             return True
         return False
 
