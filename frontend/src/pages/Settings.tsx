@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { SnackbarCloseReason } from '@mui/material/Snackbar';
+import { useTranslation } from 'react-i18next';
 import authService from '../services/auth';
 
 interface TabPanelProps {
@@ -71,6 +72,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Settings: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [tabValue, setTabValue] = useState(0);
     const [showPasswords, setShowPasswords] = useState({
         old: false,
@@ -87,7 +89,7 @@ const Settings: React.FC = () => {
         newPassword: '',
         confirmPassword: '',
         theme: 'light',
-        language: 'es',
+        language: i18n.language || 'es',
         notifications: {
             email: true,
             push: true,
@@ -125,6 +127,11 @@ const Settings: React.FC = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // If language is changed, update i18n
+        if (name === 'language') {
+            i18n.changeLanguage(value);
+        }
     };
 
     const handleNotificationChange = (name: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +167,7 @@ const Settings: React.FC = () => {
         setSuccess(null);
         // Simular llamada a la API
         setTimeout(() => {
-            setSuccess('Perfil actualizado correctamente!');
+            setSuccess(t('configuration.profile.updateSuccess', 'Perfil actualizado correctamente!'));
         }, 500);
     };
 
@@ -178,7 +185,7 @@ const Settings: React.FC = () => {
         }
         // Simular llamada a la API para cambiar contraseña
         setTimeout(() => {
-            setSuccess('Contraseña actualizada correctamente!');
+            setSuccess(t('configuration.security.passwordUpdated', 'Contraseña actualizada correctamente!'));
             setFormData(prev => ({
                 ...prev,
                 oldPassword: '',
@@ -194,7 +201,7 @@ const Settings: React.FC = () => {
         setSuccess(null);
         // Simular llamada a la API
         setTimeout(() => {
-            setSuccess('Preferencias guardadas correctamente!');
+            setSuccess(t('configuration.preferencesUpdated', 'Preferencias guardadas correctamente!'));
         }, 500);
     };
 
@@ -215,10 +222,10 @@ const Settings: React.FC = () => {
                 </Avatar>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                        Configuración
+                        {t('configuration.title')}
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Gestiona tu perfil, seguridad y preferencias
+                        {t('configuration.description')}
                     </Typography>
                 </Box>
             </Box>
@@ -229,25 +236,25 @@ const Settings: React.FC = () => {
                     <Tabs value={tabValue} onChange={handleTabChange} aria-label="settings tabs">
                         <Tab 
                             icon={<PersonIcon />} 
-                            label="Perfil" 
+                            label={t('configuration.tabs.profile')} 
                             iconPosition="start"
                             sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
                         />
                         <Tab 
                             icon={<SecurityIcon />} 
-                            label="Seguridad" 
+                            label={t('configuration.tabs.security')} 
                             iconPosition="start"
                             sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
                         />
                         <Tab 
                             icon={<PaletteIcon />} 
-                            label="Preferencias" 
+                            label={t('configuration.tabs.preferences')} 
                             iconPosition="start"
                             sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
                         />
                         <Tab 
                             icon={<NotificationsIcon />} 
-                            label="Notificaciones" 
+                            label={t('configuration.tabs.notifications')} 
                             iconPosition="start"
                             sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
                         />
@@ -537,19 +544,19 @@ const Settings: React.FC = () => {
                 <TabPanel value={tabValue} index={2}>
                     <Card sx={{ borderRadius: 3, p: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                            Preferencias de la Aplicación
+                            {t('configuration.applicationPreferences')}
                         </Typography>
                         <form onSubmit={handlePreferencesSubmit}>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} sm={6}>
                                     <FormControl fullWidth>
-                                        <InputLabel id="theme-label">Tema</InputLabel>
+                                        <InputLabel id="theme-label">{t('configuration.theme')}</InputLabel>
                                         <Select
                                             labelId="theme-label"
                                             id="theme"
                                             name="theme"
                                             value={formData.theme}
-                                            label="Tema"
+                                            label={t('configuration.theme')}
                                             onChange={handleInputChange}
                                             startAdornment={
                                                 <InputAdornment position="start">
@@ -558,21 +565,21 @@ const Settings: React.FC = () => {
                                             }
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                                         >
-                                            <MenuItem value="light">Claro</MenuItem>
-                                            <MenuItem value="dark">Oscuro</MenuItem>
-                                            <MenuItem value="auto">Automático</MenuItem>
+                                            <MenuItem value="light">{t('configuration.themes.light')}</MenuItem>
+                                            <MenuItem value="dark">{t('configuration.themes.dark')}</MenuItem>
+                                            <MenuItem value="auto">{t('configuration.themes.auto')}</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
                                     <FormControl fullWidth>
-                                        <InputLabel id="language-label">Idioma</InputLabel>
+                                        <InputLabel id="language-label">{t('configuration.language')}</InputLabel>
                                         <Select
                                             labelId="language-label"
                                             id="language"
                                             name="language"
                                             value={formData.language}
-                                            label="Idioma"
+                                            label={t('configuration.language')}
                                             onChange={handleInputChange}
                                             startAdornment={
                                                 <InputAdornment position="start">
@@ -581,9 +588,9 @@ const Settings: React.FC = () => {
                                             }
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                                         >
-                                            <MenuItem value="es">Español</MenuItem>
-                                            <MenuItem value="en">Inglés</MenuItem>
-                                            <MenuItem value="pt">Português</MenuItem>
+                                            <MenuItem value="es">{t('configuration.languages.es')}</MenuItem>
+                                            <MenuItem value="en">{t('configuration.languages.en')}</MenuItem>
+                                            <MenuItem value="pt">{t('configuration.languages.pt')}</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -595,7 +602,7 @@ const Settings: React.FC = () => {
                                     startIcon={<SaveIcon />}
                                     sx={{ borderRadius: 2, px: 4 }}
                                 >
-                                    Guardar Preferencias
+                                    {t('common.save')} {t('configuration.tabs.preferences')}
                                 </Button>
                             </Box>
                         </form>

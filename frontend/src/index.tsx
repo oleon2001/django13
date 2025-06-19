@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { store } from './store';
 import theme from './theme';
 import './index.css';
+import './i18n'; // Initialize i18n
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
