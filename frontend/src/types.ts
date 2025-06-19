@@ -66,6 +66,10 @@ export interface Vehicle {
     year?: number;
     status?: string;
     lastUpdate?: string;
+    device_id?: number;
+    device?: Device; // Referencia al dispositivo GPS vinculado
+    driver_id?: number;
+    driver?: Driver; // Referencia al conductor asignado
 }
 
 // Conductor
@@ -85,6 +89,10 @@ export interface Driver {
     license: string;
     address: string;
     phone: string;
+    device_id?: number;
+    device?: Device; // Referencia al dispositivo GPS vinculado
+    vehicle_id?: number;
+    vehicle?: Vehicle; // Referencia al vehículo asignado
 }
 
 // Evento de dispositivo

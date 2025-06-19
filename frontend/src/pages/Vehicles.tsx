@@ -36,6 +36,8 @@ import {
     LocationOn as LocationIcon,
     Refresh as RefreshIcon,
     FilterList as FilterIcon,
+    GpsFixed as GpsIcon,
+    Person as PersonIcon,
 } from '@mui/icons-material';
 import { vehicleService, Vehicle } from '../services/vehicleService';
 import { VehicleForm } from '../components/VehicleForm';
@@ -355,6 +357,34 @@ const Vehicles: React.FC = () => {
                                             </Typography>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                 {new Date(vehicle.lastUpdate).toLocaleDateString()}
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Divider sx={{ my: 1 }} />
+                                        
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <GpsIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                            <Typography variant="body2" color="text.secondary">
+                                                GPS:
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                {vehicle.device ? 
+                                                    `${vehicle.device.name || `Device ${vehicle.device.imei}`}` : 
+                                                    'Sin dispositivo'
+                                                }
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                            <Typography variant="body2" color="text.secondary">
+                                                Conductor:
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                {vehicle.driver ? 
+                                                    vehicle.driver.full_name : 
+                                                    'Sin conductor'
+                                                }
                                             </Typography>
                                         </Box>
                                     </Stack>

@@ -17,9 +17,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
-    TextField,
-    MenuItem,
     IconButton,
     Tooltip,
 } from '@mui/material';
@@ -32,9 +29,12 @@ import {
     ErrorOutline as ErrorIcon,
     Badge as BadgeIcon,
     Phone as PhoneIcon,
+    GpsFixed as GpsIcon,
+    DirectionsCar as CarIcon,
 } from '@mui/icons-material';
 import { driverService } from '../services/driverService';
 import { Driver } from '../types';
+import { DriverForm } from '../components/DriverForm';
 
 const Drivers: React.FC = () => {
     const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -82,14 +82,12 @@ const Drivers: React.FC = () => {
         setOpenDialog(true);
     };
 
-    const handleSaveDriver = async () => {
-        if (!editingDriver) return;
-
+    const handleSaveDriver = async (driverData: Partial<Driver>) => {
         try {
-            if (editingDriver.id) {
-                await driverService.updateDriver(editingDriver.id, editingDriver);
+            if (driverData.id) {
+                await driverService.updateDriver(driverData.id, driverData);
             } else {
-                await driverService.createDriver(editingDriver);
+                await driverService.createDriver(driverData);
             }
             fetchDrivers();
             setOpenDialog(false);
@@ -314,6 +312,45 @@ const Drivers: React.FC = () => {
                                         </List>
                                     </Grid>
                                 </Grid>
+                                
+                                <Divider sx={{ my: 2 }} />
+                                
+                                <Typography variant="h6" gutterBottom>
+                                    Vinculaciones
+                                </Typography>
+                                
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                        <List dense>
+                                            <ListItem>
+                                                <ListItemIcon><GpsIcon /></ListItemIcon>
+                                                <ListItemText
+                                                    primary="Dispositivo GPS"
+                                                    secondary={
+                                                        selectedDriver.device ? 
+                                                        `${selectedDriver.device.name || `Device ${selectedDriver.device.imei}`} - IMEI: ${selectedDriver.device.imei}` : 
+                                                        'Sin dispositivo asignado'
+                                                    }
+                                                />
+                                            </ListItem>
+                                        </List>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                        <List dense>
+                                            <ListItem>
+                                                <ListItemIcon><CarIcon /></ListItemIcon>
+                                                <ListItemText
+                                                    primary="Vehículo Asignado"
+                                                    secondary={
+                                                        selectedDriver.vehicle ? 
+                                                        `${selectedDriver.vehicle.name} - Placa: ${selectedDriver.vehicle.plate}` : 
+                                                        'Sin vehículo asignado'
+                                                    }
+                                                />
+                                            </ListItem>
+                                        </List>
+                                    </Grid>
+                                </Grid>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -326,89 +363,12 @@ const Drivers: React.FC = () => {
                     {editingDriver?.id ? 'Editar Chofer' : 'Nuevo Chofer'}
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="Nombre"
-                                value={editingDriver?.name || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, name: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="Apellido Paterno"
-                                value={editingDriver?.middle_name || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, middle_name: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="Apellido Materno"
-                                value={editingDriver?.last_name || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, last_name: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Fecha de Nacimiento"
-                                type="date"
-                                value={editingDriver?.birth_date || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, birth_date: e.target.value }))}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                select
-                                label="Estado Civil"
-                                value={editingDriver?.civil_status || 'SOL'}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, civil_status: e.target.value as string }))}
-                            >
-                                <MenuItem value="SOL">Soltero</MenuItem>
-                                <MenuItem value="CAS">Casado</MenuItem>
-                                <MenuItem value="VIU">Viudo</MenuItem>
-                                <MenuItem value="DIV">Divorciado</MenuItem>
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Nómina"
-                                value={editingDriver?.payroll || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, payroll: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Teléfono"
-                                value={editingDriver?.phone || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, phone: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Dirección"
-                                multiline
-                                rows={2}
-                                value={editingDriver?.address || ''}
-                                onChange={(e) => setEditingDriver((prev: Partial<Driver> | null) => ({ ...prev, address: e.target.value }))}
-                            />
-                        </Grid>
-                    </Grid>
+                    <DriverForm
+                        initialData={editingDriver || {}}
+                        onSave={handleSaveDriver}
+                        onCancel={() => setOpenDialog(false)}
+                    />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-                    <Button onClick={handleSaveDriver} variant="contained">
-                        {editingDriver?.id ? 'Actualizar' : 'Crear'}
-                    </Button>
-                </DialogActions>
             </Dialog>
         </Box>
     );

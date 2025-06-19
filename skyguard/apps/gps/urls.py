@@ -3,7 +3,7 @@ URL patterns for the GPS application.
 """
 from django.urls import path
 
-from . import views
+from . import views, vehicle_views, driver_views
 
 app_name = 'gps'
 
@@ -48,4 +48,18 @@ urlpatterns = [
     # Real-time position endpoints
     path('positions/real-time/', views.get_real_time_positions, name='real_time_positions'),
     path('devices/<int:imei>/trail/', views.get_device_trail, name='device_trail'),
+    
+    # Vehicle endpoints
+    path('vehicles/', vehicle_views.vehicle_list, name='vehicle_list'),
+    path('vehicles/<int:vehicle_id>/', vehicle_views.vehicle_detail, name='vehicle_detail'),
+    path('vehicles/available-devices/', vehicle_views.available_gps_devices, name='available_gps_devices'),
+    path('vehicles/available-drivers/', vehicle_views.available_drivers, name='available_drivers_for_vehicles'),
+    path('vehicles/<int:vehicle_id>/assign-device/', vehicle_views.assign_device_to_vehicle, name='assign_device_to_vehicle'),
+    path('vehicles/<int:vehicle_id>/assign-driver/', vehicle_views.assign_driver_to_vehicle, name='assign_driver_to_vehicle'),
+    
+    # Driver endpoints
+    path('drivers/', driver_views.driver_list, name='driver_list'),
+    path('drivers/<int:driver_id>/', driver_views.driver_detail, name='driver_detail'),
+    path('drivers/available-vehicles/', driver_views.available_vehicles, name='available_vehicles'),
+    path('drivers/<int:driver_id>/assign-vehicle/', driver_views.assign_vehicle_to_driver, name='assign_vehicle_to_driver'),
 ]

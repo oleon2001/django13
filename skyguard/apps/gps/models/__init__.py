@@ -26,6 +26,9 @@ from .drivers import (
     Driver, TicketLog, TicketDetail, TimeSheetCapture, CardTransaction
 )
 
+# Vehicle models
+from .vehicles import Vehicle
+
 # Asset management models
 from .assets import (
     CarPark, CarLane, CarSlot, GridlessCar, DemoCar
@@ -53,6 +56,9 @@ __all__ = [
     
     # Driver and ticket models
     'Driver', 'TicketLog', 'TicketDetail', 'TimeSheetCapture', 'CardTransaction',
+    
+    # Vehicle models
+    'Vehicle',
     
     # Asset management models
     'CarPark', 'CarLane', 'CarSlot', 'GridlessCar', 'DemoCar',

@@ -915,4 +915,9 @@ def test_device_connection(request, imei):
         return Response({'error': f'Internal server error: {str(e)}'}, status=500)
 
 
+# Mock endpoints removed - now using real database endpoints
+
+
 # Temporary test endpoints removed - production code only
+
+# Mock detail endpoints removed - now using real database endpoints
