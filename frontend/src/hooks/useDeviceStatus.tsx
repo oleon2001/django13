@@ -11,7 +11,7 @@ interface DeviceStatusOptions {
 export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
   const {
     checkInterval = 30000, // 30 segundos por defecto
-    heartbeatTimeout = 300000, // 5 minutos por defecto
+    heartbeatTimeout = 60000, // 1 minuto por defecto
     autoRefresh = true
   } = options;
 
@@ -169,7 +169,7 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
   }, []);
 
   // Función para verificar el estado de todos los dispositivos
-  const checkAllDevicesStatus = useCallback(async (timeout: number = 300): Promise<{
+      const checkAllDevicesStatus = useCallback(async (timeout: number = 60): Promise<{
     success: boolean;
     message: string;
     devicesUpdated: number;

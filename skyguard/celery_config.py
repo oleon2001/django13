@@ -10,7 +10,7 @@ CELERYBEAT_SCHEDULE = {
     'check-devices-heartbeat': {
         'task': 'skyguard.apps.gps.tasks.check_devices_heartbeat',
         'schedule': crontab(minute='*'),  # Cada minuto
-        'kwargs': {'timeout_minutes': 5}
+                    'kwargs': {'timeout_minutes': 1}
     },
     
     # Limpiar sesiones antiguas diariamente a las 2:00 AM

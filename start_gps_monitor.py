@@ -11,7 +11,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description='Iniciar monitor de dispositivos GPS')
-    parser.add_argument('--timeout', type=int, default=5, help='Timeout en minutos (default: 5)')
+    parser.add_argument('--timeout', type=int, default=1, help='Timeout en minutos (default: 1)')
     parser.add_argument('--quiet', action='store_true', help='Modo silencioso - solo cambios importantes')
     parser.add_argument('--test', action='store_true', help='Ejecutar prueba del sistema completo')
     

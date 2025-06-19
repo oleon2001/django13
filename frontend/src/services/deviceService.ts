@@ -225,7 +225,7 @@ export const deviceService = {
     return response.data;
   },
 
-  checkAllDevicesStatus: async (timeout: number = 300): Promise<any> => {
+  checkAllDevicesStatus: async (timeout: number = 60): Promise<any> => {
     const response = await api.post('/api/gps/devices/check-status/', { timeout });
     return response.data;
   },

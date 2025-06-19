@@ -19,8 +19,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--timeout',
             type=int,
-            default=300,
-            help='Heartbeat timeout in seconds (default: 300 = 5 minutes)'
+            default=60,
+            help='Heartbeat timeout in seconds (default: 60 = 1 minute)'
         )
         parser.add_argument(
             '--dry-run',

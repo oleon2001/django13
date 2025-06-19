@@ -452,7 +452,7 @@ def cleanup_sessions(request):
 def check_all_devices_status(request):
     """Check status of all devices and update offline ones."""
     try:
-        timeout_seconds = int(request.data.get('timeout', 300))  # Default 5 minutes
+        timeout_seconds = int(request.data.get('timeout', 60))  # Default 1 minute
         
         # Calcular el tiempo límite
         timeout_time = timezone.now() - timedelta(seconds=timeout_seconds)
@@ -525,7 +525,7 @@ def get_devices_activity_status(request):
     """Get real-time activity status of all devices."""
     try:
         # Obtener parámetro de timeout
-        timeout_minutes = int(request.GET.get('timeout', 5))  # Default 5 minutos
+        timeout_minutes = int(request.GET.get('timeout', 1))  # Default 1 minuto
         timeout_time = timezone.now() - timedelta(minutes=timeout_minutes)
         
         # Obtener todos los dispositivos activos
@@ -823,8 +823,8 @@ def test_device_connection(request, imei):
         repository = GPSDeviceRepository()
         connection_service = DeviceConnectionService(repository)
         
-        # Verificar heartbeat reciente (últimos 5 minutos)
-        heartbeat_timeout = 300  # 5 minutos en segundos
+        # Verificar heartbeat reciente (último minuto)
+        heartbeat_timeout = 60  # 1 minuto en segundos
         is_recent_heartbeat = False
         
         if device.last_heartbeat:

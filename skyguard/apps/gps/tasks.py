@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True)
-def check_devices_heartbeat(self, timeout_minutes=5):
+def check_devices_heartbeat(self, timeout_minutes=1):
     """
     Tarea periódica para verificar el heartbeat de los dispositivos y marcar como offline
     aquellos que no han enviado datos recientemente.

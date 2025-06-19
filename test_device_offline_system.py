@@ -53,7 +53,7 @@ def check_device_status():
 def force_check_devices():
     """Forzar verificación de todos los dispositivos."""
     try:
-        response = requests.post(f"{API_BASE_URL}/devices/check-status/", json={'timeout': 300})
+        response = requests.post(f"{API_BASE_URL}/devices/check-status/", json={'timeout': 60})
         if response.status_code == 200:
             data = response.json()
             print(f"✅ Verificación completada:")
@@ -91,7 +91,7 @@ def run_device_monitor_command():
         # Ejecutar el comando en background por 60 segundos para demostración
         process = subprocess.Popen([
             'python', 'manage.py', 'start_device_monitor', 
-            '--timeout', '2',  # 2 minutos para prueba rápida
+            '--timeout', '1',  # 1 minuto para prueba rápida
             '--interval', '60',  # Verificar cada 60 segundos (1 minuto)
             '--verbose'
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

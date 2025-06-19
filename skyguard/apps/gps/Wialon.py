@@ -159,7 +159,7 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 		gps_device.connection_status = 'ONLINE'
 		gps_device.last_heartbeat = self.timeck
 		gps_device.last_connection = self.timeck
-		gps_device.last_log = self.timeck
+		gps_device.last_seen = self.timeck
 		gps_device.position = avl.position
 		gps_device.speed = avl.speed
 		gps_device.total_connections += 1
@@ -233,21 +233,22 @@ class BLURequestHandler(SocketServer.BaseRequestHandler):
 			gps_device.last_heartbeat = self.timeck
 			gps_device.position = pos["pos"]
 			gps_device.speed = pos["speed"]
-			gps_device.last_log = pos["date"]
+			gps_device.last_seen = pos["date"]
 			gps_device.connection_status = 'ONLINE'
 			gps_device.current_ip = self.host
 			gps_device.current_port = self.port
 			
 			# Actualizar contadores de actividad
-			gps_device.total_packets_received += 1
-			if hasattr(gps_device, 'last_activity_update'):
-				time_since_update = self.timeck - gps_device.last_activity_update
-				if time_since_update.total_seconds() > 300:  # 5 minutos
+			# Solo incrementar total_connections si ha pasado más de 1 minuto desde la última conexión
+			if gps_device.last_connection:
+				time_since_connection = self.timeck - gps_device.last_connection
+				if time_since_connection.total_seconds() > 60:  # 1 minuto
 					gps_device.total_connections += 1
 			else:
 				gps_device.total_connections += 1
 			
-			gps_device.last_activity_update = self.timeck
+			# Actualizar última conexión
+			gps_device.last_connection = self.timeck
 			gps_device.save()
 			print(f"Updated GPS device heartbeat and position - Status: ONLINE", file=self.stdout)
 		except GPSDevice.DoesNotExist:

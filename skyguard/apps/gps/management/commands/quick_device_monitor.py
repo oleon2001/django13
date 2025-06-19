@@ -33,8 +33,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--timeout',
             type=int,
-            default=5,
-            help='Heartbeat timeout in minutes (default: 5 minutes)'
+            default=1,
+            help='Heartbeat timeout in minutes (default: 1 minute)'
         )
         parser.add_argument(
             '--quiet',

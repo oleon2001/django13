@@ -116,7 +116,7 @@ class AuthService {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/api/auth/user/`, {
+      const response = await axios.get(`${API_URL}/api/auth/profile/`, {
         headers: { Authorization: `Bearer ${this.token}` }
       });
       this.user = response.data;

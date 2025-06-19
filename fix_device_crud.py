@@ -216,7 +216,7 @@ def test_device_connection(request, imei):
         # Verificar el último heartbeat
         if device.last_heartbeat:
             time_since_heartbeat = timezone.now() - device.last_heartbeat
-            if time_since_heartbeat.total_seconds() < 300:  # 5 minutos
+            if time_since_heartbeat.total_seconds() < 60:  # 1 minuto
                 device.update_connection_status('ONLINE')
                 return Response({
                     'success': True,

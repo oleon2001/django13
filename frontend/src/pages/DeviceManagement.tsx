@@ -70,7 +70,7 @@ const DeviceManagement: React.FC = () => {
         setError
     } = useDeviceStatus({
         checkInterval: 30000, // Verificar cada 30 segundos
-        heartbeatTimeout: 300000, // 5 minutos para considerar offline
+        heartbeatTimeout: 60000, // 1 minuto para considerar offline
         autoRefresh: true
     });
 
@@ -221,7 +221,7 @@ const DeviceManagement: React.FC = () => {
     const handleCheckAllDevicesStatus = async () => {
         setCheckingAllDevices(true);
         try {
-            const result = await checkAllDevicesStatus(300); // 5 minutos de timeout
+                            const result = await checkAllDevicesStatus(60); // 1 minuto de timeout
             
             if (result.success) {
                 if (result.devicesUpdated > 0) {
