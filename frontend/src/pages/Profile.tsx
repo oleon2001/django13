@@ -7,11 +7,16 @@
 //   return <div>Profile Page</div>;
 // };
 
-const Profile = () => {
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+
+const Profile: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="profile-page">
-      <h1>Profile Page</h1>
-      <p>This is the user profile page</p>
+      <h1>{t('profile.title')}</h1>
+      <p>{t('profile.description')}</p>
     </div>
   );
 };

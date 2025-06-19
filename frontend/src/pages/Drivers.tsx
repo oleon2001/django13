@@ -32,11 +32,13 @@ import {
     GpsFixed as GpsIcon,
     DirectionsCar as CarIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { driverService } from '../services/driverService';
 import { Driver } from '../types';
 import { DriverForm } from '../components/DriverForm';
 
 const Drivers: React.FC = () => {
+    const { t } = useTranslation();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
     const [loading, setLoading] = useState(true);
@@ -122,7 +124,7 @@ const Drivers: React.FC = () => {
     if (loading) {
         return (
             <Box sx={{ flexGrow: 1, p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Typography>Cargando choferes...</Typography>
+                <Typography>{t('common.loading')}...</Typography>
             </Box>
         );
     }
@@ -131,14 +133,14 @@ const Drivers: React.FC = () => {
         <Box sx={{ flexGrow: 1, p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" gutterBottom component="h1">
-                    Gestión de Choferes
+                    {t('drivers.title')}
                 </Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleCreateDriver}
                 >
-                    Nuevo Chofer
+                    {t('drivers.add')}
                 </Button>
             </Box>
 
@@ -148,13 +150,13 @@ const Drivers: React.FC = () => {
                     <Card sx={{ height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
-                                Estado General
+                                {t('drivers.generalStatus')}
                             </Typography>
                             <List>
                                 <ListItem disablePadding>
                                     <ListItemText
-                                        primary="Choferes Activos"
-                                        secondary={`${activeDrivers.length} de ${drivers.length}`}
+                                        primary={t('drivers.activeDrivers')}
+                                        secondary={`${activeDrivers.length} ${t('common.of')} ${drivers.length}`}
                                     />
                                     <LinearProgress
                                         variant="determinate"
@@ -165,8 +167,8 @@ const Drivers: React.FC = () => {
                                 </ListItem>
                                 <ListItem disablePadding>
                                     <ListItemText
-                                        primary="Licencias Válidas"
-                                        secondary={`${validLicenses} de ${drivers.length}`}
+                                        primary={t('drivers.validLicenses')}
+                                        secondary={`${validLicenses} ${t('common.of')} ${drivers.length}`}
                                     />
                                     <LinearProgress
                                         variant="determinate"
@@ -184,7 +186,7 @@ const Drivers: React.FC = () => {
                 <Grid item xs={12} md={8}>
                     <Paper sx={{ height: 500, p: 2 }}>
                         <Typography variant="h6" gutterBottom>
-                            Lista de Choferes
+                            {t('drivers.driversList')}
                         </Typography>
                         <List sx={{ maxHeight: 400, overflowY: 'auto' }}>
                             {drivers.map((driver) => (
@@ -194,7 +196,7 @@ const Drivers: React.FC = () => {
                                         sx={{ cursor: 'pointer' }}
                                         secondaryAction={
                                             <Box>
-                                                <Tooltip title="Editar">
+                                                <Tooltip title={t('common.edit')}>
                                                     <IconButton onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleEditDriver(driver);
@@ -202,7 +204,7 @@ const Drivers: React.FC = () => {
                                                         <EditIcon />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Eliminar">
+                                                <Tooltip title={t('common.delete')}>
                                                     <IconButton onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDeleteDriver(driver.id);
@@ -221,13 +223,13 @@ const Drivers: React.FC = () => {
                                             secondary={
                                                 <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                                                     <Chip
-                                                        label={driver.is_active ? 'Activo' : 'Inactivo'}
+                                                        label={driver.is_active ? t('drivers.status.active') : t('drivers.status.inactive')}
                                                         color={getStatusChipColor(driver.is_active)}
                                                         size="small"
                                                         icon={driver.is_active ? <CheckIcon fontSize="small" /> : <ErrorIcon fontSize="small" />}
                                                     />
                                                     <Chip
-                                                        label={driver.is_license_valid ? 'Licencia Válida' : 'Licencia Vencida'}
+                                                        label={driver.is_license_valid ? t('drivers.license.valid') : t('drivers.license.expired')}
                                                         color={getLicenseChipColor(driver.is_license_valid)}
                                                         size="small"
                                                         icon={<BadgeIcon fontSize="small" />}
@@ -249,7 +251,7 @@ const Drivers: React.FC = () => {
                         <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                             <CardContent sx={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                 <Typography variant="h6" gutterBottom>
-                                    Detalles del Chofer: {selectedDriver.full_name}
+                                    {t('drivers.driverDetails')}: {selectedDriver.full_name}
                                 </Typography>
                                 <Grid container spacing={2}>
                                     <Grid item xs={12} md={6}>
@@ -257,26 +259,26 @@ const Drivers: React.FC = () => {
                                             <ListItem>
                                                 <ListItemIcon><PersonIcon /></ListItemIcon>
                                                 <ListItemText
-                                                    primary="Nómina"
+                                                    primary={t('drivers.fields.payroll')}
                                                     secondary={selectedDriver.payroll}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemIcon><BadgeIcon /></ListItemIcon>
                                                 <ListItemText
-                                                    primary="Licencia"
-                                                    secondary={selectedDriver.license || 'No especificada'}
+                                                    primary={t('drivers.fields.license')}
+                                                    secondary={selectedDriver.license || t('common.notSpecified')}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemText
-                                                    primary="RFC"
+                                                    primary={t('drivers.fields.taxId')}
                                                     secondary={selectedDriver.tax_id}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemText
-                                                    primary="Estado Civil"
+                                                    primary={t('drivers.fields.civilStatus')}
                                                     secondary={selectedDriver.civil_status}
                                                 />
                                             </ListItem>
@@ -287,25 +289,25 @@ const Drivers: React.FC = () => {
                                             <ListItem>
                                                 <ListItemIcon><PhoneIcon /></ListItemIcon>
                                                 <ListItemText
-                                                    primary="Teléfono"
+                                                    primary={t('drivers.fields.phone')}
                                                     secondary={selectedDriver.phone}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemText
-                                                    primary="Fecha de Nacimiento"
-                                                    secondary={selectedDriver.birth_date ? new Date(selectedDriver.birth_date).toLocaleDateString() : 'No especificada'}
+                                                    primary={t('drivers.fields.birthDate')}
+                                                    secondary={selectedDriver.birth_date ? new Date(selectedDriver.birth_date).toLocaleDateString() : t('common.notSpecified')}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemText
-                                                    primary="Seguro Social"
+                                                    primary={t('drivers.fields.socialSecurity')}
                                                     secondary={selectedDriver.social_security}
                                                 />
                                             </ListItem>
                                             <ListItem>
                                                 <ListItemText
-                                                    primary="Dirección"
+                                                    primary={t('drivers.fields.address')}
                                                     secondary={selectedDriver.address}
                                                 />
                                             </ListItem>
@@ -316,7 +318,7 @@ const Drivers: React.FC = () => {
                                 <Divider sx={{ my: 2 }} />
                                 
                                 <Typography variant="h6" gutterBottom>
-                                    Vinculaciones
+                                    {t('drivers.assignments')}
                                 </Typography>
                                 
                                 <Grid container spacing={2}>
@@ -325,11 +327,11 @@ const Drivers: React.FC = () => {
                                             <ListItem>
                                                 <ListItemIcon><GpsIcon /></ListItemIcon>
                                                 <ListItemText
-                                                    primary="Dispositivo GPS"
+                                                    primary={t('drivers.fields.gpsDevice')}
                                                     secondary={
                                                         selectedDriver.device ? 
                                                         `${selectedDriver.device.name || `Device ${selectedDriver.device.imei}`} - IMEI: ${selectedDriver.device.imei}` : 
-                                                        'Sin dispositivo asignado'
+                                                        t('drivers.noDeviceAssigned')
                                                     }
                                                 />
                                             </ListItem>
@@ -340,11 +342,11 @@ const Drivers: React.FC = () => {
                                             <ListItem>
                                                 <ListItemIcon><CarIcon /></ListItemIcon>
                                                 <ListItemText
-                                                    primary="Vehículo Asignado"
+                                                    primary={t('drivers.fields.assignedVehicle')}
                                                     secondary={
                                                         selectedDriver.vehicle ? 
-                                                        `${selectedDriver.vehicle.name} - Placa: ${selectedDriver.vehicle.plate}` : 
-                                                        'Sin vehículo asignado'
+                                                        `${selectedDriver.vehicle.name} - ${t('drivers.fields.plate')}: ${selectedDriver.vehicle.plate}` : 
+                                                        t('drivers.noVehicleAssigned')
                                                     }
                                                 />
                                             </ListItem>
@@ -360,7 +362,7 @@ const Drivers: React.FC = () => {
             {/* Dialog para Crear/Editar Chofer */}
             <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    {editingDriver?.id ? 'Editar Chofer' : 'Nuevo Chofer'}
+                    {editingDriver?.id ? t('drivers.editDriver') : t('drivers.newDriver')}
                 </DialogTitle>
                 <DialogContent>
                     <DriverForm

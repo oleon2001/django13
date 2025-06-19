@@ -5,10 +5,12 @@ import DeviceList from '../components/DeviceList';
 import DeviceMap from '../components/DeviceMap';
 import VehicleList from '../components/VehicleList';
 import DriverList from '../components/DriverList';
+import { useTranslation } from 'react-i18next';
 
 type TabType = 'devices' | 'vehicles' | 'drivers';
 
-const GPS: React.FC = () => {
+export const GPS: React.FC = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<TabType>('devices');
     const [devices, setDevices] = useState<Device[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
@@ -66,16 +68,27 @@ const GPS: React.FC = () => {
             case 'devices':
                 if (loading) {
                     return (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                        <div className="text-center py-12">
+                            <div className="text-lg">{t('gps.loadingDeviceData')}</div>
+                            <div className="mt-4">
+                                <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full" role="status">
+                                    <span className="visually-hidden">{t('common.loading')}</span>
+                                </div>
+                            </div>
                         </div>
                     );
                 }
 
                 if (error) {
                     return (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-red-500">{error}</div>
+                        <div className="text-center py-12">
+                            <div className="text-red-500 text-xl mb-4">{t('gps.loadingError')}</div>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            >
+                                {t('common.refresh')}
+                            </button>
                         </div>
                     );
                 }
@@ -123,7 +136,7 @@ const GPS: React.FC = () => {
             {/* Header con pestañas */}
             <div className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-900">Sistema GPS</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('gps.title')}</h1>
                     <div className="flex space-x-4">
                         <button
                             onClick={() => handleTabChange('devices')}

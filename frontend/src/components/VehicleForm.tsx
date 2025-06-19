@@ -13,6 +13,7 @@ import {
   Alert
 } from '@mui/material';
 import { vehicleService } from '../services/vehicleService';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   initialData?: Partial<Vehicle>;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState<Partial<Vehicle>>(initialData);
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
@@ -41,7 +43,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       setAvailableDevices(devices);
       setAvailableDrivers(drivers);
     } catch (err) {
-      setError('Error cargando opciones disponibles');
+      setError(t('vehicles.form.loadingOptions'));
       console.error('Error loading options:', err);
     } finally {
       setLoading(false);
@@ -58,11 +60,10 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Guardar el vehículo
       await onSave(form);
       
       // Si se seleccionó un dispositivo GPS, vincularlo
@@ -76,7 +77,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       }
       
     } catch (err) {
-      setError('Error al guardar el vehículo');
+      setError(t('vehicles.form.errorSaving'));
       console.error('Error saving vehicle:', err);
     } finally {
       setLoading(false);
@@ -92,12 +93,12 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       )}
       
       <Typography variant="h6" gutterBottom>
-        Información del Vehículo
+        {t('vehicles.form.vehicleInfo')}
       </Typography>
       
       <TextField
         name="name"
-        label="Nombre"
+        label={t('vehicles.vehicleName')}
         value={form.name || ''}
         onChange={handleChange}
         fullWidth
@@ -107,7 +108,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       
       <TextField
         name="plate"
-        label="Placa"
+        label={t('vehicles.plate')}
         value={form.plate || ''}
         onChange={handleChange}
         fullWidth
@@ -117,7 +118,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       
       <TextField
         name="brand"
-        label="Marca"
+        label={t('vehicles.brand')}
         value={form.brand || ''}
         onChange={handleChange}
         fullWidth
@@ -126,7 +127,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       
       <TextField
         name="model"
-        label="Modelo"
+        label={t('vehicles.model')}
         value={form.model || ''}
         onChange={handleChange}
         fullWidth
@@ -135,7 +136,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       
       <TextField
         name="year"
-        label="Año"
+        label={t('vehicles.year')}
         type="number"
         value={form.year || ''}
         onChange={handleChange}
@@ -144,51 +145,51 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       />
       
       <FormControl fullWidth margin="normal">
-        <InputLabel>Estado</InputLabel>
+        <InputLabel>{t('vehicles.form.status')}</InputLabel>
         <Select
           name="status"
           value={form.status || 'active'}
           onChange={handleSelectChange('status')}
-          label="Estado"
+          label={t('vehicles.form.status')}
         >
-          <MenuItem value="active">Activo</MenuItem>
-          <MenuItem value="maintenance">Mantenimiento</MenuItem>
-          <MenuItem value="inactive">Inactivo</MenuItem>
+          <MenuItem value="active">{t('vehicles.form.active')}</MenuItem>
+          <MenuItem value="maintenance">{t('vehicles.form.maintenance')}</MenuItem>
+          <MenuItem value="inactive">{t('vehicles.form.inactive')}</MenuItem>
         </Select>
       </FormControl>
 
       <Divider sx={{ my: 3 }} />
       
       <Typography variant="h6" gutterBottom>
-        Vinculaciones
+        {t('vehicles.form.assignments')}
       </Typography>
       
       <FormControl fullWidth margin="normal">
-        <InputLabel>Dispositivo GPS</InputLabel>
+        <InputLabel>{t('vehicles.form.gpsDevice')}</InputLabel>
         <Select
           name="device_id"
           value={form.device_id || ''}
           onChange={handleSelectChange('device_id')}
-          label="Dispositivo GPS"
+          label={t('vehicles.form.gpsDevice')}
         >
-          <MenuItem value="">Sin dispositivo</MenuItem>
+          <MenuItem value="">{t('vehicles.form.noDevice')}</MenuItem>
           {availableDevices.map((device) => (
             <MenuItem key={device.imei} value={device.imei}>
-              {device.name || `Device ${device.imei}`} - IMEI: {device.imei}
+              {device.name || `${t('vehicles.form.device')} ${device.imei}`} - IMEI: {device.imei}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
       
       <FormControl fullWidth margin="normal">
-        <InputLabel>Conductor Asignado</InputLabel>
+        <InputLabel>{t('vehicles.form.assignedDriver')}</InputLabel>
         <Select
           name="driver_id"
           value={form.driver_id || ''}
           onChange={handleSelectChange('driver_id')}
-          label="Conductor Asignado"
+          label={t('vehicles.form.assignedDriver')}
         >
-          <MenuItem value="">Sin conductor</MenuItem>
+          <MenuItem value="">{t('vehicles.form.noDriver')}</MenuItem>
           {availableDrivers.map((driver) => (
             <MenuItem key={driver.id} value={driver.id}>
               {driver.full_name} - Licencia: {driver.license}
@@ -199,14 +200,14 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
         <Button onClick={onCancel} disabled={loading}>
-          Cancelar
+          {t('vehicles.form.cancel')}
         </Button>
         <Button 
           type="submit" 
           variant="contained" 
           disabled={loading}
         >
-          {loading ? 'Guardando...' : 'Guardar'}
+          {loading ? t('vehicles.form.saving') : t('vehicles.form.save')}
         </Button>
       </Box>
     </Box>

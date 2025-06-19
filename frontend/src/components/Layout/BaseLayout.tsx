@@ -28,6 +28,7 @@ import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import RouteIcon from '@mui/icons-material/Route';
 import DevicesIcon from '@mui/icons-material/Devices';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth'; // Import useAuth hook
 import logo from '../../assets/img/logofalkon.png';
 
@@ -38,6 +39,7 @@ interface BaseLayoutProps {
 const drawerWidth = 240;
 
 export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth(); // Get user and logout from useAuth
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -46,18 +48,18 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
   };
 
   const navItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'GPS', icon: <LocationOnIcon />, path: '/gps' },
-    { text: 'Gestión de Dispositivos', icon: <DevicesIcon />, path: '/devices' },
-    { text: 'Monitoreo', icon: <MonitorHeartIcon />, path: '/monitoring' },
-    { text: 'Rastreo', icon: <TrackChangesIcon />, path: '/tracking' },
-    { text: 'Vehículos', icon: <DirectionsCarIcon />, path: '/vehicles' },
-    { text: 'Choferes', icon: <PersonIcon />, path: '/drivers' },
-    { text: 'Estacionamientos', icon: <LocalParkingIcon />, path: '/parking' },
-    { text: 'Sensores', icon: <SensorsIcon />, path: '/sensors' },
-    { text: 'Rutas', icon: <RouteIcon />, path: '/routes' },
-    { text: 'Reportes', icon: <BarChartIcon />, path: '/reports' },
-    { text: 'Configuración', icon: <SettingsIcon />, path: '/settings' },
+    { text: t('navigation.dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
+    { text: t('navigation.gps'), icon: <LocationOnIcon />, path: '/gps' },
+    { text: t('navigation.deviceManagement'), icon: <DevicesIcon />, path: '/devices' },
+    { text: t('navigation.monitoring'), icon: <MonitorHeartIcon />, path: '/monitoring' },
+    { text: t('navigation.tracking'), icon: <TrackChangesIcon />, path: '/tracking' },
+    { text: t('navigation.vehicles'), icon: <DirectionsCarIcon />, path: '/vehicles' },
+    { text: t('navigation.drivers'), icon: <PersonIcon />, path: '/drivers' },
+    { text: t('navigation.parking'), icon: <LocalParkingIcon />, path: '/parking' },
+    { text: t('navigation.sensors'), icon: <SensorsIcon />, path: '/sensors' },
+    { text: t('navigation.routes'), icon: <RouteIcon />, path: '/routes' },
+    { text: t('navigation.reports'), icon: <BarChartIcon />, path: '/reports' },
+    { text: t('navigation.configuration'), icon: <SettingsIcon />, path: '/settings' },
   ];
 
   const drawer = (
@@ -105,19 +107,19 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            SkyGuard
+            {t('app.name')}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {user && (
               <Typography variant="subtitle1" sx={{ mr: 1 }}>
-                Hola, {user.username}
+                {t('dashboard.welcome')}, {user.username}
               </Typography>
             )}
             <IconButton color="inherit">
               <AccountCircle />
             </IconButton>
             <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>
-              Cerrar Sesión
+              {t('auth.logout')}
             </Button>
           </Box>
         </Toolbar>

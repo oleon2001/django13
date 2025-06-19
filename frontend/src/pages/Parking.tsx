@@ -33,8 +33,10 @@ import {
 } from '@mui/icons-material';
 import { parkingService } from '../services/parkingService';
 import { CarPark, CarLane, CarSlot } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const Parking: React.FC = () => {
+    const { t } = useTranslation();
     const [carParks, setCarParks] = useState<CarPark[]>([]);
     const [selectedPark, setSelectedPark] = useState<CarPark | null>(null);
     const [carLanes, setCarLanes] = useState<CarLane[]>([]);
@@ -119,9 +121,7 @@ const Parking: React.FC = () => {
     };
 
     const handleClearLot = async () => {
-        if (!selectedPark) return;
-        
-        if (window.confirm(`¿Está seguro de limpiar todos los espacios del estacionamiento ${selectedPark.name}?`)) {
+        if (selectedPark && window.confirm(t('parking.confirmClearLot', { name: selectedPark.name }))) {
             try {
                 await parkingService.clearLot(selectedPark.id);
                 if (selectedLane) {
@@ -161,7 +161,7 @@ const Parking: React.FC = () => {
     if (loading) {
         return (
             <Box sx={{ flexGrow: 1, p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Typography>Cargando estacionamientos...</Typography>
+                <Typography>{t('parking.loading')}</Typography>
             </Box>
         );
     }
@@ -170,7 +170,7 @@ const Parking: React.FC = () => {
         <Box sx={{ flexGrow: 1, p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" gutterBottom component="h1">
-                    Gestión de Estacionamientos
+                    {t('parking.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
@@ -178,7 +178,7 @@ const Parking: React.FC = () => {
                         startIcon={<RefreshIcon />}
                         onClick={() => selectedPark && fetchOccupancy(selectedPark.id)}
                     >
-                        Actualizar
+                        {t('parking.refresh')}
                     </Button>
                     <Button
                         variant="outlined"
@@ -186,7 +186,7 @@ const Parking: React.FC = () => {
                         onClick={handleExportData}
                         disabled={!selectedPark}
                     >
-                        Exportar
+                        {t('parking.export')}
                     </Button>
                     <Button
                         variant="outlined"
@@ -195,7 +195,7 @@ const Parking: React.FC = () => {
                         onClick={handleClearLot}
                         disabled={!selectedPark}
                     >
-                        Limpiar Lote
+                        {t('parking.clearLot')}
                     </Button>
                 </Box>
             </Box>
@@ -208,10 +208,10 @@ const Parking: React.FC = () => {
                             <Card>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom>
-                                        Selección de Estacionamiento
+                                        {t('parking.selection')}
                                     </Typography>
                                     <FormControl fullWidth sx={{ mb: 2 }}>
-                                        <InputLabel>Estacionamiento</InputLabel>
+                                        <InputLabel>{t('parking.parking')}</InputLabel>
                                         <Select
                                             value={selectedPark?.id || ''}
                                             onChange={(e) => {
@@ -228,7 +228,7 @@ const Parking: React.FC = () => {
                                     </FormControl>
                                     
                                     <FormControl fullWidth sx={{ mb: 2 }}>
-                                        <InputLabel>Carril</InputLabel>
+                                        <InputLabel>{t('parking.lane')}</InputLabel>
                                         <Select
                                             value={selectedLane?.id || ''}
                                             onChange={(e) => {
@@ -238,7 +238,7 @@ const Parking: React.FC = () => {
                                         >
                                             {carLanes.map((lane) => (
                                                 <MenuItem key={lane.id} value={lane.id}>
-                                                    Carril {lane.prefix} ({lane.slot_count} espacios)
+                                                    {t('parking.lanePrefix', { prefix: lane.prefix })} ({lane.slot_count} {t('parking.spaces')})
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -247,7 +247,7 @@ const Parking: React.FC = () => {
                                     <Box sx={{ display: 'flex', gap: 1 }}>
                                         <TextField
                                             fullWidth
-                                            label="Buscar por serie"
+                                            label={t('parking.searchBySerial')}
                                             value={searchSerial}
                                             onChange={(e) => setSearchSerial(e.target.value)}
                                             onKeyPress={(e) => e.key === 'Enter' && handleSearchCar()}
@@ -266,12 +266,12 @@ const Parking: React.FC = () => {
                                 <Card>
                                     <CardContent>
                                         <Typography variant="h6" gutterBottom>
-                                            Estado de Ocupación
+                                            {t('parking.occupancyStatus')}
                                         </Typography>
                                         <List>
                                             <ListItem disablePadding>
                                                 <ListItemText
-                                                    primary="Espacios Ocupados"
+                                                    primary={t('parking.occupiedSpaces')}
                                                     secondary={`${occupancyData.occupied} de ${occupancyData.total}`}
                                                 />
                                                 <LinearProgress
@@ -283,13 +283,13 @@ const Parking: React.FC = () => {
                                             </ListItem>
                                             <ListItem disablePadding>
                                                 <ListItemText
-                                                    primary="Porcentaje de Ocupación"
+                                                    primary={t('parking.occupancyPercentage')}
                                                     secondary={`${((occupancyData.occupied / occupancyData.total) * 100).toFixed(1)}%`}
                                                 />
                                             </ListItem>
                                             <ListItem disablePadding>
                                                 <ListItemText
-                                                    primary="Espacios Disponibles"
+                                                    primary={t('parking.freeSpaces')}
                                                     secondary={occupancyData.total - occupancyData.occupied}
                                                 />
                                             </ListItem>
@@ -306,11 +306,11 @@ const Parking: React.FC = () => {
                     <Paper sx={{ height: 500, p: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6">
-                                {selectedLane ? `Carril ${selectedLane.prefix}` : 'Seleccione un carril'}
+                                {selectedLane ? t('parking.lanePrefix', { prefix: selectedLane.prefix }) : t('parking.selectLane')}
                             </Typography>
                             <Chip
                                 icon={<GridIcon />}
-                                label={`${carSlots.length} espacios`}
+                                label={`${carSlots.length} ${t('parking.spaces')}`}
                                 color="primary"
                                 variant="outlined"
                             />
@@ -326,7 +326,7 @@ const Parking: React.FC = () => {
                             {carSlots.map((slot) => (
                                 <Tooltip 
                                     key={slot.id} 
-                                    title={slot.car_serial ? `Serie: ${slot.car_serial}` : 'Espacio libre'}
+                                    title={slot.car_serial ? t('parking.serial', { serial: slot.car_serial.substring(0, 8) }) : t('parking.freeSpace')}
                                 >
                                     <Card 
                                         sx={{ 
@@ -367,7 +367,7 @@ const Parking: React.FC = () => {
                     <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <CardContent sx={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" gutterBottom>
-                                Carriles del Estacionamiento
+                                {t('parking.lanes')}
                             </Typography>
                             <List>
                                 {carLanes.map((lane) => (
@@ -380,16 +380,16 @@ const Parking: React.FC = () => {
                                                 <ParkingIcon />
                                             </ListItemIcon>
                                             <ListItemText
-                                                primary={`Carril ${lane.prefix}`}
+                                                primary={t('parking.lanePrefix', { prefix: lane.prefix })}
                                                 secondary={
                                                     <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                                                         <Chip
-                                                            label={`${lane.slot_count} espacios`}
+                                                            label={`${lane.slot_count} ${t('parking.spaces')}`}
                                                             color="primary"
                                                             size="small"
                                                         />
                                                         <Chip
-                                                            label={lane.single ? 'Sencillo' : 'Doble'}
+                                                            label={lane.single ? t('parking.single') : t('parking.double')}
                                                             color="secondary"
                                                             size="small"
                                                         />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Box,
     Grid,
@@ -46,6 +47,7 @@ import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
 
 const Monitoring: React.FC = () => {
+    const { t } = useTranslation();
     const [devices, setDevices] = useState<Device[]>([]);
     const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
@@ -110,10 +112,10 @@ const Monitoring: React.FC = () => {
                 setLastUpdate(new Date());
             } else {
                 setDevices([]);
-                setError('Formato de datos inválido recibido del servidor');
+                setError(t('monitoring.errors.invalidDataFormat'));
             }
         } catch (err) {
-            setError('Error al cargar los dispositivos');
+            setError(t('monitoring.errors.loadingDevices'));
             console.error('Error loading devices:', err);
         } finally {
             setLoading(false);
@@ -210,11 +212,11 @@ const Monitoring: React.FC = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Monitoreo en Tiempo Real
+                    {t('monitoring.realTimeMonitoring')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                        Última actualización: {lastUpdate.toLocaleTimeString()}
+                        {t('monitoring.lastUpdate')}: {lastUpdate.toLocaleTimeString()}
                     </Typography>
                     <FormControlLabel
                         control={
@@ -224,7 +226,7 @@ const Monitoring: React.FC = () => {
                                 color="primary"
                             />
                         }
-                        label="Auto-actualizar"
+                        label={t('monitoring.autoRefresh')}
                     />
                     <IconButton onClick={handleRefresh} color="primary">
                         <RefreshIcon />
@@ -250,7 +252,7 @@ const Monitoring: React.FC = () => {
                                 {totalDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Total Dispositivos
+                                {t('monitoring.totalDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -265,7 +267,7 @@ const Monitoring: React.FC = () => {
                                 {onlineDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                En Línea
+                                {t('monitoring.onlineDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -280,7 +282,7 @@ const Monitoring: React.FC = () => {
                                 {offlineDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Fuera de Línea
+                                {t('monitoring.offlineDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -295,7 +297,7 @@ const Monitoring: React.FC = () => {
                                 {movingDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                En Movimiento
+                                {t('monitoring.movingDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -308,7 +310,7 @@ const Monitoring: React.FC = () => {
                     <Paper sx={{ borderRadius: 3, boxShadow: 2 }}>
                         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                Mapa de Dispositivos
+                                {t('monitoring.deviceMap')}
                             </Typography>
                         </Box>
                         <Box sx={{ height: '500px', position: 'relative' }}>
@@ -327,13 +329,13 @@ const Monitoring: React.FC = () => {
                         {/* Filters */}
                         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                                Dispositivos
+                                {t('monitoring.devices')}
                             </Typography>
                             <Stack spacing={2}>
                                 <TextField
                                     fullWidth
                                     size="small"
-                                    placeholder="Buscar dispositivos..."
+                                    placeholder={t('monitoring.searchPlaceholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     InputProps={{
@@ -345,20 +347,20 @@ const Monitoring: React.FC = () => {
                                     }}
                                 />
                                 <FormControl fullWidth size="small">
-                                    <InputLabel>Estado</InputLabel>
+                                    <InputLabel>{t('monitoring.filterByStatus')}</InputLabel>
                                     <Select
                                         value={statusFilter}
-                                        label="Estado"
+                                        label={t('monitoring.filterByStatus')}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                     >
-                                        <MenuItem value="all">Todos</MenuItem>
-                                        <MenuItem value="online">En Línea</MenuItem>
-                                        <MenuItem value="offline">Fuera de Línea</MenuItem>
+                                        <MenuItem value="all">{t('monitoring.allStatuses')}</MenuItem>
+                                        <MenuItem value="online">{t('monitoring.onlineDevices')}</MenuItem>
+                                        <MenuItem value="offline">{t('monitoring.offlineDevices')}</MenuItem>
                                     </Select>
                                 </FormControl>
                                 <Typography variant="body2" color="text.secondary">
                                     <FilterIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 16 }} />
-                                    {filteredDevices.length} de {totalDevices} dispositivos
+                                    {filteredDevices.length} {t('common.of')} {totalDevices} {t('monitoring.devices').toLowerCase()}
                                 </Typography>
                             </Stack>
                         </Box>
@@ -426,8 +428,8 @@ const Monitoring: React.FC = () => {
                                 )) : (
                                     <ListItem>
                                         <ListItemText 
-                                            primary="No hay dispositivos disponibles"
-                                            secondary="Los dispositivos aparecerán aquí cuando se conecten"
+                                            primary={t('monitoring.noDevicesAvailable')}
+                                            secondary={t('monitoring.devicesWillAppearHere')}
                                             sx={{ textAlign: 'center', py: 4 }}
                                         />
                                     </ListItem>
@@ -442,7 +444,7 @@ const Monitoring: React.FC = () => {
                     <Grid item xs={12}>
                         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                                Detalles del Dispositivo: {selectedDevice.name || `Dispositivo ${selectedDevice.imei}`}
+                                {t('monitoring.deviceDetails')}: {selectedDevice.name || `${t('monitoring.device')} ${selectedDevice.imei}`}
                             </Typography>
                             
                             <Grid container spacing={3}>
@@ -450,7 +452,7 @@ const Monitoring: React.FC = () => {
                                     <Card sx={{ borderRadius: 2, bgcolor: 'background.default' }}>
                                         <CardContent>
                                             <Typography variant="subtitle2" color="primary" gutterBottom>
-                                                Información General
+                                                {t('monitoring.generalInfo')}
                                             </Typography>
                                             <Stack spacing={2}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -463,7 +465,7 @@ const Monitoring: React.FC = () => {
                                                 </Box>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        Estado:
+                                                        {t('monitoring.status')}:
                                                     </Typography>
                                                     <Chip 
                                                         label={selectedDevice.connection_status || 'OFFLINE'}
@@ -473,12 +475,12 @@ const Monitoring: React.FC = () => {
                                                 </Box>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        Última actualización:
+                                                        {t('monitoring.lastUpdate')}:
                                                     </Typography>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                         {selectedDevice.lastUpdate ? 
                                                             new Date(selectedDevice.lastUpdate).toLocaleString() : 
-                                                            'N/A'
+                                                            t('common.notAvailable')
                                                         }
                                                     </Typography>
                                                 </Box>
@@ -491,20 +493,20 @@ const Monitoring: React.FC = () => {
                                     <Card sx={{ borderRadius: 2, bgcolor: 'background.default' }}>
                                         <CardContent>
                                             <Typography variant="subtitle2" color="primary" gutterBottom>
-                                                Ubicación y Movimiento
+                                                {t('monitoring.locationAndMovement')}
                                             </Typography>
                                             <Stack spacing={2}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <LocationOnIcon color="action" fontSize="small" />
                                                         <Typography variant="body2" color="text.secondary">
-                                                            Coordenadas:
+                                                            {t('monitoring.coordinates')}:
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                         {selectedDevice.position?.latitude && selectedDevice.position?.longitude ? 
                                                             `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}` : 
-                                                            'No disponible'
+                                                            t('common.notAvailable')
                                                         }
                                                     </Typography>
                                                 </Box>
@@ -512,7 +514,7 @@ const Monitoring: React.FC = () => {
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <SpeedIcon color="action" fontSize="small" />
                                                         <Typography variant="body2" color="text.secondary">
-                                                            Velocidad:
+                                                            {t('monitoring.speed')}:
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
@@ -528,14 +530,14 @@ const Monitoring: React.FC = () => {
                                     <Card sx={{ borderRadius: 2, bgcolor: 'background.default' }}>
                                         <CardContent>
                                             <Typography variant="subtitle2" color="primary" gutterBottom>
-                                                Estado del Dispositivo
+                                                {t('monitoring.deviceStatus')}
                                             </Typography>
                                             <Stack spacing={2}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <BatteryIcon color="action" fontSize="small" />
                                                         <Typography variant="body2" color="text.secondary">
-                                                            Batería:
+                                                            {t('monitoring.battery')}:
                                                         </Typography>
                                                     </Box>
                                                     <Chip 
@@ -548,7 +550,7 @@ const Monitoring: React.FC = () => {
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <SignalIcon color="action" fontSize="small" />
                                                         <Typography variant="body2" color="text.secondary">
-                                                            Señal:
+                                                            {t('monitoring.signal')}:
                                                         </Typography>
                                                     </Box>
                                                     <Chip 

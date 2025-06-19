@@ -114,7 +114,7 @@ const Settings: React.FC = () => {
                     email: user.email,
                 }));
             } catch (err) {
-                setError('No se pudo cargar el perfil de usuario');
+                setError(t('configuration.errors.loadProfile'));
             }
         };
         fetchUser();
@@ -128,9 +128,10 @@ const Settings: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         
-        // If language is changed, update i18n
+        // If language is changed, update i18n and persist to localStorage
         if (name === 'language') {
             i18n.changeLanguage(value);
+            localStorage.setItem('selectedLanguage', value);
         }
     };
 
@@ -176,11 +177,11 @@ const Settings: React.FC = () => {
         setError(null);
         setSuccess(null);
         if (formData.newPassword !== formData.confirmPassword) {
-            setError('Las nuevas contraseñas no coinciden.');
+            setError(t('validation.passwordMatch'));
             return;
         }
         if (formData.newPassword.length < 6) {
-            setError('La nueva contraseña debe tener al menos 6 caracteres.');
+            setError(t('configuration.security.passwordMinLength'));
             return;
         }
         // Simular llamada a la API para cambiar contraseña
@@ -281,27 +282,27 @@ const Settings: React.FC = () => {
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
                                     {formData.fullName}
                                 </Typography>
-                                <Chip label="Administrador" color="primary" size="small" sx={{ mb: 2 }} />
+                                <Chip label={t('configuration.profile.administrator')} color="primary" size="small" sx={{ mb: 2 }} />
                                 <Button
                                     variant="outlined"
                                     startIcon={<EditIcon />}
                                     sx={{ borderRadius: 2 }}
                                 >
-                                    Cambiar Foto
+                                    {t('configuration.profile.changePhoto')}
                                 </Button>
                             </Card>
                         </Grid>
                         <Grid item xs={12} md={8}>
                             <Card sx={{ borderRadius: 3, p: 3 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                                    Información Personal
+                                    {t('configuration.profile.personalInfo')}
                                 </Typography>
                                 <form onSubmit={handleProfileSubmit}>
                                     <Grid container spacing={3}>
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Nombre Completo"
+                                                label={t('configuration.profile.fullName')}
                                                 name="fullName"
                                                 value={formData.fullName}
                                                 onChange={handleInputChange}
@@ -318,7 +319,7 @@ const Settings: React.FC = () => {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Nombre de Usuario"
+                                                label={t('configuration.profile.username')}
                                                 name="username"
                                                 value={formData.username}
                                                 onChange={handleInputChange}
@@ -328,7 +329,7 @@ const Settings: React.FC = () => {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Correo Electrónico"
+                                                label={t('configuration.profile.email')}
                                                 name="email"
                                                 type="email"
                                                 value={formData.email}
@@ -346,7 +347,7 @@ const Settings: React.FC = () => {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Teléfono"
+                                                label={t('configuration.profile.phone')}
                                                 name="phone"
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
@@ -363,7 +364,7 @@ const Settings: React.FC = () => {
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                label="Ubicación"
+                                                label={t('configuration.profile.location')}
                                                 name="location"
                                                 value={formData.location}
                                                 onChange={handleInputChange}
@@ -385,7 +386,7 @@ const Settings: React.FC = () => {
                                             startIcon={<SaveIcon />}
                                             sx={{ borderRadius: 2, px: 4 }}
                                         >
-                                            Guardar Cambios
+                                            {t('configuration.profile.saveChanges')}
                                         </Button>
                                     </Box>
                                 </form>
@@ -400,13 +401,13 @@ const Settings: React.FC = () => {
                         <Grid item xs={12} md={6}>
                             <Card sx={{ borderRadius: 3, p: 3 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                                    Cambiar Contraseña
+                                    {t('configuration.security.changePassword')}
                                 </Typography>
                                 <form onSubmit={handlePasswordChangeSubmit}>
                                     <Stack spacing={3}>
                                         <TextField
                                             fullWidth
-                                            label="Contraseña Actual"
+                                            label={t('configuration.security.currentPassword')}
                                             name="oldPassword"
                                             type={showPasswords.old ? 'text' : 'password'}
                                             value={formData.oldPassword}
@@ -432,7 +433,7 @@ const Settings: React.FC = () => {
                                         />
                                         <TextField
                                             fullWidth
-                                            label="Nueva Contraseña"
+                                            label={t('configuration.security.newPassword')}
                                             name="newPassword"
                                             type={showPasswords.new ? 'text' : 'password'}
                                             value={formData.newPassword}
@@ -458,13 +459,13 @@ const Settings: React.FC = () => {
                                         />
                                         <TextField
                                             fullWidth
-                                            label="Confirmar Contraseña"
+                                            label={t('configuration.security.confirmPassword')}
                                             name="confirmPassword"
                                             type={showPasswords.confirm ? 'text' : 'password'}
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             error={formData.newPassword !== formData.confirmPassword && formData.confirmPassword !== ''}
-                                            helperText={formData.newPassword !== formData.confirmPassword && formData.confirmPassword !== '' ? 'Las contraseñas no coinciden' : ''}
+                                            helperText={formData.newPassword !== formData.confirmPassword && formData.confirmPassword !== '' ? t('validation.passwordMatch') : ''}
                                             InputProps={{
                                                 startAdornment: (
                                                     <InputAdornment position="start">
@@ -492,7 +493,7 @@ const Settings: React.FC = () => {
                                             startIcon={<SaveIcon />}
                                             sx={{ borderRadius: 2, px: 4 }}
                                         >
-                                            Cambiar Contraseña
+                                            {t('configuration.security.changePassword')}
                                         </Button>
                                     </Box>
                                 </form>
@@ -501,7 +502,7 @@ const Settings: React.FC = () => {
                         <Grid item xs={12} md={6}>
                             <Card sx={{ borderRadius: 3, p: 3 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                                    Configuración de Privacidad
+                                    {t('configuration.security.privacy')}
                                 </Typography>
                                 <Stack spacing={2}>
                                     <FormControlLabel
@@ -512,7 +513,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Perfil visible para otros usuarios"
+                                        label={t('configuration.security.profileVisible')}
                                     />
                                     <FormControlLabel
                                         control={
@@ -522,7 +523,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Compartir ubicación"
+                                        label={t('configuration.security.locationSharing')}
                                     />
                                     <FormControlLabel
                                         control={
@@ -532,7 +533,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Permitir recopilación de datos para mejoras"
+                                        label={t('configuration.security.dataCollection')}
                                     />
                                 </Stack>
                             </Card>
@@ -613,12 +614,12 @@ const Settings: React.FC = () => {
                 <TabPanel value={tabValue} index={3}>
                     <Card sx={{ borderRadius: 3, p: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                            Configuración de Notificaciones
+                            {t('configuration.notifications.title')}
                         </Typography>
                         <Stack spacing={3}>
                             <Box>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 2 }}>
-                                    Tipos de Notificaciones
+                                    {t('configuration.notifications.types')}
                                 </Typography>
                                 <Stack spacing={2}>
                                     <FormControlLabel
@@ -629,7 +630,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Notificaciones por correo electrónico"
+                                        label={t('configuration.notifications.email')}
                                     />
                                     <FormControlLabel
                                         control={
@@ -639,7 +640,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Notificaciones push en el navegador"
+                                        label={t('configuration.notifications.push')}
                                     />
                                     <FormControlLabel
                                         control={
@@ -649,7 +650,7 @@ const Settings: React.FC = () => {
                                                 color="primary"
                                             />
                                         }
-                                        label="Notificaciones por SMS"
+                                        label={t('configuration.notifications.sms')}
                                     />
                                 </Stack>
                             </Box>
@@ -660,10 +661,10 @@ const Settings: React.FC = () => {
                                     startIcon={<SaveIcon />}
                                     sx={{ borderRadius: 2, px: 4 }}
                                     onClick={() => {
-                                        setSuccess('Configuración de notificaciones guardada!');
+                                        setSuccess(t('configuration.notifications.saveSuccess'));
                                     }}
                                 >
-                                    Guardar Configuración
+                                    {t('configuration.notifications.saveSettings')}
                                 </Button>
                             </Box>
                         </Stack>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Box,
     Paper,
@@ -27,6 +28,7 @@ import {
 import { routeService, Route as RouteType } from '../services/routeService';
 
 const Routes: React.FC = () => {
+    const { t } = useTranslation();
     const [routes, setRoutes] = useState<RouteType[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
@@ -97,11 +99,13 @@ const Routes: React.FC = () => {
     };
 
     const handleDelete = async (routeId: number) => {
-        try {
-            await routeService.delete(routeId);
-            fetchRoutes();
-        } catch (error) {
-            console.error('Error al eliminar la ruta:', error);
+        if (window.confirm(t('routes.deleteRoute'))) {
+            try {
+                await routeService.delete(routeId);
+                fetchRoutes();
+            } catch (error) {
+                console.error('Error al eliminar la ruta:', error);
+            }
         }
     };
 
@@ -111,14 +115,14 @@ const Routes: React.FC = () => {
                 <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                         <Typography variant="h4" component="h1">
-                            Gestión de Rutas
+                            {t('routes.title')}
                         </Typography>
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
                             onClick={() => handleOpenDialog()}
                         >
-                            Nueva Ruta
+                            {t('routes.newRoute')}
                         </Button>
                     </Box>
                 </Grid>
@@ -130,7 +134,7 @@ const Routes: React.FC = () => {
                                     <ListItem
                                         secondaryAction={
                                             <Box>
-                                                <Tooltip title="Editar">
+                                                <Tooltip title={t('routes.edit')}>
                                                     <IconButton
                                                         edge="end"
                                                         onClick={() => handleOpenDialog(route)}
@@ -138,7 +142,7 @@ const Routes: React.FC = () => {
                                                         <EditIcon />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Eliminar">
+                                                <Tooltip title={t('routes.delete')}>
                                                     <IconButton
                                                         edge="end"
                                                         onClick={() => handleDelete(route.id)}
@@ -156,12 +160,10 @@ const Routes: React.FC = () => {
                                             primary={route.name}
                                             secondary={
                                                 <>
-                                                    <Typography component="span" variant="body2">
-                                                        {route.description}
-                                                    </Typography>
+                                                    {route.description}
                                                     <br />
                                                     <Typography component="span" variant="body2">
-                                                        Distancia: {route.distance} km | Tiempo estimado: {route.estimatedTime} min
+                                                        {t('routes.distanceKm', { distance: route.distance })} | {t('routes.estimatedTimeMin', { time: route.estimatedTime })}
                                                     </Typography>
                                                 </>
                                             }
@@ -177,18 +179,18 @@ const Routes: React.FC = () => {
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
-                    {selectedRoute ? 'Editar Ruta' : 'Nueva Ruta'}
+                    {selectedRoute ? t('routes.editRoute') : t('routes.newRoute')}
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
                         <TextField
-                            label="Nombre de la ruta"
+                            label={t('routes.routeNameLabel')}
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             fullWidth
                         />
                         <TextField
-                            label="Descripción"
+                            label={t('routes.description')}
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             fullWidth
@@ -196,26 +198,26 @@ const Routes: React.FC = () => {
                             rows={2}
                         />
                         <TextField
-                            label="Punto de inicio"
+                            label={t('routes.startPointLabel')}
                             value={formData.startPoint}
                             onChange={(e) => setFormData({ ...formData, startPoint: e.target.value })}
                             fullWidth
                         />
                         <TextField
-                            label="Punto final"
+                            label={t('routes.endPointLabel')}
                             value={formData.endPoint}
                             onChange={(e) => setFormData({ ...formData, endPoint: e.target.value })}
                             fullWidth
                         />
                         <TextField
-                            label="Distancia (km)"
+                            label={t('routes.distanceKm')}
                             type="number"
                             value={formData.distance}
                             onChange={(e) => setFormData({ ...formData, distance: Number(e.target.value) })}
                             fullWidth
                         />
                         <TextField
-                            label="Tiempo estimado (minutos)"
+                            label={t('routes.estimatedTimeLabel')}
                             type="number"
                             value={formData.estimatedTime}
                             onChange={(e) => setFormData({ ...formData, estimatedTime: Number(e.target.value) })}
@@ -224,9 +226,9 @@ const Routes: React.FC = () => {
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancelar</Button>
+                    <Button onClick={handleCloseDialog}>{t('common.cancel')}</Button>
                     <Button onClick={handleSubmit} variant="contained">
-                        {selectedRoute ? 'Actualizar' : 'Crear'}
+                        {selectedRoute ? t('common.update') : t('common.create')}
                     </Button>
                 </DialogActions>
             </Dialog>

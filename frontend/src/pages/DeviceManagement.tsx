@@ -44,6 +44,7 @@ import {
     Speed as SpeedIcon,
     Warning as WarningIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
 import authService from '../services/auth';
 import { useDeviceStatus } from '../hooks/useDeviceStatus';
@@ -55,6 +56,7 @@ interface DeviceFormData {
 }
 
 const DeviceManagement: React.FC = () => {
+    const { t } = useTranslation();
     // Usar el hook personalizado para manejo de dispositivos
     const {
         devices,
@@ -165,33 +167,33 @@ const DeviceManagement: React.FC = () => {
             handleCloseDialog();
         } catch (err) {
             console.error('Error saving device:', err);
-            setError('Error al guardar el dispositivo');
+            setError(t('errors.saving'));
         }
     };
 
     const handleDelete = async (imei: number) => {
-        if (window.confirm('¿Está seguro de que desea eliminar este dispositivo?')) {
+        if (window.confirm(t('devices.confirmDelete'))) {
             try {
                 // Verificar autenticación
                 if (!authService.isAuthenticated()) {
-                    setError('Debe iniciar sesión para eliminar dispositivos');
+                    setError(t('auth.loginRequired'));
                     window.location.href = '/login';
                     return;
                 }
 
                 const success = await deleteDevice(imei);
                 if (!success) {
-                    setError('Error al eliminar el dispositivo');
+                    setError(t('errors.deleting'));
                 }
             } catch (err: any) {
                 console.error('Error deleting device:', err);
                 if (err.response?.status === 401) {
-                    setError('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+                    setError(t('auth.sessionExpired'));
                     window.location.href = '/login';
                 } else if (err.response?.status === 403) {
-                    setError('No tiene permisos para eliminar dispositivos');
+                    setError(t('auth.noPermissions'));
                 } else {
-                    setError('Error al eliminar el dispositivo: ' + (err.message || 'Error desconocido'));
+                    setError(t('errors.deleting') + ': ' + (err.message || t('errors.unknown')));
                 }
             }
         }
@@ -208,11 +210,11 @@ const DeviceManagement: React.FC = () => {
                 setError(null);
                 console.log(`✅ Dispositivo ${imei}: ${result.message}`);
             } else {
-                setError(`Dispositivo ${imei}: ${result.message || 'Error desconocido'}`);
+                setError(result.message || t('errors.testingConnection') + ` ${imei}: ${t('errors.unknown')}`);
             }
         } catch (err: any) {
             console.error('Error testing connection:', err);
-            setError(`Error al probar la conexión del dispositivo ${imei}: ${err.message || 'Error desconocido'}`);
+            setError(t('errors.testingConnection') + ` ${imei}: ${err.message || t('errors.unknown')}`);
         } finally {
             setTestingConnection(null);
         }
@@ -232,11 +234,11 @@ const DeviceManagement: React.FC = () => {
                     console.log('✅ Verificación completada: Todos los dispositivos están actualizados');
                 }
             } else {
-                setError(`Error en la verificación: ${result.message}`);
+                setError(result.message || t('errors.checkingDevices') + `: ${t('errors.unknown')}`);
             }
         } catch (err: any) {
             console.error('Error checking all devices:', err);
-            setError(`Error al verificar dispositivos: ${err.message || 'Error desconocido'}`);
+            setError(t('errors.checkingDevices') + `: ${err.message || t('errors.unknown')}`);
         } finally {
             setCheckingAllDevices(false);
         }
@@ -291,7 +293,7 @@ const DeviceManagement: React.FC = () => {
             {/* Header */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Gestión de Dispositivos
+                    {t('deviceManagement.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <IconButton onClick={fetchDevices} color="primary">
@@ -305,7 +307,7 @@ const DeviceManagement: React.FC = () => {
                         disabled={checkingAllDevices}
                         sx={{ borderRadius: 2 }}
                     >
-                        {checkingAllDevices ? 'Verificando...' : 'Verificar Estado'}
+                        {checkingAllDevices ? t('devices.checking') : t('devices.checkAllStatus')}
                     </Button>
                     <Button
                         variant="contained"
@@ -314,7 +316,7 @@ const DeviceManagement: React.FC = () => {
                         onClick={() => handleOpenDialog()}
                         sx={{ borderRadius: 2 }}
                     >
-                        Agregar Dispositivo
+                        {t('deviceManagement.addDevice')}
                     </Button>
                 </Box>
             </Box>
@@ -337,7 +339,7 @@ const DeviceManagement: React.FC = () => {
                                 {totalDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Total Dispositivos
+                                {t('deviceManagement.totalDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -352,7 +354,7 @@ const DeviceManagement: React.FC = () => {
                                 {onlineDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                En Línea
+                                {t('deviceManagement.onlineDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -367,7 +369,7 @@ const DeviceManagement: React.FC = () => {
                                 {offlineDevices}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Fuera de Línea
+                                {t('deviceManagement.offlineDevices')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -380,7 +382,7 @@ const DeviceManagement: React.FC = () => {
                     <Grid item xs={12} md={6}>
                         <TextField
                             fullWidth
-                            placeholder="Buscar por nombre o IMEI..."
+                            placeholder={t('deviceManagement.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             InputProps={{
@@ -395,22 +397,22 @@ const DeviceManagement: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={3}>
                         <FormControl fullWidth>
-                            <InputLabel>Estado</InputLabel>
+                            <InputLabel>{t('deviceManagement.statusLabel')}</InputLabel>
                             <Select
                                 value={statusFilter}
-                                label="Estado"
+                                label={t('deviceManagement.statusLabel')}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <MenuItem value="all">Todos</MenuItem>
-                                <MenuItem value="online">En Línea</MenuItem>
-                                <MenuItem value="offline">Fuera de Línea</MenuItem>
+                                <MenuItem value="all">{t('deviceManagement.allDevices')}</MenuItem>
+                                <MenuItem value="online">{t('deviceManagement.onlineDevices')}</MenuItem>
+                                <MenuItem value="offline">{t('deviceManagement.offlineDevices')}</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} md={3}>
                         <Typography variant="body2" color="text.secondary">
                             <FilterIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                            {filteredDevices.length} de {totalDevices} dispositivos
+                            {filteredDevices.length} {t('common.of')} {totalDevices} {t('devices.title').toLowerCase()}
                         </Typography>
                     </Grid>
                 </Grid>
@@ -435,7 +437,7 @@ const DeviceManagement: React.FC = () => {
                                                 </Avatar>
                                             </Badge>
                                             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                {device.name || `Dispositivo ${device.imei}`}
+                                                {device.name || `${t('devices.title')} ${device.imei}`}
                                             </Typography>
                                         </Box>
                                         <Chip
@@ -458,12 +460,12 @@ const DeviceManagement: React.FC = () => {
                                             </Typography>
                                         </Box>
                                         
-                                                                {device.position && device.position.latitude && device.position.longitude && (
+                                        {device.position && device.position.latitude && device.position.longitude && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                     <LocationIcon color="action" fontSize="small" />
                                     <Typography variant="body2" color="text.secondary">
-                                        Ubicación:
+                                        {t('devices.position')}:
                                     </Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
@@ -477,7 +479,7 @@ const DeviceManagement: React.FC = () => {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                     <SpeedIcon color="action" fontSize="small" />
                                                     <Typography variant="body2" color="text.secondary">
-                                                        Velocidad:
+                                                        {t('devices.speed')}:
                                                     </Typography>
                                                 </Box>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
@@ -490,7 +492,7 @@ const DeviceManagement: React.FC = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <BatteryIcon color="action" fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
-                                                    Batería:
+                                                    {t('devices.battery')}:
                                                 </Typography>
                                             </Box>
                                             <Chip 
@@ -504,7 +506,7 @@ const DeviceManagement: React.FC = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <SignalIcon color="action" fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
-                                                    Señal:
+                                                    {t('devices.signal')}:
                                                 </Typography>
                                             </Box>
                                             <Chip 
@@ -514,16 +516,16 @@ const DeviceManagement: React.FC = () => {
                                             />
                                         </Box>
                                         
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Typography variant="body2" color="text.secondary">
-                                Última actualización:
+                                {t('monitoring.lastUpdate')}:
                             </Typography>
                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                 {device.last_heartbeat ? 
                                     new Date(device.last_heartbeat).toLocaleDateString() : 
                                     device.updated_at ? 
                                         new Date(device.updated_at).toLocaleDateString() : 
-                                        'N/A'
+                                        t('common.notAvailable')
                                 }
                             </Typography>
                         </Box>
@@ -539,11 +541,11 @@ const DeviceManagement: React.FC = () => {
                                         {testingConnection === device.imei ? (
                                             <CircularProgress size={16} />
                                         ) : (
-                                            'Probar Conexión'
+                                            t('devices.testConnection')
                                         )}
                                     </Button>
                                     <Box>
-                                        <Tooltip title="Editar">
+                                        <Tooltip title={t('deviceManagement.edit')}>
                                             <IconButton
                                                 size="small"
                                                 onClick={() => handleOpenDialog(device)}
@@ -552,7 +554,7 @@ const DeviceManagement: React.FC = () => {
                                                 <EditIcon />
                                             </IconButton>
                                         </Tooltip>
-                                        <Tooltip title="Eliminar">
+                                        <Tooltip title={t('deviceManagement.delete')}>
                                             <IconButton
                                                 size="small"
                                                 onClick={() => handleDelete(device.imei)}
@@ -571,12 +573,12 @@ const DeviceManagement: React.FC = () => {
                 <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3 }}>
                     <DevicesIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h6" color="text.secondary" gutterBottom>
-                        {devices.length === 0 ? 'No hay dispositivos registrados' : 'No se encontraron dispositivos'}
+                        {devices.length === 0 ? t('deviceManagement.noDevicesRegistered') : t('deviceManagement.noDevicesFound')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         {devices.length === 0 
-                            ? 'Haz clic en "Agregar Dispositivo" para crear tu primer dispositivo'
-                            : 'Intenta ajustar los filtros de búsqueda.'
+                            ? t('deviceManagement.addFirstDevice')
+                            : t('deviceManagement.tryAdjustingFilters')
                         }
                     </Typography>
                     {devices.length === 0 && (
@@ -586,7 +588,7 @@ const DeviceManagement: React.FC = () => {
                             onClick={() => handleOpenDialog()}
                             sx={{ borderRadius: 2 }}
                         >
-                            Agregar Primer Dispositivo
+                            {t('deviceManagement.addFirstDevice')}
                         </Button>
                     )}
                 </Paper>
@@ -597,7 +599,7 @@ const DeviceManagement: React.FC = () => {
                 <form onSubmit={handleSubmit}>
                     <DialogTitle sx={{ pb: 1 }}>
                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                            {editingDevice ? 'Editar Dispositivo' : 'Agregar Nuevo Dispositivo'}
+                            {editingDevice ? t('deviceManagement.editDevice') : t('deviceManagement.addNewDevice')}
                         </Typography>
                     </DialogTitle>
                     <DialogContent sx={{ pt: 2 }}>
@@ -612,33 +614,33 @@ const DeviceManagement: React.FC = () => {
                                 onChange={handleInputChange}
                                 required
                                 disabled={!!editingDevice}
-                                helperText={editingDevice ? "El IMEI no se puede modificar" : "Ingrese el IMEI del dispositivo"}
+                                helperText={editingDevice ? t('deviceManagement.imeiCannotBeModified') : t('deviceManagement.enterDeviceImei')}
                             />
                             <TextField
                                 name="name"
-                                label="Nombre del Dispositivo"
+                                label={t('deviceManagement.deviceName')}
                                 type="text"
                                 fullWidth
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                helperText="Nombre descriptivo para identificar el dispositivo"
+                                helperText={t('deviceManagement.deviceNameDescription')}
                             />
                             <TextField
                                 name="description"
-                                label="Descripción"
+                                label={t('deviceManagement.description')}
                                 type="text"
                                 fullWidth
                                 multiline
                                 rows={4}
                                 value={formData.description}
                                 onChange={handleInputChange}
-                                helperText="Descripción adicional del dispositivo (opcional)"
+                                helperText={t('deviceManagement.deviceDescriptionOptional')}
                             />
                         </Stack>
                     </DialogContent>
                     <DialogActions sx={{ p: 3, pt: 2 }}>
                         <Button onClick={handleCloseDialog} sx={{ borderRadius: 2 }}>
-                            Cancelar
+                            {t('deviceManagement.cancel')}
                         </Button>
                         <Button 
                             type="submit" 
@@ -646,7 +648,7 @@ const DeviceManagement: React.FC = () => {
                             color="primary"
                             sx={{ borderRadius: 2 }}
                         >
-                            {editingDevice ? 'Guardar Cambios' : 'Agregar Dispositivo'}
+                            {editingDevice ? t('deviceManagement.saveChanges') : t('deviceManagement.addDevice')}
                         </Button>
                     </DialogActions>
                 </form>

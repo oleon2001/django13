@@ -40,9 +40,11 @@ import {
     InsertChart as ChartIcon,
     DateRange as DateRangeIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { reportService, Report } from '../services/reportService';
 
 const Reports: React.FC = () => {
+    const { t } = useTranslation();
     const [reports, setReports] = useState<Report[]>([]);
     const [filteredReports, setFilteredReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
@@ -214,7 +216,7 @@ const Reports: React.FC = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Reportes
+                    {t('reports.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <IconButton onClick={handleRefresh} color="primary">
@@ -226,7 +228,7 @@ const Reports: React.FC = () => {
                         onClick={handleGenerateReport}
                         sx={{ borderRadius: 2 }}
                     >
-                        Generar Reporte
+                        {t('reports.generateReport')}
                     </Button>
                 </Box>
             </Box>
@@ -249,7 +251,7 @@ const Reports: React.FC = () => {
                                 {reports.length}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Total Reportes
+                                {t('reports.totalReports')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -264,7 +266,7 @@ const Reports: React.FC = () => {
                                 {completedReports}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Completados
+                                {t('reports.completed')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -279,7 +281,7 @@ const Reports: React.FC = () => {
                                 {processingReports}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Procesando
+                                {t('reports.processing')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -294,7 +296,7 @@ const Reports: React.FC = () => {
                                 {failedReports}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Fallidos
+                                {t('reports.failed')}
                             </Typography>
                         </CardContent>
                     </Card>
@@ -307,7 +309,7 @@ const Reports: React.FC = () => {
                     <Grid item xs={12} md={4}>
                         <TextField
                             fullWidth
-                            placeholder="Buscar reportes..."
+                            placeholder={t('reports.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             InputProps={{
@@ -322,38 +324,38 @@ const Reports: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={3}>
                         <FormControl fullWidth>
-                            <InputLabel>Estado</InputLabel>
+                            <InputLabel>{t('reports.status')}</InputLabel>
                             <Select
                                 value={statusFilter}
-                                label="Estado"
+                                label={t('reports.status')}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <MenuItem value="all">Todos</MenuItem>
-                                <MenuItem value="completed">Completados</MenuItem>
-                                <MenuItem value="processing">Procesando</MenuItem>
-                                <MenuItem value="failed">Fallidos</MenuItem>
+                                <MenuItem value="all">{t('reports.all')}</MenuItem>
+                                <MenuItem value="completed">{t('reports.completed')}</MenuItem>
+                                <MenuItem value="processing">{t('reports.processing')}</MenuItem>
+                                <MenuItem value="failed">{t('reports.failed')}</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} md={3}>
                         <FormControl fullWidth>
-                            <InputLabel>Tipo</InputLabel>
+                            <InputLabel>{t('reports.type')}</InputLabel>
                             <Select
                                 value={typeFilter}
-                                label="Tipo"
+                                label={t('reports.type')}
                                 onChange={(e) => setTypeFilter(e.target.value)}
                             >
-                                <MenuItem value="all">Todos</MenuItem>
-                                <MenuItem value="tracking">Seguimiento</MenuItem>
-                                <MenuItem value="summary">Resumen</MenuItem>
-                                <MenuItem value="daily">Diario</MenuItem>
+                                <MenuItem value="all">{t('reports.all')}</MenuItem>
+                                <MenuItem value="tracking">{t('reports.tracking')}</MenuItem>
+                                <MenuItem value="summary">{t('reports.summary')}</MenuItem>
+                                <MenuItem value="daily">{t('reports.daily')}</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} md={2}>
                         <Typography variant="body2" color="text.secondary">
                             <FilterIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                            {filteredReports.length} de {reports.length}
+                            {t('reports.resultsCount', { current: filteredReports.length, total: reports.length })}
                         </Typography>
                     </Grid>
                 </Grid>
@@ -388,7 +390,7 @@ const Reports: React.FC = () => {
                                     <Stack spacing={1}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Tipo:
+                                                {t('reports.type')}
                                             </Typography>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                 {getTypeLabel(report.type)}
@@ -396,7 +398,7 @@ const Reports: React.FC = () => {
                                         </Box>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Creado:
+                                                {t('reports.created')}
                                             </Typography>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                 {new Date(report.createdAt).toLocaleDateString()}
@@ -405,7 +407,7 @@ const Reports: React.FC = () => {
                                         {report.status === 'processing' && (
                                             <Box sx={{ mt: 1 }}>
                                                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                    Progreso:
+                                                    {t('reports.progress')}
                                                 </Typography>
                                                 <LinearProgress variant="indeterminate" sx={{ borderRadius: 1 }} />
                                             </Box>
@@ -421,7 +423,7 @@ const Reports: React.FC = () => {
                                         variant={report.status === 'completed' ? 'contained' : 'outlined'}
                                         sx={{ borderRadius: 2 }}
                                     >
-                                        Descargar
+                                        {t('reports.download')}
                                     </Button>
                                 </CardActions>
                             </Card>
@@ -432,12 +434,12 @@ const Reports: React.FC = () => {
                 <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3 }}>
                     <AssessmentIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h6" color="text.secondary" gutterBottom>
-                        {reports.length === 0 ? 'No hay reportes disponibles' : 'No se encontraron reportes'}
+                        {reports.length === 0 ? t('reports.noReportsAvailable') : t('reports.noReportsFound')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         {reports.length === 0 
-                            ? 'Los reportes se generarán automáticamente cuando haya datos de dispositivos GPS.'
-                            : 'Intenta ajustar los filtros de búsqueda.'
+                            ? t('reports.autoGeneration')
+                            : t('reports.tryAdjustingFilters')
                         }
                     </Typography>
                     {reports.length === 0 && (
@@ -447,7 +449,7 @@ const Reports: React.FC = () => {
                             onClick={handleGenerateReport}
                             sx={{ borderRadius: 2 }}
                         >
-                            Generar Primer Reporte
+                            {t('reports.generateFirstReport')}
                         </Button>
                     )}
                 </Paper>
@@ -456,34 +458,34 @@ const Reports: React.FC = () => {
             {/* Generate Report Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
-                    Generar Nuevo Reporte
+                    {t('reports.generateNewReport')}
                 </DialogTitle>
                 <DialogContent>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Selecciona el tipo de reporte que deseas generar:
+                        {t('reports.selectReportType')}
                     </Typography>
                     <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel>Tipo de Reporte</InputLabel>
+                        <InputLabel>{t('reports.reportType')}</InputLabel>
                         <Select
                             value={newReportType}
-                            label="Tipo de Reporte"
+                            label={t('reports.reportType')}
                             onChange={(e) => setNewReportType(e.target.value)}
                         >
-                            <MenuItem value="tracking">Reporte de Seguimiento</MenuItem>
-                            <MenuItem value="summary">Reporte Resumen</MenuItem>
-                            <MenuItem value="daily">Reporte Diario</MenuItem>
+                            <MenuItem value="tracking">{t('reports.trackingReport')}</MenuItem>
+                            <MenuItem value="summary">{t('reports.summaryReport')}</MenuItem>
+                            <MenuItem value="daily">{t('reports.dailyReport')}</MenuItem>
                         </Select>
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancelar</Button>
+                    <Button onClick={handleCloseDialog}>{t('reports.cancel')}</Button>
                     <Button 
                         onClick={handleCreateReport} 
                         variant="contained"
                         disabled={!newReportType}
                         sx={{ borderRadius: 2 }}
                     >
-                        Generar Reporte
+                        {t('reports.generateReport')}
                     </Button>
                 </DialogActions>
             </Dialog>

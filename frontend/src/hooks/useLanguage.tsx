@@ -1,13 +1,36 @@
 import { useTranslation } from 'react-i18next';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export const useLanguage = () => {
   const { i18n, t } = useTranslation();
 
-  const changeLanguage = useCallback((language: string) => {
-    i18n.changeLanguage(language);
-    // Save to localStorage for persistence
-    localStorage.setItem('selectedLanguage', language);
+  const changeLanguage = useCallback(async (newLanguage: string) => {
+    try {
+      await i18n.changeLanguage(newLanguage);
+      
+      localStorage.setItem('selectedLanguage', newLanguage);
+      
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'selectedLanguage',
+        newValue: newLanguage,
+        storageArea: localStorage
+      }));
+      
+      console.log(`Language changed to: ${newLanguage}`);
+    } catch (error) {
+      console.error('Error changing language:', error);
+    }
+  }, [i18n]);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'selectedLanguage' && e.newValue && e.newValue !== i18n.language) {
+        i18n.changeLanguage(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [i18n]);
 
   const getCurrentLanguage = useCallback(() => {
@@ -31,11 +54,13 @@ export const useLanguage = () => {
   }, [t]);
 
   return {
+    currentLanguage: i18n.language,
     changeLanguage,
     getCurrentLanguage,
     getLanguageNames,
     getAvailableLanguages,
-    currentLanguage: i18n.language,
+    availableLanguages: ['es', 'en', 'pt'],
+    isReady: i18n.isInitialized,
     t,
   };
 };

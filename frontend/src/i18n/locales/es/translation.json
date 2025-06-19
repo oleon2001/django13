@@ -42,6 +42,17 @@
     "deviceStatus": "Estado de Dispositivos",
     "refresh": "Actualizar datos"
   },
+  "gps": {
+    "title": "Sistema GPS",
+    "devices": "Dispositivos GPS",
+    "vehicles": "Vehículos",
+    "drivers": "Conductores",
+    "loadingError": "Error al cargar datos del dispositivo",
+    "loadingDeviceData": "Cargando datos del dispositivo...",
+    "noDeviceSelected": "Ningún dispositivo seleccionado",
+    "selectDevice": "Seleccionar dispositivo",
+    "realTimeUpdates": "Actualizaciones en tiempo real"
+  },
   "devices": {
     "title": "Dispositivos GPS",
     "management": "Gestión de Dispositivos",
@@ -91,6 +102,32 @@
     "checkAllStatus": "Verificar Estado de Todos",
     "checking": "Verificando..."
   },
+  "deviceManagement": {
+    "title": "Gestión de Dispositivos",
+    "addDevice": "Agregar Dispositivo",
+    "editDevice": "Editar Dispositivo",
+    "addNewDevice": "Agregar Nuevo Dispositivo",
+    "totalDevices": "Total Dispositivos",
+    "onlineDevices": "En Línea",
+    "offlineDevices": "Fuera de Línea",
+    "searchPlaceholder": "Buscar por nombre o IMEI...",
+    "statusLabel": "Estado",
+    "allDevices": "Todos",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "noDevicesRegistered": "No hay dispositivos registrados",
+    "noDevicesFound": "No se encontraron dispositivos",
+    "addFirstDevice": "Agregar Primer Dispositivo",
+    "tryAdjustingFilters": "Intenta ajustar los filtros de búsqueda",
+    "deviceName": "Nombre del Dispositivo",
+    "imeiCannotBeModified": "El IMEI no se puede modificar",
+    "enterDeviceImei": "Ingrese el IMEI del dispositivo",
+    "deviceNameDescription": "Nombre descriptivo para identificar el dispositivo",
+    "description": "Descripción",
+    "deviceDescriptionOptional": "Descripción adicional del dispositivo (opcional)",
+    "cancel": "Cancelar",
+    "saveChanges": "Guardar Cambios"
+  },
   "vehicles": {
     "title": "Vehículos",
     "management": "Gestión de Vehículos",
@@ -137,14 +174,35 @@
     "errorLoading": "Error al cargar los vehículos",
     "createSuccess": "Vehículo creado correctamente",
     "updateSuccess": "Vehículo actualizado correctamente",
-    "deleteSuccess": "Vehículo eliminado correctamente"
+    "deleteSuccess": "Vehículo eliminado correctamente",
+    "form": {
+      "gpsDevice": "Dispositivo GPS",
+      "assignedDriver": "Conductor Asignado",
+      "noDevice": "Sin dispositivo",
+      "noDriver": "Sin conductor",
+      "loadingOptions": "Error cargando opciones disponibles",
+      "saving": "Guardando...",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "errorSaving": "Error al guardar el vehículo"
+    }
   },
   "drivers": {
-    "title": "Conductores",
+    "title": "Gestión de Choferes",
     "management": "Gestión de Conductores",
+    "add": "Nuevo Chofer",
     "addDriver": "Agregar Conductor",
     "editDriver": "Editar Conductor",
+    "newDriver": "Nuevo Chofer",
     "deleteDriver": "Eliminar Conductor",
+    "driverDetails": "Detalles del Chofer",
+    "driversList": "Lista de Choferes",
+    "generalStatus": "Estado General",
+    "activeDrivers": "Choferes Activos",
+    "validLicenses": "Licencias Válidas",
+    "assignments": "Vinculaciones",
+    "noDeviceAssigned": "Sin dispositivo asignado",
+    "noVehicleAssigned": "Sin vehículo asignado",
     "name": "Nombre",
     "lastName": "Apellido",
     "fullName": "Nombre Completo",
@@ -152,9 +210,27 @@
     "licenseNumber": "Número de Licencia",
     "phone": "Teléfono",
     "email": "Email",
-    "status": "Estado",
-    "active": "Activo",
-    "inactive": "Inactivo",
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "license": {
+      "valid": "Licencia Válida",
+      "expired": "Licencia Vencida"
+    },
+    "fields": {
+      "payroll": "Nómina",
+      "license": "Licencia",
+      "taxId": "RFC",
+      "civilStatus": "Estado Civil",
+      "phone": "Teléfono",
+      "birthDate": "Fecha de Nacimiento",
+      "socialSecurity": "Seguro Social",
+      "address": "Dirección",
+      "gpsDevice": "Dispositivo GPS",
+      "assignedVehicle": "Vehículo Asignado",
+      "plate": "Placa"
+    },
     "assignedVehicle": "Vehículo Asignado",
     "confirmDelete": "¿Estás seguro de que quieres eliminar este conductor?",
     "noDrivers": "No hay conductores registrados",
@@ -216,38 +292,48 @@
       "byType": "Por Tipo",
       "byStatus": "Por Estado",
       "byDate": "Por Fecha"
-    }
+    },
+    "resultsCount": "{{current}} de {{total}}",
+    "noReportsAvailable": "No hay reportes disponibles",
+    "noReportsFound": "No se encontraron reportes",
+    "autoGeneration": "Los reportes se generan automáticamente basados en la actividad del sistema",
+    "tryAdjustingFilters": "Intenta ajustar los filtros para encontrar los reportes que buscas",
+    "generateFirstReport": "Generar primer reporte",
+    "generateNewReport": "Generar nuevo reporte",
+    "selectReportType": "Selecciona el tipo de reporte que deseas generar",
+    "trackingReport": "Reporte de seguimiento",
+    "summaryReport": "Reporte de resumen",
+    "dailyReport": "Reporte diario",
+    "cancel": "Cancelar",
+    "generateReport": "Generar reporte"
   },
   "monitoring": {
     "title": "Monitoreo",
-    "realTime": "Tiempo Real",
-    "liveTracking": "Seguimiento en Vivo",
-    "alerts": "Alertas",
-    "events": "Eventos",
-    "geofences": "Geocercas",
-    "notifications": "Notificaciones",
-    "activeAlerts": "Alertas Activas",
-    "recentEvents": "Eventos Recientes",
-    "deviceStatus": "Estado de Dispositivos",
-    "mapView": "Vista de Mapa",
-    "listView": "Vista de Lista",
-    "filterByType": "Filtrar por Tipo",
-    "filterByDevice": "Filtrar por Dispositivo",
-    "alertTypes": {
-      "speed": "Velocidad",
-      "geofence": "Geocerca",
-      "battery": "Batería",
-      "maintenance": "Mantenimiento",
-      "panic": "Pánico",
-      "offline": "Desconectado"
-    },
-    "eventTypes": {
-      "start": "Encendido",
-      "stop": "Apagado",
-      "movement": "Movimiento",
-      "idle": "Inactivo",
-      "maintenance": "Mantenimiento"
-    }
+    "management": "Gestión de Monitoreo",
+    "realTimeMonitoring": "Monitoreo en Tiempo Real",
+    "autoRefresh": "Auto-actualizar",
+    "totalDevices": "Total Dispositivos",
+    "onlineDevices": "En Línea",
+    "offlineDevices": "Fuera de Línea",
+    "movingDevices": "En Movimiento",
+    "deviceMap": "Mapa de Dispositivos",
+    "devices": "Dispositivos",
+    "device": "Dispositivo",
+    "searchPlaceholder": "Buscar dispositivos...",
+    "filterByStatus": "Estado",
+    "allStatuses": "Todos",
+    "deviceDetails": "Detalles del Dispositivo",
+    "generalInfo": "Información General",
+    "status": "Estado",
+    "lastUpdate": "Última actualización",
+    "locationAndMovement": "Ubicación y Movimiento",
+    "coordinates": "Coordenadas",
+    "speed": "Velocidad",
+    "deviceStatus": "Estado del Dispositivo",
+    "battery": "Batería",
+    "signal": "Señal",
+    "noDevicesAvailable": "No hay dispositivos disponibles",
+    "devicesWillAppearHere": "Los dispositivos aparecerán aquí cuando se conecten"
   },
   "tracking": {
     "title": "Rastreo",
@@ -276,19 +362,31 @@
     "addRoute": "Agregar Ruta",
     "editRoute": "Editar Ruta",
     "deleteRoute": "Eliminar Ruta",
+    "newRoute": "Nueva Ruta",
     "routeName": "Nombre de la Ruta",
+    "routeNameLabel": "Nombre de la ruta",
+    "description": "Descripción",
     "startPoint": "Punto de Inicio",
+    "startPointLabel": "Punto de inicio",
     "endPoint": "Punto Final",
+    "endPointLabel": "Punto de destino",
+    "estimatedTime": "Tiempo Estimado",
+    "estimatedTimeLabel": "Tiempo estimado (minutos)",
     "waypoints": "Puntos de Referencia",
     "distance": "Distancia",
-    "estimatedTime": "Tiempo Estimado",
+    "distanceKm": "Distancia: {{distance}} km",
+    "estimatedTimeMin": "Tiempo estimado: {{time}} min",
     "assignedVehicles": "Vehículos Asignados",
     "active": "Activa",
     "inactive": "Inactiva",
     "noRoutes": "No hay rutas definidas",
     "createSuccess": "Ruta creada correctamente",
     "updateSuccess": "Ruta actualizada correctamente",
-    "deleteSuccess": "Ruta eliminada correctamente"
+    "deleteSuccess": "Ruta eliminada correctamente",
+    "errorSaving": "Error al guardar la ruta",
+    "errorDeleting": "Error al eliminar la ruta",
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "parking": {
     "title": "Estacionamientos",
@@ -306,7 +404,29 @@
     "facilities": "Instalaciones",
     "security": "Seguridad",
     "covered": "Techado",
-    "uncovered": "Descubierto"
+    "uncovered": "Descubierto",
+    "loading": "Cargando estacionamientos...",
+    "selection": "Selección de Estacionamiento",
+    "parkingLot": "Estacionamiento",
+    "searchBySerial": "Buscar por serial",
+    "searchPlaceholder": "Ingrese número de serie...",
+    "searchButton": "Buscar",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "clearLot": "Limpiar Lote",
+    "confirmClearLot": "¿Está seguro de limpiar todos los espacios del estacionamiento {{name}}?",
+    "parkingSpaces": "Espacios de Estacionamiento",
+    "occupancyStats": "Estadísticas de Ocupación",
+    "occupancyLevel": "Nivel de Ocupación",
+    "totalSpaces": "Espacios Totales",
+    "occupiedSpaces": "Espacios Ocupados",
+    "freeSpaces": "Espacios Libres",
+    "laneSelection": "Selección de Carril",
+    "lane": "Carril",
+    "space": "Espacio {{number}}",
+    "occupied": "Ocupado",
+    "free": "Libre",
+    "slot": "Espacio"
   },
   "sensors": {
     "title": "Sensores",
@@ -321,6 +441,12 @@
     "lastReading": "Última Lectura",
     "value": "Valor",
     "unit": "Unidad",
+    "pressureSensors": "Sensores de Presión",
+    "selectDevice": "Seleccionar Dispositivo",
+    "selectDeviceLabel": "Seleccionar Dispositivo",
+    "activeAlarms": "Alarmas Activas",
+    "currentPressure": "Presión Actual: {{pressure}} PSI",
+    "errorLoading": "Error al cargar dispositivos",
     "types": {
       "temperature": "Temperatura",
       "humidity": "Humedad",
@@ -377,23 +503,35 @@
       "username": "Nombre de Usuario",
       "email": "Correo Electrónico",
       "phone": "Teléfono",
-      "location": "Ubicación"
+      "location": "Ubicación",
+      "administrator": "Administrador",
+      "saveChanges": "Guardar Cambios",
+      "updateSuccess": "Perfil actualizado correctamente!"
     },
     "security": {
       "changePassword": "Cambiar Contraseña",
       "currentPassword": "Contraseña Actual",
       "newPassword": "Nueva Contraseña",
       "confirmPassword": "Confirmar Contraseña",
+      "passwordMinLength": "La nueva contraseña debe tener al menos 6 caracteres.",
+      "passwordUpdated": "Contraseña actualizada correctamente!",
       "privacy": "Configuración de Privacidad",
       "profileVisible": "Perfil visible para otros usuarios",
       "locationSharing": "Compartir ubicación",
       "dataCollection": "Permitir recopilación de datos para mejoras"
     },
     "notifications": {
+      "title": "Configuración de Notificaciones",
       "types": "Tipos de Notificaciones",
       "email": "Notificaciones por correo electrónico",
       "push": "Notificaciones push en el navegador",
-      "sms": "Notificaciones por SMS"
+      "sms": "Notificaciones por SMS",
+      "saveSettings": "Guardar Configuración",
+      "saveSuccess": "Configuración de notificaciones guardada!"
+    },
+    "preferencesUpdated": "Preferencias guardadas correctamente!",
+    "errors": {
+      "loadProfile": "No se pudo cargar el perfil de usuario"
     }
   },
   "auth": {
@@ -408,7 +546,10 @@
     "signIn": "Entrar",
     "signOut": "Salir",
     "invalidCredentials": "Credenciales inválidas",
-    "sessionExpired": "Sesión expirada"
+    "sessionExpired": "Sesión expirada",
+    "loginRequired": "Debe iniciar sesión para realizar esta acción",
+    "noPermissions": "No tiene permisos para realizar esta acción",
+    "loginError": "Error al iniciar sesión"
   },
   "map": {
     "showMap": "Mostrar Mapa",
@@ -487,7 +628,9 @@
     "name": "Nombre",
     "type": "Tipo",
     "category": "Categoría",
-    "priority": "Prioridad"
+    "priority": "Prioridad",
+    "notSpecified": "No especificado",
+    "notAvailable": "No disponible"
   },
   "errors": {
     "network": "Error de conexión de red",
@@ -497,7 +640,17 @@
     "notFound": "No encontrado",
     "validation": "Error de validación",
     "timeout": "Tiempo de espera agotado",
-    "unknown": "Error desconocido"
+    "unknown": "Error desconocido",
+    "saving": "Error al guardar",
+    "loading": "Error al cargar",
+    "deleting": "Error al eliminar",
+    "updating": "Error al actualizar",
+    "creating": "Error al crear",
+    "connection": "Error de conexión",
+    "testingConnection": "Error al probar la conexión",
+    "checkingDevices": "Error al verificar dispositivos",
+    "downloadingReport": "Error al descargar el reporte",
+    "generatingReport": "Error al generar el reporte"
   },
   "validation": {
     "required": "Este campo es obligatorio",
@@ -507,5 +660,25 @@
     "numeric": "Debe ser un número",
     "phone": "Debe ser un número de teléfono válido",
     "passwordMatch": "Las contraseñas deben coincidir"
+  },
+  "login": {
+    "title": "Iniciar Sesión",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "loginButton": "Iniciar Sesión",
+    "rememberMe": "Recordarme",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "accessProblems": "¿Problemas para acceder?",
+    "contactSupport": "Contactar soporte",
+    "footer": "© 2024 GPS Tracker System. Todos los derechos reservados.",
+    "errors": {
+      "loginFailed": "Error al iniciar sesión",
+      "invalidCredentials": "Credenciales inválidas",
+      "serverError": "Error del servidor"
+    }
+  },
+  "profile": {
+    "title": "Perfil de Usuario",
+    "description": "Esta es la página del perfil de usuario"
   }
 } 

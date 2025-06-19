@@ -39,10 +39,12 @@ import {
     GpsFixed as GpsIcon,
     Person as PersonIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { vehicleService, Vehicle } from '../services/vehicleService';
 import { VehicleForm } from '../components/VehicleForm';
 
 const Vehicles: React.FC = () => {
+    const { t } = useTranslation();
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ const Vehicles: React.FC = () => {
             setVehicles(data);
             setError(null);
         } catch (err) {
-            setError('Error al cargar los vehículos');
+            setError(t('vehicles.errorLoading'));
             console.error('Error loading vehicles:', err);
         } finally {
             setLoading(false);
@@ -104,12 +106,12 @@ const Vehicles: React.FC = () => {
     };
 
     const handleDelete = async (vehicleId: number) => {
-        if (window.confirm('¿Está seguro de que desea eliminar este vehículo?')) {
+        if (window.confirm(t('vehicles.confirmDelete'))) {
             try {
                 await vehicleService.delete(vehicleId);
                 fetchVehicles();
             } catch (err) {
-                setError('Error al eliminar el vehículo');
+                setError(t('vehicles.errorLoading'));
             }
         }
     };
@@ -140,11 +142,11 @@ const Vehicles: React.FC = () => {
     const getStatusLabel = (status: string) => {
         switch (status) {
             case 'active':
-                return 'Activo';
+                return t('vehicles.status.active');
             case 'maintenance':
-                return 'Mantenimiento';
+                return t('vehicles.status.maintenance');
             case 'inactive':
-                return 'Inactivo';
+                return t('vehicles.status.inactive');
             default:
                 return status;
         }
@@ -167,7 +169,7 @@ const Vehicles: React.FC = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Gestión de Vehículos
+                    {t('vehicles.management')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <IconButton onClick={fetchVehicles} color="primary">
@@ -179,7 +181,7 @@ const Vehicles: React.FC = () => {
                         onClick={handleAddNew}
                         sx={{ borderRadius: 2 }}
                     >
-                        Agregar Vehículo
+                        {t('vehicles.addVehicle')}
                     </Button>
                 </Box>
             </Box>

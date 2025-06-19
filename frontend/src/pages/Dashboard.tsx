@@ -36,11 +36,13 @@ import {
     PlayArrow as PlayIcon,
     Pause as PauseIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
 import DeviceMap from '../components/DeviceMap';
 
 const Dashboard: React.FC = () => {
+    const { t } = useTranslation();
     const [devices, setDevices] = useState<Device[]>([]);
     const [realTimePositions, setRealTimePositions] = useState<any[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
@@ -61,7 +63,7 @@ const Dashboard: React.FC = () => {
             setLastUpdate(new Date());
             setError(null);
         } catch (err) {
-            setError('Error loading devices');
+            setError(t('devices.errorLoading'));
             console.error('Error loading devices:', err);
         } finally {
             setLoading(false);
@@ -165,7 +167,7 @@ const Dashboard: React.FC = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1" fontWeight="bold">
-                        Dashboard GPS
+                    {t('dashboard.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <FormControlLabel
@@ -180,18 +182,18 @@ const Dashboard: React.FC = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 {isRealTimeEnabled ? <PlayIcon color="success" /> : <PauseIcon color="disabled" />}
                                 <Typography variant="body2">
-                                    {isRealTimeEnabled ? 'En Vivo' : 'Pausado'}
+                                    {isRealTimeEnabled ? t('dashboard.realTime') : t('dashboard.paused')}
                                 </Typography>
                             </Box>
                         }
                     />
                     <Typography variant="body2" color="text.secondary">
-                        Última actualización: {lastUpdate.toLocaleTimeString()}
+                        {t('dashboard.lastUpdate')}: {lastUpdate.toLocaleTimeString()}
                     </Typography>
                     <Typography variant="body2" color="primary">
-                        Activos: {realTimePositions.length}
+                        {t('dashboard.active')}: {realTimePositions.length}
                     </Typography>
-                    <Tooltip title="Actualizar datos">
+                    <Tooltip title={t('dashboard.refresh')}>
                         <IconButton 
                             onClick={handleRefresh} 
                             disabled={refreshing}

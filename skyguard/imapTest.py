@@ -72,7 +72,7 @@ else:
 #	except:
 #		pass
 		
-print "Remaining items:", len(a)
+print ("Remaining items:"), len(a)
 for i in a:
 	print i
 	

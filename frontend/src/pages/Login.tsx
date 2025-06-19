@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import { 
     Button, 
     TextField, 
@@ -26,6 +27,7 @@ import {
 } from '@mui/icons-material';
 
 const Login: React.FC = () => {
+    const { t } = useTranslation();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ const Login: React.FC = () => {
                 navigate('/dashboard');
             }, 100);
         } catch (err: any) {
-            setError(err.message || 'Error al iniciar sesión');
+            setError(err.message || t('login.errors.loginFailed'));
         }
     };
 
@@ -96,10 +98,10 @@ const Login: React.FC = () => {
                                 <GpsIcon sx={{ fontSize: 40 }} />
                             </Avatar>
                             <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                GPS Tracker
+                                {t('app.name')}
                             </Typography>
                             <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                                Sistema de Monitoreo y Seguimiento
+                                {t('app.subtitle')}
                             </Typography>
                         </Box>
 
@@ -114,7 +116,7 @@ const Login: React.FC = () => {
                                     color: 'text.primary'
                                 }}
                             >
-                                Iniciar Sesión
+                                {t('login.title')}
                             </Typography>
 
                             {error && (
@@ -138,7 +140,7 @@ const Login: React.FC = () => {
                                     required
                                     fullWidth
                                     id="username"
-                                    label="Usuario"
+                                    label={t('login.username')}
                                     name="username"
                                     autoComplete="username"
                                     autoFocus
@@ -167,7 +169,7 @@ const Login: React.FC = () => {
                                     required
                                     fullWidth
                                     name="password"
-                                    label="Contraseña"
+                                    label={t('login.password')}
                                     type={showPassword ? 'text' : 'password'}
                                     id="password"
                                     autoComplete="current-password"
@@ -241,7 +243,7 @@ const Login: React.FC = () => {
 
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="body2" color="text.secondary">
-                                        ¿Problemas para acceder?{' '}
+                                        {t('login.accessProblems')}{' '}
                                         <Typography 
                                             component="span" 
                                             color="primary" 
@@ -250,7 +252,7 @@ const Login: React.FC = () => {
                                                 '&:hover': { textDecoration: 'underline' }
                                             }}
                                         >
-                                            Contactar soporte
+                                            {t('login.contactSupport')}
                                         </Typography>
                                     </Typography>
                                 </Box>
@@ -262,7 +264,7 @@ const Login: React.FC = () => {
                 {/* Footer */}
                 <Box sx={{ textAlign: 'center', mt: 3 }}>
                     <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                        © 2024 GPS Tracker System. Todos los derechos reservados.
+                        {t('login.footer')}
                     </Typography>
                 </Box>
             </Container>
