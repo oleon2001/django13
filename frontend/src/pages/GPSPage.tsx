@@ -53,7 +53,7 @@ const GPSPage: React.FC = () => {
                         })
                     );
                 },
-                3000 // Poll every 3 seconds
+                10000 // Poll every 10 seconds (optimized from 3s for better performance)
             );
         } else {
             if (stopPollingRef.current) {

@@ -3,19 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { BaseLayout } from './components/Layout/BaseLayout';
 import { LoginPage } from './pages/Login/LoginPage';
-import Dashboard from './pages/Dashboard';
-import GPS from './pages/GPS';
-import Monitoring from './pages/Monitoring';
-import Tracking from './pages/Tracking';
-import Vehicles from './pages/Vehicles';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Drivers from './pages/Drivers';
-import Parking from './pages/Parking';
-import Sensors from './pages/Sensors';
-import GPSPage from './pages/GPSPage';
-import DeviceManagement from './pages/DeviceManagement';
-import RoutesPage from './pages/Routes';
+// Import lazy-loaded components for better performance
+import {
+  LazyDashboard,
+  LazyGPS,
+  LazyMonitoring,
+  LazyTracking,
+  LazyVehicles,
+  LazyReports,
+  LazySettings,
+  LazyDrivers,
+  LazyParking,
+  LazySensors,
+  LazyGPSPage,
+  LazyDeviceManagement,
+  LazyRoutesPage,
+  ComponentPreloader
+} from './components/LazyComponents';
 import './App.css';
 
 // Componente para rutas protegidas
@@ -49,13 +53,15 @@ const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
+        {/* Preload components for better UX */}
+        <ComponentPreloader />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <LazyDashboard />
               </ProtectedRoute>
             }
           />
@@ -63,7 +69,7 @@ const App: React.FC = () => {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <LazyDashboard />
               </ProtectedRoute>
             }
           />
@@ -71,7 +77,7 @@ const App: React.FC = () => {
             path="/gps"
             element={
               <ProtectedRoute>
-                <GPS />
+                <LazyGPS />
               </ProtectedRoute>
             }
           />
@@ -79,7 +85,7 @@ const App: React.FC = () => {
             path="/monitoring"
             element={
               <ProtectedRoute>
-                <Monitoring />
+                <LazyMonitoring />
               </ProtectedRoute>
             }
           />
@@ -87,7 +93,7 @@ const App: React.FC = () => {
             path="/tracking"
             element={
               <ProtectedRoute>
-                <Tracking />
+                <LazyTracking />
               </ProtectedRoute>
             }
           />
@@ -95,7 +101,7 @@ const App: React.FC = () => {
             path="/vehicles"
             element={
               <ProtectedRoute>
-                <Vehicles />
+                <LazyVehicles />
               </ProtectedRoute>
             }
           />
@@ -103,7 +109,7 @@ const App: React.FC = () => {
             path="/drivers"
             element={
               <ProtectedRoute>
-                <Drivers />
+                <LazyDrivers />
               </ProtectedRoute>
             }
           />
@@ -111,7 +117,7 @@ const App: React.FC = () => {
             path="/parking"
             element={
               <ProtectedRoute>
-                <Parking />
+                <LazyParking />
               </ProtectedRoute>
             }
           />
@@ -119,7 +125,7 @@ const App: React.FC = () => {
             path="/sensors"
             element={
               <ProtectedRoute>
-                <Sensors />
+                <LazySensors />
               </ProtectedRoute>
             }
           />
@@ -127,7 +133,7 @@ const App: React.FC = () => {
             path="/reports"
             element={
               <ProtectedRoute>
-                <Reports />
+                <LazyReports />
               </ProtectedRoute>
             }
           />
@@ -135,16 +141,16 @@ const App: React.FC = () => {
             path="/settings"
             element={
               <ProtectedRoute>
-                <Settings />
+                <LazySettings />
               </ProtectedRoute>
             }
           />
-          <Route path="/gps-page" element={<GPSPage />} />
+          <Route path="/gps-page" element={<LazyGPSPage />} />
           <Route
             path="/devices"
             element={
               <ProtectedRoute>
-                <DeviceManagement />
+                <LazyDeviceManagement />
               </ProtectedRoute>
             }
           />
@@ -152,7 +158,7 @@ const App: React.FC = () => {
             path="/routes"
             element={
               <ProtectedRoute>
-                <RoutesPage />
+                <LazyRoutesPage />
               </ProtectedRoute>
             }
           />

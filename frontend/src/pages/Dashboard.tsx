@@ -40,6 +40,7 @@ import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
 import DeviceMap from '../components/DeviceMap';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const Dashboard: React.FC = () => {
     const { t } = useTranslation();
@@ -103,7 +104,7 @@ const Dashboard: React.FC = () => {
                         })
                     );
                 },
-                3000 // Poll every 3 seconds
+                10000 // Poll every 10 seconds (optimized from 3s for better performance)
             );
         } else {
             if (stopPollingRef.current) {
@@ -155,11 +156,7 @@ const Dashboard: React.FC = () => {
     const totalDevices = devices.length;
 
     if (loading && !refreshing) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-                <CircularProgress size={60} />
-            </Box>
-        );
+        return <LoadingSkeleton variant="dashboard" />;
     }
 
     return (
