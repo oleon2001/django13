@@ -62,9 +62,18 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
         throw new Error('Formato de datos inválido recibido del servidor');
       }
 
-      // Verificar y actualizar el estado de cada dispositivo
+      // Filtrar dispositivos con IMEI válidos (números no nulos)
+      const validDevices = data.filter(device => 
+        device && 
+        device.imei && 
+        typeof device.imei === 'number' && 
+        !isNaN(device.imei) &&
+        device.imei > 0
+      );
+
+      // Verificar y actualizar el estado de cada dispositivo válido
       const updatedDevices = await Promise.all(
-        data.map(device => updateDeviceStatus(device))
+        validDevices.map(device => updateDeviceStatus(device))
       );
 
       setDevices(updatedDevices);
@@ -159,14 +168,28 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
   // Función para eliminar un dispositivo
   const deleteDevice = useCallback(async (imei: number): Promise<boolean> => {
     try {
+      // Verificar si el dispositivo existe en la lista local antes de intentar eliminarlo
+      const deviceExists = devices.some(device => device.imei === imei);
+      if (!deviceExists) {
+        setError(`Dispositivo con IMEI ${imei} no encontrado en la lista actual`);
+        return false;
+      }
+
       await deviceService.deleteDevice(imei);
       setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
       return true;
     } catch (error: any) {
+      // Si es un error 404, el dispositivo ya no existe, removerlo de la lista local
+      if (error.response?.status === 404) {
+        setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
+        setError(`Dispositivo con IMEI ${imei} ya no existe en el servidor`);
+        return true; // Retornar true porque el objetivo (eliminar) se cumplió
+      }
+      
       setError(error.response?.data?.error || error.message || 'Error al eliminar dispositivo');
       return false;
     }
-  }, []);
+  }, [devices]);
 
   // Función para verificar el estado de todos los dispositivos
       const checkAllDevicesStatus = useCallback(async (timeout: number = 60): Promise<{
