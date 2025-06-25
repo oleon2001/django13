@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import {
     Box,
     Grid,
@@ -10,7 +10,6 @@ import {
     IconButton,
     Tooltip,
     Alert,
-    CircularProgress,
     Divider,
     List,
     ListItem,
@@ -39,7 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
-import DeviceMap from '../components/DeviceMap';
+import { DeviceMapWithLoading } from '../components/LazyComponents';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const Dashboard: React.FC = () => {
@@ -60,15 +59,23 @@ const Dashboard: React.FC = () => {
             else setLoading(true);
             
             const data = await deviceService.getAll();
-            setDevices(data);
-            setLastUpdate(new Date());
-            setError(null);
+            
+            // Use startTransition for state updates that might cause suspense
+            startTransition(() => {
+                setDevices(data);
+                setLastUpdate(new Date());
+                setError(null);
+            });
         } catch (err) {
-            setError(t('devices.errorLoading'));
+            startTransition(() => {
+                setError(t('devices.errorLoading'));
+            });
             console.error('Error loading devices:', err);
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            startTransition(() => {
+                setLoading(false);
+                setRefreshing(false);
+            });
         }
     };
 
@@ -78,31 +85,34 @@ const Dashboard: React.FC = () => {
 
     // Real-time polling effect
     useEffect(() => {
-        if (isRealTimeEnabled) {
+        if (isRealTimeEnabled && !loading) { // Only start polling after initial load
             stopPollingRef.current = deviceService.startRealTimePolling(
                 (positions) => {
-                    setRealTimePositions(positions);
-                    setLastUpdate(new Date());
-                    
-                    // Update devices with real-time positions
-                    setDevices(prevDevices => 
-                        prevDevices.map(device => {
-                            const realtimePos = positions.find(pos => pos.imei === device.imei);
-                            if (realtimePos) {
-                                return {
-                                    ...device,
-                                    latitude: realtimePos.position.latitude,
-                                    longitude: realtimePos.position.longitude,
-                                    speed: realtimePos.speed,
-                                    course: realtimePos.course,
-                                    altitude: realtimePos.altitude,
-                                    connection_status: realtimePos.connection_status,
-                                    lastUpdate: realtimePos.last_update,
-                                };
-                            }
-                            return device;
-                        })
-                    );
+                    // Use startTransition for real-time updates
+                    startTransition(() => {
+                        setRealTimePositions(positions);
+                        setLastUpdate(new Date());
+                        
+                        // Update devices with real-time positions
+                        setDevices(prevDevices => 
+                            prevDevices.map(device => {
+                                const realtimePos = positions.find(pos => pos.imei === device.imei);
+                                if (realtimePos) {
+                                    return {
+                                        ...device,
+                                        latitude: realtimePos.position.latitude,
+                                        longitude: realtimePos.position.longitude,
+                                        speed: realtimePos.speed,
+                                        course: realtimePos.course,
+                                        altitude: realtimePos.altitude,
+                                        connection_status: realtimePos.connection_status,
+                                        lastUpdate: realtimePos.last_update,
+                                    };
+                                }
+                                return device;
+                            })
+                        );
+                    });
                 },
                 10000 // Poll every 10 seconds (optimized from 3s for better performance)
             );
@@ -118,10 +128,12 @@ const Dashboard: React.FC = () => {
                 stopPollingRef.current();
             }
         };
-    }, [isRealTimeEnabled]);
+    }, [isRealTimeEnabled, loading]); // Add loading as dependency
 
     const handleDeviceSelect = (device: Device) => {
-        setSelectedDevice(device);
+        startTransition(() => {
+            setSelectedDevice(device);
+        });
     };
 
     const handleRefresh = () => {
@@ -391,7 +403,7 @@ const Dashboard: React.FC = () => {
                 <Grid item xs={12} md={8}>
                     <Paper sx={{ height: '600px', p: 2 }}>
                         <Box sx={{ height: '100%' }}>
-                            <DeviceMap
+                            <DeviceMapWithLoading
                                 devices={devices}
                                 selectedDevice={selectedDevice}
                                 onDeviceSelect={handleDeviceSelect}

@@ -29,8 +29,13 @@ class WialonServer(IDeviceServer):
         self.clients = {}
         self.protocol = WialonProtocolHandler()
         
-    def start(self):
+    def start(self, host: str = '', port: int = 0):
         """Start the server."""
+        # Use provided parameters if given
+        if host:
+            self.host = host
+        if port:
+            self.port = port
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -66,6 +71,14 @@ class WialonServer(IDeviceServer):
             except:
                 pass
         logger.info("Wialon server stopped")
+        
+    def is_running(self) -> bool:
+        """Check if server is running."""
+        return self.running
+        
+    def handle_connection(self, connection, address) -> None:
+        """Handle incoming connection."""
+        self._handle_client(connection, address)
         
     def _handle_client(self, client_socket: socket.socket, address: tuple):
         """Handle a client connection."""

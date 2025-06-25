@@ -1,22 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { CircularProgress, Box } from '@mui/material';
-
-// Loading component for Suspense fallback
-const LoadingSpinner: React.FC<{ message?: string }> = ({ message = 'Cargando...' }) => (
-  <Box 
-    display="flex" 
-    flexDirection="column"
-    justifyContent="center" 
-    alignItems="center" 
-    minHeight="60vh"
-    gap={2}
-  >
-    <CircularProgress size={60} />
-    <Box sx={{ color: 'text.secondary', fontSize: '1.1rem' }}>
-      {message}
-    </Box>
-  </Box>
-);
+import EnhancedLoading from './EnhancedLoading';
 
 // Lazy load main page components
 export const LazyDashboard = lazy(() => import('../pages/Dashboard'));
@@ -36,88 +19,186 @@ export const LazyGPSPage = lazy(() => import('../pages/GPSPage'));
 // Lazy load heavy components (only if they have default exports)
 export const LazyDeviceMap = lazy(() => import('./DeviceMap'));
 
-// Wrapper components with Suspense and custom loading messages
+// Wrapper components with Suspense and enhanced loading animations
 export const DashboardWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Dashboard..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="dashboard" 
+      message="Cargando Dashboard" 
+      subMessage="Preparando vista general del sistema"
+      variant="detailed"
+    />
+  }>
     <LazyDashboard />
   </Suspense>
 );
 
 export const MonitoringWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Monitoreo..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="monitoring" 
+      message="Cargando Monitoreo" 
+      subMessage="Iniciando supervisión en tiempo real"
+      variant="detailed"
+    />
+  }>
     <LazyMonitoring />
   </Suspense>
 );
 
 export const GPSWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando GPS..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="gps" 
+      message="Cargando GPS" 
+      subMessage="Conectando con dispositivos GPS"
+      variant="default"
+    />
+  }>
     <LazyGPS />
   </Suspense>
 );
 
 export const TrackingWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Seguimiento..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="tracking" 
+      message="Cargando Seguimiento" 
+      subMessage="Preparando sistema de rastreo"
+      variant="default"
+    />
+  }>
     <LazyTracking />
   </Suspense>
 );
 
 export const VehiclesWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Vehículos..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="vehicles" 
+      message="Cargando Vehículos" 
+      subMessage="Obteniendo información de la flota"
+      variant="default"
+    />
+  }>
     <LazyVehicles />
   </Suspense>
 );
 
 export const DriversWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Conductores..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="drivers" 
+      message="Cargando Conductores" 
+      subMessage="Accediendo a datos de conductores"
+      variant="default"
+    />
+  }>
     <LazyDrivers />
   </Suspense>
 );
 
 export const ParkingWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Estacionamiento..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="parking" 
+      message="Cargando Estacionamiento" 
+      subMessage="Verificando espacios disponibles"
+      variant="default"
+    />
+  }>
     <LazyParking />
   </Suspense>
 );
 
 export const SensorsWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Sensores..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="sensors" 
+      message="Cargando Sensores" 
+      subMessage="Conectando con sensores IoT"
+      variant="default"
+    />
+  }>
     <LazySensors />
   </Suspense>
 );
 
 export const ReportsWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Reportes..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="reports" 
+      message="Cargando Reportes" 
+      subMessage="Generando análisis y estadísticas"
+      variant="detailed"
+    />
+  }>
     <LazyReports />
   </Suspense>
 );
 
 export const SettingsWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Configuración..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="settings" 
+      message="Cargando Configuración" 
+      subMessage="Accediendo a preferencias del sistema"
+      variant="default"
+    />
+  }>
     <LazySettings />
   </Suspense>
 );
 
 export const DeviceManagementWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Gestión de Dispositivos..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="devices" 
+      message="Cargando Gestión de Dispositivos" 
+      subMessage="Verificando estado de dispositivos"
+      variant="detailed"
+    />
+  }>
     <LazyDeviceManagement />
   </Suspense>
 );
 
 export const RoutesPageWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Rutas..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="routes" 
+      message="Cargando Rutas" 
+      subMessage="Calculando rutas optimizadas"
+      variant="default"
+    />
+  }>
     <LazyRoutesPage />
   </Suspense>
 );
 
 export const GPSPageWithLoading: React.FC = () => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Página GPS..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="gps" 
+      message="Cargando Página GPS" 
+      subMessage="Inicializando interfaz GPS"
+      variant="default"
+    />
+  }>
     <LazyGPSPage />
   </Suspense>
 );
 
 // Map component with loading
 export const DeviceMapWithLoading: React.FC<any> = (props) => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Mapa..." />}>
+  <Suspense fallback={
+    <EnhancedLoading 
+      module="gps" 
+      message="Cargando Mapa" 
+      subMessage="Renderizando ubicaciones de dispositivos"
+      variant="minimal"
+    />
+  }>
     <LazyDeviceMap {...props} />
   </Suspense>
 );
@@ -145,6 +226,14 @@ export const ComponentPreloader: React.FC = () => {
 
   return null;
 };
+
+// Legacy LoadingSpinner for backward compatibility
+const LoadingSpinner: React.FC<{ message?: string }> = ({ message = 'Cargando...' }) => (
+  <EnhancedLoading 
+    message={message}
+    variant="minimal"
+  />
+);
 
 export {
   LoadingSpinner

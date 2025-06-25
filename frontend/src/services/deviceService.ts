@@ -243,22 +243,51 @@ export const deviceService = {
 
   // Polling method for real-time updates
   startRealTimePolling: (callback: (positions: any[]) => void, interval: number = 5000) => {
+    let isActive = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const poll = async () => {
+      if (!isActive) return;
+      
       try {
         const data = await deviceService.getRealTimePositions();
-        callback(data.positions || []);
+        if (isActive && data && data.positions) {
+          // Use a small timeout to prevent synchronous updates that could cause suspense
+          timeoutId = setTimeout(() => {
+            if (isActive) {
+              callback(data.positions || []);
+            }
+          }, 50); // Small delay to allow React to process the update
+        }
       } catch (error) {
         console.error('Error polling real-time positions:', error);
+        // Don't callback with error data to avoid state inconsistencies
+        // Add exponential backoff on errors
+        if (isActive) {
+          const backoffDelay = Math.min(interval * 2, 30000); // Max 30 seconds
+          timeoutId = setTimeout(() => {
+            if (isActive) poll();
+          }, backoffDelay);
+          return;
+        }
+      }
+      
+      // Schedule next poll
+      if (isActive) {
+        timeoutId = setTimeout(poll, interval);
       }
     };
 
-    // Initial call
-    poll();
-    
-    // Set up interval
-    const intervalId = setInterval(poll, interval);
+    // Initial call with delay to avoid immediate suspense
+    timeoutId = setTimeout(poll, 200);
     
     // Return cleanup function
-    return () => clearInterval(intervalId);
+    return () => {
+      isActive = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
   },
 }; 

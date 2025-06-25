@@ -8,6 +8,30 @@ from django.contrib.gis.geos import Point
 from skyguard.apps.gps.models import GPSDevice, GPSLocation, GPSEvent
 
 
+class IDeviceServer(ABC):
+    """Interface for GPS device servers."""
+    
+    @abstractmethod
+    def start(self, host: str = '', port: int = 0) -> None:
+        """Start the server."""
+        pass
+    
+    @abstractmethod
+    def stop(self) -> None:
+        """Stop the server."""
+        pass
+    
+    @abstractmethod
+    def is_running(self) -> bool:
+        """Check if server is running."""
+        pass
+    
+    @abstractmethod
+    def handle_connection(self, connection, address) -> None:
+        """Handle incoming connection."""
+        pass
+
+
 class IDeviceRepository(ABC):
     """Interface for device repositories."""
     
