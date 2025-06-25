@@ -81,7 +81,7 @@ const Monitoring: React.FC = () => {
         }
         const interval = setInterval(() => {
             fetchDevices();
-        }, 100000); // Update every 10 seconds
+        }, 10000); // Update every 10 seconds
         startTransition(() => {
             setRefreshInterval(interval);
         });

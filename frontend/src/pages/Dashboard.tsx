@@ -20,7 +20,6 @@ import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import CircularProgress from '@mui/material/CircularProgress';
 // Optimized icon imports
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
@@ -290,17 +289,6 @@ const Dashboard: React.FC = () => {
         return <ErrorIcon color="error" />;
       default:
         return <WarningIcon color="warning" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'online':
-        return 'success';
-      case 'offline':
-        return 'error';
-      default:
-        return 'warning';
     }
   };
 

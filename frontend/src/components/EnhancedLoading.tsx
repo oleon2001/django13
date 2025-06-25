@@ -1,124 +1,132 @@
-import React from 'react';
-import { Box, Typography, LinearProgress, Fade, Zoom, keyframes } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import React, { memo, useMemo } from 'react';
+import {
+  Box,
+  Typography,
+  LinearProgress,
+  Skeleton,
+  CircularProgress,
+  useTheme,
+  alpha,
+} from '@mui/material';
+import { keyframes, styled } from '@mui/material/styles';
 import {
   Dashboard as DashboardIcon,
-  MonitorHeart as MonitorIcon,
-  GpsFixed as GpsIcon,
-  DirectionsCar as VehicleIcon,
-  Person as DriverIcon,
-  LocalParking as ParkingIcon,
-  Sensors as SensorIcon,
-  Assessment as ReportIcon,
+  LocationOn as LocationOnIcon,
+  MonitorHeart as MonitorHeartIcon,
+  TrackChanges as TrackChangesIcon,
+  DirectionsCar as DirectionsCarIcon,
+  BarChart as BarChartIcon,
   Settings as SettingsIcon,
-  DevicesOther as DeviceIcon,
+  Person as PersonIcon,
+  LocalParking as LocalParkingIcon,
+  Sensors as SensorsIcon,
   Route as RouteIcon,
-  Timeline as TrackingIcon,
+  Devices as DevicesIcon,
+  CloudSync as CloudSyncIcon,
 } from '@mui/icons-material';
 
-// Animaciones personalizadas
-const pulse = keyframes`
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-`;
+// Enhanced animations with better performance
+const animations = {
+  pulse: keyframes`
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  `,
+  
+  float: keyframes`
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  `,
+  
+  shimmer: keyframes`
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  `,
+  
+  rotate: keyframes`
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  `,
+  
+  slideIn: keyframes`
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  `,
+  
+  breathe: keyframes`
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  `,
+  
+  wave: keyframes`
+    0%, 60%, 100% { transform: initial; }
+    30% { transform: translateY(-15px); }
+  `,
+};
 
-const float = keyframes`
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-`;
-
-const shimmer = keyframes`
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
-`;
-
-const rotate = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const slideIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
-
-// Componentes estilizados
+// Optimized styled components with better performance
 const LoadingContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  minHeight: '60vh',
+  minHeight: '200px',
   padding: theme.spacing(4),
-  background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+  position: 'relative',
+  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
+  borderRadius: theme.shape.borderRadius * 2,
+  backdropFilter: 'blur(10px)',
+  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+  overflow: 'hidden',
+  
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: '-100%',
+    width: '100%',
+    height: '100%',
+    background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.primary.main, 0.1)}, transparent)`,
+    animation: `${animations.shimmer} 2s infinite`,
+  },
 }));
 
 const IconContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
   marginBottom: theme.spacing(3),
-  '& .main-icon': {
-    fontSize: '4rem',
+  animation: `${animations.float} 3s ease-in-out infinite`,
+  
+  '& .MuiSvgIcon-root': {
+    fontSize: '3rem',
     color: theme.palette.primary.main,
-    animation: `${pulse} 2s ease-in-out infinite`,
-  },
-  '& .orbit-icon': {
-    position: 'absolute',
-    fontSize: '1.5rem',
-    color: theme.palette.primary.light,
-    animation: `${rotate} 3s linear infinite`,
+    filter: `drop-shadow(0 4px 8px ${alpha(theme.palette.primary.main, 0.3)})`,
   },
 }));
 
 const LoadingText = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(1),
+  fontWeight: 600,
   color: theme.palette.text.primary,
-  fontWeight: 500,
-  marginBottom: theme.spacing(2),
-  animation: `${slideIn} 0.8s ease-out`,
+  textAlign: 'center',
+  animation: `${animations.slideIn} 0.6s ease-out`,
 }));
 
 const SubText = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.secondary,
-  fontSize: '0.875rem',
-  animation: `${slideIn} 1s ease-out`,
+  textAlign: 'center',
+  marginBottom: theme.spacing(3),
+  animation: `${animations.slideIn} 0.8s ease-out`,
 }));
 
 const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  width: '200px',
-  height: '4px',
-  borderRadius: '2px',
-  marginTop: theme.spacing(2),
-  backgroundColor: theme.palette.grey[200],
+  width: '100%',
+  maxWidth: 300,
+  height: 6,
+  borderRadius: 3,
+  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  
   '& .MuiLinearProgress-bar': {
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: '2px',
+    borderRadius: 3,
+    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
   },
 }));
 
@@ -126,166 +134,248 @@ const FloatingDots = styled(Box)(({ theme }) => ({
   display: 'flex',
   gap: theme.spacing(1),
   marginTop: theme.spacing(2),
+  
   '& .dot': {
-    width: '8px',
-    height: '8px',
+    width: 8,
+    height: 8,
     borderRadius: '50%',
     backgroundColor: theme.palette.primary.main,
-    animation: `${float} 1.5s ease-in-out infinite`,
-    '&:nth-of-type(2)': {
-      animationDelay: '0.2s',
-    },
-    '&:nth-of-type(3)': {
-      animationDelay: '0.4s',
-    },
+    animation: `${animations.wave} 1.4s ease-in-out infinite`,
+    
+    '&:nth-of-type(1)': { animationDelay: '0s' },
+    '&:nth-of-type(2)': { animationDelay: '0.1s' },
+    '&:nth-of-type(3)': { animationDelay: '0.2s' },
   },
 }));
 
-const ShimmerBox = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(90deg, 
-    ${theme.palette.grey[100]} 0%, 
-    ${theme.palette.grey[200]} 50%, 
-    ${theme.palette.grey[100]} 100%)`,
-  backgroundSize: '200px 100%',
-  animation: `${shimmer} 1.5s ease-in-out infinite`,
-  borderRadius: theme.shape.borderRadius,
+const SkeletonContainer = styled(Box)(({ theme }) => ({
+  width: '100%',
+  maxWidth: 400,
+  padding: theme.spacing(2),
+  
+  '& .MuiSkeleton-root': {
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  },
 }));
 
-// Mapeo de iconos por módulo
+// Module icons mapping with better organization
 const moduleIcons = {
   dashboard: DashboardIcon,
-  monitoring: MonitorIcon,
-  gps: GpsIcon,
-  vehicles: VehicleIcon,
-  drivers: DriverIcon,
-  parking: ParkingIcon,
-  sensors: SensorIcon,
-  reports: ReportIcon,
+  gps: LocationOnIcon,
+  monitoring: MonitorHeartIcon,
+  tracking: TrackChangesIcon,
+  vehicles: DirectionsCarIcon,
+  reports: BarChartIcon,
   settings: SettingsIcon,
-  devices: DeviceIcon,
+  users: PersonIcon,
+  parking: LocalParkingIcon,
+  sensors: SensorsIcon,
   routes: RouteIcon,
-  tracking: TrackingIcon,
-};
+  devices: DevicesIcon,
+  sync: CloudSyncIcon,
+  default: DashboardIcon,
+} as const;
 
-interface EnhancedLoadingProps {
-  module?: keyof typeof moduleIcons;
+// Enhanced loading variants
+export type LoadingVariant = 'default' | 'minimal' | 'skeleton' | 'dots' | 'circular' | 'detailed';
+export type ModuleType = keyof typeof moduleIcons;
+
+export interface EnhancedLoadingProps {
+  module?: ModuleType;
   message?: string;
   subMessage?: string;
   showProgress?: boolean;
-  variant?: 'default' | 'minimal' | 'detailed';
+  progress?: number;
+  variant?: LoadingVariant;
+  size?: 'small' | 'medium' | 'large';
+  fullScreen?: boolean;
+  className?: string;
 }
 
-const EnhancedLoading: React.FC<EnhancedLoadingProps> = ({
-  module = 'dashboard',
+const EnhancedLoading: React.FC<EnhancedLoadingProps> = memo(({
+  module = 'default',
   message = 'Cargando...',
-  subMessage = 'Por favor espere mientras se carga el contenido',
-  showProgress = true,
-  variant = 'default'
+  subMessage = 'Por favor espere mientras procesamos su solicitud',
+  showProgress = false,
+  progress,
+  variant = 'default',
+  size = 'medium',
+  fullScreen = false,
+  className,
 }) => {
-  const IconComponent = moduleIcons[module] || DashboardIcon;
-
-  if (variant === 'minimal') {
-    return (
-      <Fade in timeout={300}>
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          minHeight="200px"
-          gap={2}
-        >
-          <IconComponent sx={{ 
-            fontSize: '2rem', 
-            color: 'primary.main',
-            animation: `${pulse} 1.5s ease-in-out infinite`
-          }} />
-          <Typography variant="h6" color="text.secondary">
-            {message}
-          </Typography>
-        </Box>
-      </Fade>
-    );
-  }
-
-  if (variant === 'detailed') {
-    return (
-      <Fade in timeout={500}>
-        <LoadingContainer>
-          <Zoom in timeout={600}>
-            <IconContainer>
-              <IconComponent className="main-icon" />
-              <Box
-                className="orbit-icon"
+  const theme = useTheme();
+  
+  // Memoize icon component for better performance
+  const IconComponent = useMemo(() => moduleIcons[module] || moduleIcons.default, [module]);
+  
+  // Memoize size configurations
+  const sizeConfig = useMemo(() => ({
+    small: { minHeight: '120px', iconSize: '2rem', padding: 2 },
+    medium: { minHeight: '200px', iconSize: '3rem', padding: 4 },
+    large: { minHeight: '300px', iconSize: '4rem', padding: 6 },
+  }), []);
+  
+  const currentSize = sizeConfig[size];
+  
+  // Render different variants
+  const renderContent = () => {
+    switch (variant) {
+      case 'minimal':
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
+            <CircularProgress size={24} thickness={4} />
+            <Typography variant="body2" color="text.secondary">
+              {message}
+            </Typography>
+          </Box>
+        );
+        
+      case 'skeleton':
+        return (
+          <SkeletonContainer>
+            <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
+            <Skeleton variant="text" width="80%" sx={{ mb: 1 }} />
+            <Skeleton variant="text" width="60%" sx={{ mb: 2 }} />
+            <Skeleton variant="rectangular" height={40} />
+          </SkeletonContainer>
+        );
+        
+      case 'dots':
+        return (
+          <Box sx={{ textAlign: 'center', p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              {message}
+            </Typography>
+            <FloatingDots>
+              <Box className="dot" />
+              <Box className="dot" />
+              <Box className="dot" />
+            </FloatingDots>
+          </Box>
+        );
+        
+      case 'circular':
+        return (
+          <Box sx={{ textAlign: 'center', p: 4 }}>
+            <Box sx={{ position: 'relative', display: 'inline-flex', mb: 3 }}>
+              <CircularProgress
+                size={60}
+                thickness={4}
+                variant={progress !== undefined ? 'determinate' : 'indeterminate'}
+                value={progress}
                 sx={{
-                  top: '-10px',
-                  right: '-10px',
-                  transformOrigin: '20px 35px',
-                }}
-              >
-                <GpsIcon sx={{ fontSize: '1rem' }} />
-              </Box>
-            </IconContainer>
-          </Zoom>
-
-          <LoadingText variant="h5">{message}</LoadingText>
-          <SubText>{subMessage}</SubText>
-
-          {showProgress && (
-            <Fade in timeout={800}>
-              <StyledLinearProgress />
-            </Fade>
-          )}
-
-          <FloatingDots>
-            <Box className="dot" />
-            <Box className="dot" />
-            <Box className="dot" />
-          </FloatingDots>
-
-          {/* Elementos decorativos */}
-          <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
-            {[1, 2, 3, 4].map((item) => (
-              <ShimmerBox
-                key={item}
-                sx={{
-                  width: 40,
-                  height: 6,
-                  animationDelay: `${item * 0.2}s`,
+                  color: theme.palette.primary.main,
+                  '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round',
+                  },
                 }}
               />
-            ))}
+              {progress !== undefined && (
+                <Box
+                  sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography variant="caption" component="div" color="text.secondary">
+                    {`${Math.round(progress)}%`}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              {message}
+            </Typography>
+            {subMessage && (
+              <Typography variant="body2" color="text.secondary">
+                {subMessage}
+              </Typography>
+            )}
           </Box>
-        </LoadingContainer>
-      </Fade>
+        );
+        
+      case 'detailed':
+      default:
+        return (
+          <>
+            <IconContainer>
+              <IconComponent sx={{ fontSize: currentSize.iconSize }} />
+            </IconContainer>
+            
+            <LoadingText variant="h6">
+              {message}
+            </LoadingText>
+            
+            {subMessage && (
+              <SubText variant="body2">
+                {subMessage}
+              </SubText>
+            )}
+            
+            {showProgress && (
+              <Box sx={{ width: '100%', maxWidth: 300, mb: 2 }}>
+                <StyledLinearProgress
+                  variant={progress !== undefined ? 'determinate' : 'indeterminate'}
+                  value={progress}
+                />
+                {progress !== undefined && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                    {Math.round(progress)}% completado
+                  </Typography>
+                )}
+              </Box>
+            )}
+            
+            <FloatingDots>
+              <Box className="dot" />
+              <Box className="dot" />
+              <Box className="dot" />
+            </FloatingDots>
+          </>
+        );
+    }
+  };
+  
+  const containerProps = {
+    className,
+    sx: {
+      minHeight: currentSize.minHeight,
+      padding: currentSize.padding,
+      ...(fullScreen && {
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: theme.zIndex.modal,
+        backgroundColor: alpha(theme.palette.background.default, 0.9),
+        backdropFilter: 'blur(8px)',
+      }),
+    },
+  };
+  
+  if (variant === 'minimal' || variant === 'skeleton' || variant === 'dots' || variant === 'circular') {
+    return (
+      <Box {...containerProps}>
+        {renderContent()}
+      </Box>
     );
   }
-
-  // Variant default
+  
   return (
-    <Fade in timeout={400}>
-      <LoadingContainer>
-        <Zoom in timeout={500}>
-          <IconContainer>
-            <IconComponent className="main-icon" />
-          </IconContainer>
-        </Zoom>
-
-        <LoadingText variant="h6">{message}</LoadingText>
-        
-        {showProgress && (
-          <Fade in timeout={600}>
-            <StyledLinearProgress />
-          </Fade>
-        )}
-
-        <FloatingDots>
-          <Box className="dot" />
-          <Box className="dot" />
-          <Box className="dot" />
-        </FloatingDots>
-      </LoadingContainer>
-    </Fade>
+    <LoadingContainer {...containerProps}>
+      {renderContent()}
+    </LoadingContainer>
   );
-};
+});
+
+EnhancedLoading.displayName = 'EnhancedLoading';
 
 export default EnhancedLoading; 
