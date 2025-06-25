@@ -223,22 +223,15 @@ const DeviceManagement: React.FC = () => {
     const handleCheckAllDevicesStatus = async () => {
         setCheckingAllDevices(true);
         try {
-                            const result = await checkAllDevicesStatus(60); // 1 minuto de timeout
-            
+            const result = await checkAllDevicesStatus(60);
             if (result.success) {
-                if (result.devicesUpdated > 0) {
-                    setError(null);
-                    console.log(`✅ Verificación completada: ${result.devicesUpdated} dispositivos marcados como offline`);
-                } else {
-                    setError(null);
-                    console.log('✅ Verificación completada: Todos los dispositivos están actualizados');
-                }
+                setError(null);
             } else {
-                setError(result.message || t('errors.checkingDevices') + `: ${t('errors.unknown')}`);
+                setError(result.message);
             }
-        } catch (err: any) {
-            console.error('Error checking all devices:', err);
-            setError(t('errors.checkingDevices') + `: ${err.message || t('errors.unknown')}`);
+        } catch (err) {
+            console.error('Error checking all devices status:', err);
+            setError(t('errors.checkingStatus'));
         } finally {
             setCheckingAllDevices(false);
         }
