@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { CircularProgress, Box, Skeleton } from '@mui/material';
+import EnhancedLoading from './EnhancedLoading';
 
 // Optimized Loading component with skeleton
 const LoadingSpinner: React.FC<{ message?: string; variant?: 'spinner' | 'skeleton' }> = ({ 
@@ -103,10 +104,14 @@ const withLazyLoading = <T extends object>(
   return React.forwardRef<any, T>((props, ref) => (
     <Suspense 
       fallback={
-        <LoadingSpinner 
-          message={loadingMessage} 
-          variant={useSkeletonLoading ? 'skeleton' : 'spinner'} 
-        />
+        useSkeletonLoading ? (
+          <LoadingSpinner 
+            message={loadingMessage} 
+            variant="skeleton"
+          />
+        ) : (
+          <EnhancedLoading message={loadingMessage} />
+        )
       }
     >
       <LazyComponent {...props} ref={ref} />
@@ -187,116 +192,35 @@ export const GPSPageWithLoading = withLazyLoading(
   'Cargando Página GPS...'
 );
 
-// Map component with loading
-export const DeviceMapWithLoading: React.FC<any> = (props) => (
-  <Suspense fallback={<LoadingSpinner message="Cargando Mapa..." />}>
-    <LazyDeviceMap {...props} />
-  </Suspense>
+// Device Map Component with Enhanced Loading
+export const DeviceMapWithLoading = withLazyLoading(
+  LazyDeviceMap, 
+  'Cargando Mapa de Dispositivos...', 
+  true
 );
 
-// Enhanced preload function with priority system
-export const preloadComponents = (priority: 'high' | 'medium' | 'low' | 'all' = 'high') => {
-  const componentsToLoad: Promise<any>[] = [];
-
-  if (priority === 'high' || priority === 'all') {
-    componentsToLoad.push(
-      import(/* webpackChunkName: "dashboard" */ '../pages/Dashboard'),
-      import(/* webpackChunkName: "monitoring" */ '../pages/Monitoring'),
-      import(/* webpackChunkName: "gps" */ '../pages/GPS'),
-      import(/* webpackChunkName: "vehicles" */ '../pages/Vehicles'),
-      import(/* webpackChunkName: "device-map" */ './DeviceMap')
-    );
-  }
-
-  if (priority === 'medium' || priority === 'all') {
-    componentsToLoad.push(
-      import(/* webpackChunkName: "drivers" */ '../pages/Drivers'),
-      import(/* webpackChunkName: "device-management" */ '../pages/DeviceManagement'),
-      import(/* webpackChunkName: "reports" */ '../pages/Reports')
-    );
-  }
-
-  if (priority === 'low' || priority === 'all') {
-    componentsToLoad.push(
-      import(/* webpackChunkName: "parking" */ '../pages/Parking'),
-      import(/* webpackChunkName: "sensors" */ '../pages/Sensors'),
-      import(/* webpackChunkName: "settings" */ '../pages/Settings'),
-      import(/* webpackChunkName: "routes" */ '../pages/Routes'),
-      import(/* webpackChunkName: "gps-page" */ '../pages/GPSPage'),
-      import(/* webpackChunkName: "tracking" */ '../pages/Tracking')
-    );
-  }
-
-  return Promise.allSettled(componentsToLoad);
+// Preload components for better UX
+export const preloadComponents = () => {
+  // Preload most commonly used components
+  import('../pages/Dashboard');
+  import('../pages/Monitoring');
+  import('../pages/GPS');
+  import('../pages/Vehicles');
+  import('./DeviceMap');
 };
 
-// Smart preloader component with adaptive strategy
+// Component for preloading on app start
 export const ComponentPreloader: React.FC = () => {
   React.useEffect(() => {
-    let timeouts: NodeJS.Timeout[] = [];
+    // Preload components after a short delay to not block initial render
+    const timer = setTimeout(() => {
+      preloadComponents();
+    }, 2000);
 
-    // Immediate preload of critical components
-    const immediatePreload = setTimeout(() => {
-      preloadComponents('high').then(() => {
-        console.log('🚀 High priority components preloaded');
-      });
-    }, 1000);
-
-    // Medium priority after user settles
-    const mediumPreload = setTimeout(() => {
-      preloadComponents('medium').then(() => {
-        console.log('📦 Medium priority components preloaded');
-      });
-    }, 5000);
-
-    // Low priority when idle
-    const lowPreload = setTimeout(() => {
-      preloadComponents('low').then(() => {
-        console.log('📋 Low priority components preloaded');
-      });
-    }, 10000);
-
-    timeouts = [immediatePreload, mediumPreload, lowPreload];
-
-    return () => {
-      timeouts.forEach(timeout => clearTimeout(timeout));
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   return null;
-};
-
-// Route-based preloader hook
-export const useRoutePreloader = () => {
-  const preloadRoute = React.useCallback((routeName: string) => {
-    const routeImportMap: Record<string, () => Promise<any>> = {
-      dashboard: () => import('../pages/Dashboard'),
-      monitoring: () => import('../pages/Monitoring'),
-      gps: () => import('../pages/GPS'),
-      tracking: () => import('../pages/Tracking'),
-      vehicles: () => import('../pages/Vehicles'),
-      drivers: () => import('../pages/Drivers'),
-      parking: () => import('../pages/Parking'),
-      sensors: () => import('../pages/Sensors'),
-      reports: () => import('../pages/Reports'),
-      settings: () => import('../pages/Settings'),
-      devices: () => import('../pages/DeviceManagement'),
-      routes: () => import('../pages/Routes'),
-    };
-
-    const importFn = routeImportMap[routeName.toLowerCase()];
-    if (importFn) {
-      return importFn();
-    }
-    return Promise.resolve();
-  }, []);
-
-  return { preloadRoute };
-};
-
-export {
-  LoadingSpinner,
-  withLazyLoading
 };
 
 export default {
@@ -316,7 +240,5 @@ export default {
   GPSPageWithLoading,
   DeviceMapWithLoading,
   ComponentPreloader,
-  preloadComponents,
-  withLazyLoading,
-  useRoutePreloader
+  preloadComponents
 }; 

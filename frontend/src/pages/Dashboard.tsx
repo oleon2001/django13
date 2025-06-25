@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 // Optimized MUI imports for better tree shaking
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -20,6 +20,7 @@ import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import CircularProgress from '@mui/material/CircularProgress';
 // Optimized icon imports
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
@@ -33,12 +34,11 @@ import ErrorIcon from '@mui/icons-material/Error';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import CircularProgress from '@mui/material/CircularProgress';
-
 import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
-import DeviceMap from '../components/DeviceMap';
+import { DeviceMapWithLoading } from '../components/LazyComponents';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 // Memoized status icon component for better performance
 const StatusIcon = React.memo<{ status: string }>(({ status }) => {
@@ -195,57 +195,68 @@ const Dashboard: React.FC = () => {
   const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
   const stopPollingRef = useRef<(() => void) | null>(null);
 
-  const fetchDevices = React.useCallback(async (showRefreshing = false) => {
+  const fetchDevices = async (showRefreshing = false) => {
     try {
       if (showRefreshing) setRefreshing(true);
       else setLoading(true);
       
       const data = await deviceService.getAll();
-      setDevices(data);
-      setLastUpdate(new Date());
-      setError(null);
+      
+      // Use startTransition for state updates that might cause suspense
+      startTransition(() => {
+        setDevices(data);
+        setLastUpdate(new Date());
+        setError(null);
+      });
     } catch (err) {
-      setError(t('devices.errorLoading'));
+      startTransition(() => {
+        setError(t('devices.errorLoading'));
+      });
       console.error('Error loading devices:', err);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      startTransition(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
     }
-  }, [t]);
+  };
 
   useEffect(() => {
     fetchDevices();
-  }, [fetchDevices]);
+  }, []);
 
   // Real-time polling effect
   useEffect(() => {
-    if (isRealTimeEnabled) {
+    if (isRealTimeEnabled && !loading) {
       stopPollingRef.current = deviceService.startRealTimePolling(
         (positions) => {
-          setRealTimePositions(positions);
-          setLastUpdate(new Date());
-          
-          // Update devices with real-time positions
-          setDevices(prevDevices => 
-            prevDevices.map(device => {
-              const realtimePos = positions.find(pos => pos.imei === device.imei);
-              if (realtimePos) {
-                return {
-                  ...device,
-                  latitude: realtimePos.position.latitude,
-                  longitude: realtimePos.position.longitude,
-                  speed: realtimePos.speed,
-                  course: realtimePos.course,
-                  altitude: realtimePos.altitude,
-                  connection_status: realtimePos.connection_status,
-                  lastUpdate: realtimePos.last_update,
-                };
-              }
-              return device;
-            })
-          );
+          startTransition(() => {
+            setRealTimePositions(positions);
+            setLastUpdate(new Date());
+            
+            setDevices(prevDevices => 
+              prevDevices.map(device => {
+                const realtimePos = positions.find(pos => pos.imei === device.imei);
+                if (realtimePos) {
+                  return {
+                    ...device,
+                    position: {
+                      latitude: realtimePos.position.latitude,
+                      longitude: realtimePos.position.longitude,
+                    },
+                    speed: realtimePos.speed,
+                    course: realtimePos.course,
+                    altitude: realtimePos.altitude,
+                    connection_status: realtimePos.connection_status,
+                    lastUpdate: realtimePos.last_update,
+                  };
+                }
+                return device;
+              })
+            );
+          });
         },
-        10000 // Poll every 10 seconds (optimized from 3s for better performance)
+        10000
       );
     } else {
       if (stopPollingRef.current) {
@@ -259,36 +270,47 @@ const Dashboard: React.FC = () => {
         stopPollingRef.current();
       }
     };
-  }, [isRealTimeEnabled]);
+  }, [isRealTimeEnabled, loading]);
 
-  const handleDeviceSelect = React.useCallback((device: Device) => {
-    setSelectedDevice(device);
-  }, []);
+  const handleDeviceSelect = (device: Device) => {
+    startTransition(() => {
+      setSelectedDevice(device);
+    });
+  };
 
-  const handleRefresh = React.useCallback(() => {
+  const handleRefresh = () => {
     fetchDevices(true);
-  }, [fetchDevices]);
+  };
 
-  // Memoized calculations
-  const deviceStats = React.useMemo(() => {
-    const onlineDevices = devices.filter(d => d.connection_status === 'ONLINE').length;
-    const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
-    const totalDevices = devices.length;
-    
-    return { onlineDevices, offlineDevices, totalDevices };
-  }, [devices]);
+  const getStatusIcon = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'online':
+        return <CheckCircleIcon color="success" />;
+      case 'offline':
+        return <ErrorIcon color="error" />;
+      default:
+        return <WarningIcon color="warning" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'online':
+        return 'success';
+      case 'offline':
+        return 'error';
+      default:
+        return 'warning';
+    }
+  };
+
+  // Calculate statistics
+  const onlineDevices = devices.filter(d => d.connection_status === 'ONLINE').length;
+  const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
+  const totalDevices = devices.length;
 
   if (loading && !refreshing) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        minHeight="100vh"
-      >
-        <CircularProgress size={60} />
-      </Box>
-    );
+    return <LoadingSkeleton variant="dashboard" />;
   }
 
   return (
@@ -347,7 +369,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={4}>
           <DeviceStatsCard
             title="Total Dispositivos"
-            value={deviceStats.totalDevices}
+            value={totalDevices}
             icon={<DirectionsCarIcon />}
             color="primary.main"
           />
@@ -356,7 +378,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={4}>
           <DeviceStatsCard
             title="En Línea"
-            value={deviceStats.onlineDevices}
+            value={onlineDevices}
             icon={<CheckCircleIcon />}
             color="success.main"
           />
@@ -365,7 +387,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={4}>
           <DeviceStatsCard
             title="Fuera de Línea"
-            value={deviceStats.offlineDevices}
+            value={offlineDevices}
             icon={<ErrorIcon />}
             color="error.main"
           />
@@ -382,7 +404,7 @@ const Dashboard: React.FC = () => {
                 Dispositivos GPS
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {deviceStats.totalDevices} dispositivos registrados
+                {totalDevices} dispositivos registrados
               </Typography>
             </Box>
             
@@ -419,7 +441,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} md={8}>
           <Paper sx={{ height: '600px', p: 2 }}>
             <Box sx={{ height: '100%' }}>
-              <DeviceMap
+              <DeviceMapWithLoading
                 devices={devices}
                 selectedDevice={selectedDevice}
                 onDeviceSelect={handleDeviceSelect}
@@ -484,9 +506,7 @@ const Dashboard: React.FC = () => {
                   />
                 </ListItem>
                 <ListItem>
-                  <ListItemIcon>
-                    <StatusIcon status={selectedDevice.connection_status || 'OFFLINE'} />
-                  </ListItemIcon>
+                  <ListItemIcon>{getStatusIcon(selectedDevice.connection_status || 'OFFLINE')}</ListItemIcon>
                   <ListItemText 
                     primary="Estado" 
                     secondary={selectedDevice.connection_status || 'OFFLINE'} 
@@ -508,4 +528,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default React.memo(Dashboard); 
+export default Dashboard; 

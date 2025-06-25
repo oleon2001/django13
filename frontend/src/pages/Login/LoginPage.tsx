@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Box, TextField, Button, Typography, InputAdornment, CircularProgress } from '@mui/material';
@@ -15,19 +15,25 @@ export const LoginPage: React.FC = () => {
   useEffect(() => {
     // Si el usuario ya está autenticado, redirigir al dashboard
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      startTransition(() => {
+        navigate('/dashboard', { replace: true });
+      });
     }
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    startTransition(() => {
+      setError('');
+    });
 
     try {
       await login(username, password);
       // La redirección se maneja en el useEffect
     } catch (err: any) {
-      setError(err.message || 'Usuario o contraseña incorrectos');
+      startTransition(() => {
+        setError(err.message || 'Usuario o contraseña incorrectos');
+      });
     }
   };
 

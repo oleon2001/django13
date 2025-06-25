@@ -204,7 +204,7 @@ DJANGO_ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com
 # Database
 DB_NAME=skyguard
 DB_USER=skyguard
-DB_PASSWORD=tu-password-seguro
+DB_PASSWORD=skyguard123
 DB_HOST=localhost
 DB_PORT=5432
 

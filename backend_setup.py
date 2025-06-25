@@ -169,7 +169,7 @@ DJANGO_ALLOWED_HOSTS=your-domain.com,www.your-domain.com
 # Database Configuration
 DB_NAME=skyguard
 DB_USER=skyguard
-DB_PASSWORD=your-secure-database-password
+DB_PASSWORD=skyguard123
 DB_HOST=localhost
 DB_PORT=5432
 

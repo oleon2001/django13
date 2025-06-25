@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, startTransition } from 'react';
 import authService from '../services/auth';
 
 interface User {
@@ -29,16 +29,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (authService.isAuthenticated()) {
         const userData = await authService.getCurrentUser();
-        setUser(userData);
-        setIsAuthenticated(true);
+        startTransition(() => {
+          setUser(userData);
+          setIsAuthenticated(true);
+        });
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
       await authService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
+      startTransition(() => {
+        setUser(null);
+        setIsAuthenticated(false);
+      });
     } finally {
-      setLoading(false);
+      startTransition(() => {
+        setLoading(false);
+      });
     }
   };
 
@@ -47,31 +53,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (username: string, password: string) => {
-    setLoading(true);
-    setError(null);
+    startTransition(() => {
+      setLoading(true);
+      setError(null);
+    });
+    
     try {
       const response = await authService.login({ username, password });
-      setUser(response.user);
-      setIsAuthenticated(true);
+      startTransition(() => {
+        setUser(response.user);
+        setIsAuthenticated(true);
+      });
     } catch (error: any) {
-      setError(error.message || 'Error al iniciar sesión');
-      setIsAuthenticated(false);
+      startTransition(() => {
+        setError(error.message || 'Error al iniciar sesión');
+        setIsAuthenticated(false);
+      });
       throw error;
     } finally {
-      setLoading(false);
+      startTransition(() => {
+        setLoading(false);
+      });
     }
   };
 
   const logout = async () => {
-    setLoading(true);
+    startTransition(() => {
+      setLoading(true);
+    });
+    
     try {
       await authService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
+      startTransition(() => {
+        setUser(null);
+        setIsAuthenticated(false);
+      });
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
-      setLoading(false);
+      startTransition(() => {
+        setLoading(false);
+      });
     }
   };
 

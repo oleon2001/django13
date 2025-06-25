@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import {
     Typography,
     Box,
@@ -111,44 +111,56 @@ const DeviceManagement: React.FC = () => {
             );
         }
 
-        setFilteredDevices(filtered);
+        startTransition(() => {
+            setFilteredDevices(filtered);
+        });
     };
 
     const handleOpenDialog = (device?: Device) => {
         if (device) {
-            setEditingDevice(device);
-            setFormData({
-                imei: device.imei.toString(),
-                name: device.name || '',
-                description: '',
+            startTransition(() => {
+                setEditingDevice(device);
+                setFormData({
+                    imei: device.imei.toString(),
+                    name: device.name || '',
+                    description: '',
+                });
             });
         } else {
+            startTransition(() => {
+                setEditingDevice(null);
+                setFormData({
+                    imei: '',
+                    name: '',
+                    description: '',
+                });
+            });
+        }
+        startTransition(() => {
+            setOpenDialog(true);
+        });
+    };
+
+    const handleCloseDialog = () => {
+        startTransition(() => {
+            setOpenDialog(false);
             setEditingDevice(null);
             setFormData({
                 imei: '',
                 name: '',
                 description: '',
             });
-        }
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setEditingDevice(null);
-        setFormData({
-            imei: '',
-            name: '',
-            description: '',
         });
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        startTransition(() => {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -167,7 +179,9 @@ const DeviceManagement: React.FC = () => {
             handleCloseDialog();
         } catch (err) {
             console.error('Error saving device:', err);
-            setError(t('errors.saving'));
+            startTransition(() => {
+                setError(t('errors.saving'));
+            });
         }
     };
 
@@ -176,64 +190,105 @@ const DeviceManagement: React.FC = () => {
             try {
                 // Verificar autenticación
                 if (!authService.isAuthenticated()) {
-                    setError(t('auth.loginRequired'));
+                    startTransition(() => {
+                        setError(t('auth.loginRequired'));
+                    });
                     window.location.href = '/login';
                     return;
                 }
 
                 const success = await deleteDevice(imei);
                 if (!success) {
-                    setError(t('errors.deleting'));
+                    startTransition(() => {
+                        setError(t('errors.deleting'));
+                    });
                 }
             } catch (err: any) {
                 console.error('Error deleting device:', err);
                 if (err.response?.status === 401) {
-                    setError(t('auth.sessionExpired'));
+                    startTransition(() => {
+                        setError(t('auth.sessionExpired'));
+                    });
                     window.location.href = '/login';
                 } else if (err.response?.status === 403) {
-                    setError(t('auth.noPermissions'));
+                    startTransition(() => {
+                        setError(t('auth.noPermissions'));
+                    });
                 } else {
-                    setError(t('errors.deleting') + ': ' + (err.message || t('errors.unknown')));
+                    startTransition(() => {
+                        setError(t('errors.deleting') + ': ' + (err.message || t('errors.unknown')));
+                    });
                 }
             }
         }
     };
 
     const handleTestConnection = async (imei: number) => {
-        setTestingConnection(imei);
+        startTransition(() => {
+            setTestingConnection(imei);
+        });
+        
         try {
             const result = await testDeviceConnection(imei);
             console.log('Test connection result:', result);
             
             // Mostrar mensaje de éxito o error
             if (result.success) {
-                setError(null);
+                startTransition(() => {
+                    setError(null);
+                });
                 console.log(`✅ Dispositivo ${imei}: ${result.message}`);
             } else {
-                setError(result.message || t('errors.testingConnection') + ` ${imei}: ${t('errors.unknown')}`);
+                startTransition(() => {
+                    setError(result.message || t('errors.testingConnection') + ` ${imei}: ${t('errors.unknown')}`);
+                });
             }
         } catch (err: any) {
             console.error('Error testing connection:', err);
-            setError(t('errors.testingConnection') + ` ${imei}: ${err.message || t('errors.unknown')}`);
+            startTransition(() => {
+                setError(t('errors.testingConnection') + ` ${imei}: ${err.message || t('errors.unknown')}`);
+            });
         } finally {
-            setTestingConnection(null);
+            startTransition(() => {
+                setTestingConnection(null);
+            });
         }
     };
 
     const handleCheckAllDevicesStatus = async () => {
-        setCheckingAllDevices(true);
+        startTransition(() => {
+            setCheckingAllDevices(true);
+        });
+        
         try {
-            const result = await checkAllDevicesStatus(60);
+            const result = await checkAllDevicesStatus(60); // 1 minuto de timeout
+            
             if (result.success) {
-                setError(null);
+                if (result.devicesUpdated > 0) {
+                    startTransition(() => {
+                        setError(null);
+                    });
+                    console.log(`✅ Verificación completada: ${result.devicesUpdated} dispositivos marcados como offline`);
+                } else {
+                    startTransition(() => {
+                        setError(null);
+                    });
+                    console.log('✅ Verificación completada: Todos los dispositivos están actualizados');
+                }
             } else {
-                setError(result.message);
+                startTransition(() => {
+                    setError(result.message || t('errors.checkingDevices') + `: ${t('errors.unknown')}`);
+                });
             }
-        } catch (err) {
-            console.error('Error checking all devices status:', err);
-            setError(t('errors.checkingStatus'));
+        } catch (err: any) {
+            console.error('Error checking all devices:', err);
+            startTransition(() => {
+                setError(t('errors.checkingDevices') + `: ${err.message || t('errors.unknown')}`);
+            });
         } finally {
-            setCheckingAllDevices(false);
+            startTransition(() => {
+                setCheckingAllDevices(false);
+            });
         }
     };
 

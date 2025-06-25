@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Box,
@@ -12,7 +12,6 @@ import {
     ListItemText,
     ListItemIcon,
     Chip,
-    CircularProgress,
     Alert,
     IconButton,
     TextField,
@@ -45,6 +44,7 @@ import {
 import DeviceMap from '../components/DeviceMap';
 import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
+import EnhancedLoading from '../components/EnhancedLoading';
 
 const Monitoring: React.FC = () => {
     const { t } = useTranslation();
@@ -81,14 +81,18 @@ const Monitoring: React.FC = () => {
         }
         const interval = setInterval(() => {
             fetchDevices();
-        }, 10000); // Update every 10 seconds
-        setRefreshInterval(interval);
+        }, 100000); // Update every 10 seconds
+        startTransition(() => {
+            setRefreshInterval(interval);
+        });
     };
 
     const stopAutoRefresh = () => {
         if (refreshInterval) {
             clearInterval(refreshInterval);
-            setRefreshInterval(null);
+            startTransition(() => {
+                setRefreshInterval(null);
+            });
         }
     };
 
@@ -96,29 +100,37 @@ const Monitoring: React.FC = () => {
         try {
             const data = await deviceService.getAll();
             if (Array.isArray(data)) {
-                setDevices(data);
-                // Update selected device if it exists in the new data
-                if (selectedDevice) {
-                    const updatedDevice = data.find(d => d.imei === selectedDevice.imei);
-                    if (updatedDevice) {
-                        setSelectedDevice(updatedDevice);
+                startTransition(() => {
+                    setDevices(data);
+                    // Update selected device if it exists in the new data
+                    if (selectedDevice) {
+                        const updatedDevice = data.find(d => d.imei === selectedDevice.imei);
+                        if (updatedDevice) {
+                            setSelectedDevice(updatedDevice);
+                        }
                     }
-                }
-                // Select first device if none selected
-                if (!selectedDevice && data.length > 0) {
-                    setSelectedDevice(data[0]);
-                }
-                setError(null);
-                setLastUpdate(new Date());
+                    // Select first device if none selected
+                    if (!selectedDevice && data.length > 0) {
+                        setSelectedDevice(data[0]);
+                    }
+                    setError(null);
+                    setLastUpdate(new Date());
+                });
             } else {
-                setDevices([]);
-                setError(t('monitoring.errors.invalidDataFormat'));
+                startTransition(() => {
+                    setDevices([]);
+                    setError(t('monitoring.errors.invalidDataFormat'));
+                });
             }
         } catch (err) {
-            setError(t('monitoring.errors.loadingDevices'));
+            startTransition(() => {
+                setError(t('monitoring.errors.loadingDevices'));
+            });
             console.error('Error loading devices:', err);
         } finally {
-            setLoading(false);
+            startTransition(() => {
+                setLoading(false);
+            });
         }
     };
 
@@ -140,11 +152,15 @@ const Monitoring: React.FC = () => {
             );
         }
 
-        setFilteredDevices(filtered);
+        startTransition(() => {
+            setFilteredDevices(filtered);
+        });
     };
 
     const handleDeviceSelect = (device: Device) => {
-        setSelectedDevice(device);
+        startTransition(() => {
+            setSelectedDevice(device);
+        });
     };
 
     const handleRefresh = () => {
@@ -152,7 +168,9 @@ const Monitoring: React.FC = () => {
     };
 
     const handleAutoRefreshToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setAutoRefresh(event.target.checked);
+        startTransition(() => {
+            setAutoRefresh(event.target.checked);
+        });
         if (event.target.checked) {
             startAutoRefresh();
         } else {
@@ -201,9 +219,12 @@ const Monitoring: React.FC = () => {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-                <CircularProgress size={60} />
-            </Box>
+            <EnhancedLoading 
+                module="monitoring" 
+                message="Inicializando monitoreo" 
+                subMessage="Configurando supervisión en tiempo real de dispositivos"
+                variant="detailed"
+            />
         );
     }
 

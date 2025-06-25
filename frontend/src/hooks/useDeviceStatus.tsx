@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { Device } from '../types';
 import { deviceService } from '../services/deviceService';
 
@@ -53,8 +53,10 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
   // Función para cargar todos los dispositivos
   const fetchDevices = useCallback(async (): Promise<Device[]> => {
     try {
-      setLoading(true);
-      setError(null);
+      startTransition(() => {
+        setLoading(true);
+        setError(null);
+      });
       
       const data = await deviceService.getAll();
       
@@ -76,16 +78,22 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
         validDevices.map(device => updateDeviceStatus(device))
       );
 
-      setDevices(updatedDevices);
+      startTransition(() => {
+        setDevices(updatedDevices);
+      });
       return updatedDevices;
       
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.message || 'Error al cargar los dispositivos';
-      setError(errorMessage);
+      startTransition(() => {
+        setError(errorMessage);
+      });
       console.error('Error loading devices:', err);
       return [];
     } finally {
-      setLoading(false);
+      startTransition(() => {
+        setLoading(false);
+      });
     }
   }, [updateDeviceStatus]);
 
@@ -100,13 +108,15 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
       const result = await deviceService.testConnection(imei);
       
       // Actualizar el dispositivo en la lista local
-      setDevices(prevDevices => 
-        prevDevices.map(device => 
-          device.imei === imei 
-            ? { ...device, connection_status: result.status }
-            : device
-        )
-      );
+      startTransition(() => {
+        setDevices(prevDevices => 
+          prevDevices.map(device => 
+            device.imei === imei 
+              ? { ...device, connection_status: result.status }
+              : device
+          )
+        );
+      });
 
       return {
         success: result.success,
@@ -119,13 +129,15 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
       const errorMessage = error.response?.data?.error || error.message || 'Error desconocido';
       
       // Marcar el dispositivo como offline en caso de error
-      setDevices(prevDevices => 
-        prevDevices.map(device => 
-          device.imei === imei 
-            ? { ...device, connection_status: 'OFFLINE' }
-            : device
-        )
-      );
+      startTransition(() => {
+        setDevices(prevDevices => 
+          prevDevices.map(device => 
+            device.imei === imei 
+              ? { ...device, connection_status: 'OFFLINE' }
+              : device
+          )
+        );
+      });
 
       return {
         success: false,
@@ -140,15 +152,19 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
     try {
       const updatedDevice = await deviceService.updateDevice(imei, updates);
       
-      setDevices(prevDevices => 
-        prevDevices.map(device => 
-          device.imei === imei ? { ...device, ...updatedDevice } : device
-        )
-      );
+      startTransition(() => {
+        setDevices(prevDevices => 
+          prevDevices.map(device => 
+            device.imei === imei ? { ...device, ...updatedDevice } : device
+          )
+        );
+      });
       
       return updatedDevice;
     } catch (error: any) {
-      setError(error.response?.data?.error || error.message || 'Error al actualizar dispositivo');
+      startTransition(() => {
+        setError(error.response?.data?.error || error.message || 'Error al actualizar dispositivo');
+      });
       return null;
     }
   }, []);
@@ -157,10 +173,14 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
   const createDevice = useCallback(async (deviceData: Partial<Device>): Promise<Device | null> => {
     try {
       const newDevice = await deviceService.createDevice(deviceData);
-      setDevices(prevDevices => [...prevDevices, newDevice]);
+      startTransition(() => {
+        setDevices(prevDevices => [...prevDevices, newDevice]);
+      });
       return newDevice;
     } catch (error: any) {
-      setError(error.response?.data?.error || error.message || 'Error al crear dispositivo');
+      startTransition(() => {
+        setError(error.response?.data?.error || error.message || 'Error al crear dispositivo');
+      });
       return null;
     }
   }, []);
@@ -176,23 +196,29 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
       }
 
       await deviceService.deleteDevice(imei);
-      setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
+      startTransition(() => {
+        setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
+      });
       return true;
     } catch (error: any) {
       // Si es un error 404, el dispositivo ya no existe, removerlo de la lista local
       if (error.response?.status === 404) {
-        setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
-        setError(`Dispositivo con IMEI ${imei} ya no existe en el servidor`);
+        startTransition(() => {
+          setDevices(prevDevices => prevDevices.filter(device => device.imei !== imei));
+          setError(`Dispositivo con IMEI ${imei} ya no existe en el servidor`);
+        });
         return true; // Retornar true porque el objetivo (eliminar) se cumplió
       }
       
-      setError(error.response?.data?.error || error.message || 'Error al eliminar dispositivo');
+      startTransition(() => {
+        setError(error.response?.data?.error || error.message || 'Error al eliminar dispositivo');
+      });
       return false;
     }
   }, [devices]);
 
   // Función para verificar el estado de todos los dispositivos
-      const checkAllDevicesStatus = useCallback(async (timeout: number = 60): Promise<{
+  const checkAllDevicesStatus = useCallback(async (timeout: number = 60): Promise<{
     success: boolean;
     message: string;
     devicesUpdated: number;
@@ -211,7 +237,9 @@ export const useDeviceStatus = (options: DeviceStatusOptions = {}) => {
         stats: result.current_stats
       };
     } catch (error: any) {
-      setError(error.response?.data?.error || error.message || 'Error al verificar estado de dispositivos');
+      startTransition(() => {
+        setError(error.response?.data?.error || error.message || 'Error al verificar estado de dispositivos');
+      });
       return {
         success: false,
         message: error.message || 'Error desconocido',

@@ -12,6 +12,7 @@ from django.conf import settings
 from skyguard.apps.gps.servers.concox_server import start_concox_server
 from skyguard.apps.gps.servers.meiligao_server import start_meiligao_server
 from skyguard.apps.gps.servers.sat_server import SATServer
+from skyguard.apps.gps.servers.wialon_server import WialonServer
 from skyguard.apps.gps.services.email_processor import process_device_emails
 
 
@@ -53,6 +54,14 @@ class GPSServerManager:
                 'protocol': 'TCP',
                 'description': 'Satellite Communication Protocol',
                 'start_function': self._start_sat_server
+            },
+            'wialon': {
+                'enabled': True,
+                'host': '',
+                'port': 20332,
+                'protocol': 'TCP',
+                'description': 'Wialon GPS Tracker Protocol',
+                'start_function': self._start_wialon_server
             }
         }
         
@@ -74,6 +83,11 @@ class GPSServerManager:
     def _start_sat_server(self, host='', port=15557):
         """Start SAT server."""
         server = SATServer(host=host, port=port)
+        server.start()
+        
+    def _start_wialon_server(self, host='', port=20332):
+        """Start Wialon server."""
+        server = WialonServer(host=host, port=port)
         server.start()
         
     def start_server(self, server_name: str) -> bool:

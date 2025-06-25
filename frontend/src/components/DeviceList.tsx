@@ -7,7 +7,8 @@ interface DeviceListProps {
     onDeviceSelect: (device: Device) => void;
 }
 
-const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDeviceSelect }) => {
+// Memoized DeviceList component to prevent unnecessary re-renders
+const DeviceList: React.FC<DeviceListProps> = React.memo(({ devices, selectedDevice, onDeviceSelect }) => {
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'online':
@@ -31,54 +32,76 @@ const DeviceList: React.FC<DeviceListProps> = ({ devices, selectedDevice, onDevi
             </div>
             <div className="divide-y divide-gray-200">
                 {devices.map(device => (
-                    <div
+                    <DeviceListItem
                         key={device.imei}
-                        className={`p-4 hover:bg-gray-50 cursor-pointer ${
-                            selectedDevice?.imei === device.imei ? 'bg-blue-50' : ''
-                        }`}
-                        onClick={() => onDeviceSelect(device)}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-gray-900">{device.name || `Device ${device.imei}`}</h4>
-                                <p className="text-sm text-gray-500">IMEI: {device.imei}</p>
-                                {device.lastUpdate && (
-                                    <div className="text-sm text-gray-500">
-                                        Last seen: {formatDate(device.lastUpdate)}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex items-center">
-                                <span className={`text-sm ${getStatusColor(device.connection_status || 'OFFLINE')}`}>
-                                    {device.connection_status || 'OFFLINE'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <p className="text-gray-500">Speed</p>
-                                <p className="font-medium">{device.speed || 0} km/h</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500">Battery</p>
-                                <p className="font-medium">{device.battery_level || 0}%</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500">Signal</p>
-                                <p className="font-medium">{device.signal_strength || 0}/5</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500">Last Seen</p>
-                                <p className="font-medium">
-                                    {formatDate(device.lastUpdate)}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                        device={device}
+                        isSelected={selectedDevice?.imei === device.imei}
+                        onSelect={onDeviceSelect}
+                        formatDate={formatDate}
+                        getStatusColor={getStatusColor}
+                    />
                 ))}
             </div>
         </div>
     );
-};
+});
+
+// Memoized individual device item to optimize large lists
+const DeviceListItem: React.FC<{
+    device: Device;
+    isSelected: boolean;
+    onSelect: (device: Device) => void;
+    formatDate: (date: string | undefined) => string;
+    getStatusColor: (status: string) => string;
+}> = React.memo(({ device, isSelected, onSelect, formatDate, getStatusColor }) => {
+    return (
+        <div
+            className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                isSelected ? 'bg-blue-50' : ''
+            }`}
+            onClick={() => onSelect(device)}
+        >
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="text-sm font-medium text-gray-900">{device.name || `Device ${device.imei}`}</h4>
+                    <p className="text-sm text-gray-500">IMEI: {device.imei}</p>
+                    {device.lastUpdate && (
+                        <div className="text-sm text-gray-500">
+                            Last seen: {formatDate(device.lastUpdate)}
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center">
+                    <span className={`text-sm ${getStatusColor(device.connection_status || 'OFFLINE')}`}>
+                        {device.connection_status || 'OFFLINE'}
+                    </span>
+                </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div>
+                    <p className="text-gray-500">Speed</p>
+                    <p className="font-medium">{device.speed || 0} km/h</p>
+                </div>
+                <div>
+                    <p className="text-gray-500">Battery</p>
+                    <p className="font-medium">{device.battery_level || 0}%</p>
+                </div>
+                <div>
+                    <p className="text-gray-500">Signal</p>
+                    <p className="font-medium">{device.signal_strength || 0}/5</p>
+                </div>
+                <div>
+                    <p className="text-gray-500">Last Seen</p>
+                    <p className="font-medium">
+                        {formatDate(device.lastUpdate)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+DeviceList.displayName = 'DeviceList';
+DeviceListItem.displayName = 'DeviceListItem';
 
 export default DeviceList; 
