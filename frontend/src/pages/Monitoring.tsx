@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Box,
@@ -16,10 +16,6 @@ import {
     IconButton,
     TextField,
     InputAdornment,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Avatar,
     Divider,
     Stack,
@@ -35,127 +31,34 @@ import {
     SignalCellular4Bar as SignalIcon,
     Refresh as RefreshIcon,
     Search as SearchIcon,
-    FilterList as FilterIcon,
     Timeline as TimelineIcon,
     Warning as WarningIcon,
     CheckCircle as CheckCircleIcon,
     Error as ErrorIcon,
 } from '@mui/icons-material';
 import DeviceMap from '../components/DeviceMap';
-import { deviceService } from '../services/deviceService';
 import { Device } from '../types';
 import EnhancedLoading from '../components/EnhancedLoading';
+import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
 
 const Monitoring: React.FC = () => {
     const { t } = useTranslation();
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
-    const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
+    const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [autoRefresh, setAutoRefresh] = useState(true);
-    const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
-    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-    useEffect(() => {
-        fetchDevices();
-        if (autoRefresh) {
-            startAutoRefresh();
-        }
-        return () => {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-        };
-    }, [autoRefresh]);
-
-    useEffect(() => {
-        filterDevices();
-    }, [devices, searchTerm, statusFilter]);
-
-    const startAutoRefresh = () => {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-        const interval = setInterval(() => {
-            fetchDevices();
-        }, 10000); // Update every 10 seconds
-        startTransition(() => {
-            setRefreshInterval(interval);
-        });
-    };
-
-    const stopAutoRefresh = () => {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-            startTransition(() => {
-                setRefreshInterval(null);
-            });
-        }
-    };
-
-    const fetchDevices = async () => {
-        try {
-            const data = await deviceService.getAll();
-            if (Array.isArray(data)) {
-                startTransition(() => {
-                    setDevices(data);
-                    // Update selected device if it exists in the new data
-                    if (selectedDevice) {
-                        const updatedDevice = data.find(d => d.imei === selectedDevice.imei);
-                        if (updatedDevice) {
-                            setSelectedDevice(updatedDevice);
-                        }
-                    }
-                    // Select first device if none selected
-                    if (!selectedDevice && data.length > 0) {
-                        setSelectedDevice(data[0]);
-                    }
-                    setError(null);
-                    setLastUpdate(new Date());
-                });
-            } else {
-                startTransition(() => {
-                    setDevices([]);
-                    setError(t('monitoring.errors.invalidDataFormat'));
-                });
-            }
-        } catch (err) {
-            startTransition(() => {
-                setError(t('monitoring.errors.loadingDevices'));
-            });
-            console.error('Error loading devices:', err);
-        } finally {
-            startTransition(() => {
-                setLoading(false);
-            });
-        }
-    };
-
-    const filterDevices = () => {
-        let filtered = devices;
-
-        // Filter by search term
-        if (searchTerm) {
-            filtered = filtered.filter(device =>
-                (device.name && device.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                device.imei.toString().includes(searchTerm)
-            );
-        }
-
-        // Filter by status
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(device => 
-                device.connection_status?.toLowerCase() === statusFilter.toLowerCase()
-            );
-        }
-
-        startTransition(() => {
-            setFilteredDevices(filtered);
-        });
-    };
+    // Use the new centralized real-time hook
+    const {
+        devices,
+        loading,
+        error,
+        lastUpdate,
+        forceRefresh
+    } = useRealTimeDevices({
+        enabled: isRealTimeEnabled,
+        componentId: 'monitoring',
+        onError: (err: Error) => console.error('Monitoring real-time error:', err)
+    });
 
     const handleDeviceSelect = (device: Device) => {
         startTransition(() => {
@@ -164,18 +67,7 @@ const Monitoring: React.FC = () => {
     };
 
     const handleRefresh = () => {
-        fetchDevices();
-    };
-
-    const handleAutoRefreshToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-        startTransition(() => {
-            setAutoRefresh(event.target.checked);
-        });
-        if (event.target.checked) {
-            startAutoRefresh();
-        } else {
-            stopAutoRefresh();
-        }
+        forceRefresh();
     };
 
     const getStatusColor = (status: string) => {
@@ -212,6 +104,12 @@ const Monitoring: React.FC = () => {
         return 'error';
     };
 
+    // Filter devices based on search term
+    const filteredDevices = devices.filter(device =>
+        device.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        device.imei.toString().includes(searchTerm)
+    );
+
     const onlineDevices = devices.filter(d => d.connection_status === 'ONLINE').length;
     const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
     const totalDevices = devices.length;
@@ -237,13 +135,13 @@ const Monitoring: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                        {t('monitoring.lastUpdate')}: {lastUpdate.toLocaleTimeString()}
+                        {t('monitoring.lastUpdate')}: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Nunca'}
                     </Typography>
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={autoRefresh}
-                                onChange={handleAutoRefreshToggle}
+                                checked={isRealTimeEnabled}
+                                onChange={(event) => setIsRealTimeEnabled(event.target.checked)}
                                 color="primary"
                             />
                         }
@@ -336,8 +234,8 @@ const Monitoring: React.FC = () => {
                         </Box>
                         <Box sx={{ height: '500px', position: 'relative' }}>
                             <DeviceMap 
-                                devices={filteredDevices}
-                                selectedDevice={selectedDevice || undefined}
+                                devices={devices}
+                                selectedDevice={selectedDevice}
                                 onDeviceSelect={handleDeviceSelect}
                             />
                         </Box>
@@ -367,21 +265,8 @@ const Monitoring: React.FC = () => {
                                         ),
                                     }}
                                 />
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>{t('monitoring.filterByStatus')}</InputLabel>
-                                    <Select
-                                        value={statusFilter}
-                                        label={t('monitoring.filterByStatus')}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                    >
-                                        <MenuItem value="all">{t('monitoring.allStatuses')}</MenuItem>
-                                        <MenuItem value="online">{t('monitoring.onlineDevices')}</MenuItem>
-                                        <MenuItem value="offline">{t('monitoring.offlineDevices')}</MenuItem>
-                                    </Select>
-                                </FormControl>
                                 <Typography variant="body2" color="text.secondary">
-                                    <FilterIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 16 }} />
-                                    {filteredDevices.length} {t('common.of')} {totalDevices} {t('monitoring.devices').toLowerCase()}
+                                    {filteredDevices.length} de {totalDevices} dispositivos
                                 </Typography>
                             </Stack>
                         </Box>
@@ -501,7 +386,7 @@ const Monitoring: React.FC = () => {
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                         {selectedDevice.lastUpdate ? 
                                                             new Date(selectedDevice.lastUpdate).toLocaleString() : 
-                                                            t('common.notAvailable')
+                                                            'No disponible'
                                                         }
                                                     </Typography>
                                                 </Box>
@@ -527,7 +412,7 @@ const Monitoring: React.FC = () => {
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                                         {selectedDevice.position?.latitude && selectedDevice.position?.longitude ? 
                                                             `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}` : 
-                                                            t('common.notAvailable')
+                                                            'No disponible'
                                                         }
                                                     </Typography>
                                                 </Box>

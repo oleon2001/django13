@@ -1,76 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Device } from '../types';
 import DeviceList from '../components/DeviceList';
 import DeviceMap from '../components/DeviceMap';
-import { deviceService } from '../services/deviceService';
+import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
+import { startTransition } from 'react';
 
 const GPSPage: React.FC = () => {
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [realTimePositions, setRealTimePositions] = useState<any[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
     const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
-    const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-    const stopPollingRef = useRef<(() => void) | null>(null);
 
-    // Fetch initial devices
-    useEffect(() => {
-        const fetchDevices = async () => {
-            try {
-                const data = await deviceService.getAll();
-                setDevices(data);
-            } catch (error) {
-                console.error('Error fetching devices:', error);
-            }
-        };
-        fetchDevices();
-    }, []);
+    // Use the new centralized real-time hook
+    const {
+        devices,
+        lastUpdate
+    } = useRealTimeDevices({
+        enabled: isRealTimeEnabled,
+        componentId: 'gps-page',
+        onError: (err: Error) => console.error('GPS Page real-time error:', err)
+    });
 
-    // Start/stop real-time polling
-    useEffect(() => {
-        if (isRealTimeEnabled) {
-            stopPollingRef.current = deviceService.startRealTimePolling(
-                (positions) => {
-                    setRealTimePositions(positions);
-                    setLastUpdate(new Date());
-                    
-                    // Update devices with real-time positions
-                    setDevices(prevDevices => 
-                        prevDevices.map(device => {
-                            const realtimePos = positions.find(pos => pos.imei === device.imei);
-                            if (realtimePos) {
-                                return {
-                                    ...device,
-                                    latitude: realtimePos.position.latitude,
-                                    longitude: realtimePos.position.longitude,
-                                    speed: realtimePos.speed,
-                                    course: realtimePos.course,
-                                    altitude: realtimePos.altitude,
-                                    connection_status: realtimePos.connection_status,
-                                    lastUpdate: realtimePos.last_update,
-                                };
-                            }
-                            return device;
-                        })
-                    );
-                },
-                10000 // Poll every 10 seconds (optimized from 3s for better performance)
-            );
-        } else {
-            if (stopPollingRef.current) {
-                stopPollingRef.current();
-                stopPollingRef.current = null;
-            }
-        }
-
-        return () => {
-            if (stopPollingRef.current) {
-                stopPollingRef.current();
-            }
-        };
-    }, [isRealTimeEnabled]);
-
-    const toggleRealTime = () => {
-        setIsRealTimeEnabled(!isRealTimeEnabled);
+    // Device selection handler
+    const handleDeviceSelect = (device: Device) => {
+        startTransition(() => {
+            setSelectedDevice(device);
+        });
     };
 
     return (
@@ -82,7 +35,7 @@ const GPSPage: React.FC = () => {
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center">
                             <button
-                                onClick={toggleRealTime}
+                                onClick={() => setIsRealTimeEnabled(!isRealTimeEnabled)}
                                 className={`px-4 py-2 rounded-md text-sm font-medium ${
                                     isRealTimeEnabled
                                         ? 'bg-green-600 text-white hover:bg-green-700'
@@ -98,7 +51,7 @@ const GPSPage: React.FC = () => {
                             </div>
                         )}
                         <div className="text-sm text-gray-600">
-                            Dispositivos activos: {realTimePositions.length}
+                            Dispositivos activos: {devices.length}
                         </div>
                     </div>
                 </div>
@@ -111,7 +64,7 @@ const GPSPage: React.FC = () => {
                         <DeviceList
                             devices={devices}
                             selectedDevice={selectedDevice}
-                            onDeviceSelect={setSelectedDevice}
+                            onDeviceSelect={handleDeviceSelect}
                         />
                     </div>
                 </div>
@@ -119,7 +72,7 @@ const GPSPage: React.FC = () => {
                     <DeviceMap
                         devices={devices}
                         selectedDevice={selectedDevice}
-                        onDeviceSelect={setSelectedDevice}
+                        onDeviceSelect={handleDeviceSelect}
                     />
                 </div>
             </div>

@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
 
     return (
         <nav className="navbar">
-            <div className="navbar-brand">SkyGuard</div>
+            <div className="navbar-brand">Falkon</div>
             {isAuthenticated && (
                 <button className="navbar-logout" onClick={handleLogout}>
                     Cerrar Sesión

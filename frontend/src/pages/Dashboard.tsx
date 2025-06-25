@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, startTransition } from 'react';
+import React, { useState, startTransition } from 'react';
 // Optimized MUI imports for better tree shaking
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -35,9 +35,9 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import { useTranslation } from 'react-i18next';
 import { Device } from '../types';
-import { deviceService } from '../services/deviceService';
 import { DeviceMapWithLoading } from '../components/LazyComponents';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
 
 // Memoized status icon component for better performance
 const StatusIcon = React.memo<{ status: string }>(({ status }) => {
@@ -184,93 +184,25 @@ DeviceListItem.displayName = 'DeviceListItem';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [realTimePositions, setRealTimePositions] = useState<any[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
-  const stopPollingRef = useRef<(() => void) | null>(null);
 
-  const fetchDevices = async (showRefreshing = false) => {
-    try {
-      if (showRefreshing) setRefreshing(true);
-      else setLoading(true);
-      
-      const data = await deviceService.getAll();
-      
-      // Use startTransition for state updates that might cause suspense
-      startTransition(() => {
-        setDevices(data);
-        setLastUpdate(new Date());
-        setError(null);
-      });
-    } catch (err) {
-      startTransition(() => {
-        setError(t('devices.errorLoading'));
-      });
-      console.error('Error loading devices:', err);
-    } finally {
-      startTransition(() => {
-        setLoading(false);
-        setRefreshing(false);
-      });
-    }
-  };
+  // Use the new centralized real-time hook
+  const {
+    devices,
+    loading,
+    error,
+    lastUpdate,
+    forceRefresh,
+    debugInfo
+  } = useRealTimeDevices({
+    enabled: isRealTimeEnabled,
+    componentId: 'dashboard',
+    onError: (err) => console.error('Dashboard real-time error:', err)
+  });
 
-  useEffect(() => {
-    fetchDevices();
-  }, []);
-
-  // Real-time polling effect
-  useEffect(() => {
-    if (isRealTimeEnabled && !loading) {
-      stopPollingRef.current = deviceService.startRealTimePolling(
-        (positions) => {
-          startTransition(() => {
-            setRealTimePositions(positions);
-            setLastUpdate(new Date());
-            
-            setDevices(prevDevices => 
-              prevDevices.map(device => {
-                const realtimePos = positions.find(pos => pos.imei === device.imei);
-                if (realtimePos) {
-                  return {
-                    ...device,
-                    position: {
-                      latitude: realtimePos.position.latitude,
-                      longitude: realtimePos.position.longitude,
-                    },
-                    speed: realtimePos.speed,
-                    course: realtimePos.course,
-                    altitude: realtimePos.altitude,
-                    connection_status: realtimePos.connection_status,
-                    lastUpdate: realtimePos.last_update,
-                  };
-                }
-                return device;
-              })
-            );
-          });
-        },
-        10000
-      );
-    } else {
-      if (stopPollingRef.current) {
-        stopPollingRef.current();
-        stopPollingRef.current = null;
-      }
-    }
-
-    return () => {
-      if (stopPollingRef.current) {
-        stopPollingRef.current();
-      }
-    };
-  }, [isRealTimeEnabled, loading]);
-
+  // Remove the old fetchDevices function and polling useEffect
+  // Keep only the device selection handler
   const handleDeviceSelect = (device: Device) => {
     startTransition(() => {
       setSelectedDevice(device);
@@ -278,7 +210,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    fetchDevices(true);
+    forceRefresh();
   };
 
   const getStatusIcon = (status: string) => {
@@ -297,7 +229,7 @@ const Dashboard: React.FC = () => {
   const offlineDevices = devices.filter(d => d.connection_status === 'OFFLINE').length;
   const totalDevices = devices.length;
 
-  if (loading && !refreshing) {
+  if (loading) {
     return <LoadingSkeleton variant="dashboard" />;
   }
 
@@ -326,21 +258,18 @@ const Dashboard: React.FC = () => {
               </Box>
             }
           />
-          <Typography variant="body2" color="text.secondary">
-            {t('dashboard.lastUpdate')}: {lastUpdate.toLocaleTimeString()}
+          <Typography variant="body2" color="textSecondary">
+            {t('dashboard.lastUpdate')}: {lastUpdate ? lastUpdate.toLocaleTimeString() : t('dashboard.never')}
           </Typography>
           <Typography variant="body2" color="primary">
-            {t('dashboard.active')}: {realTimePositions.length}
+            {t('dashboard.active')}: {debugInfo.activeDevices}
           </Typography>
           <Tooltip title={t('dashboard.refresh')}>
             <IconButton 
               onClick={handleRefresh} 
-              disabled={refreshing}
               color="primary"
             >
-              <RefreshIcon sx={{ 
-                animation: refreshing ? 'spin 1s linear infinite' : 'none' 
-              }} />
+              <RefreshIcon />
             </IconButton>
           </Tooltip>
         </Box>
@@ -505,13 +434,6 @@ const Dashboard: React.FC = () => {
           </Grid>
         </Paper>
       )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </Box>
   );
 };

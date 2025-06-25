@@ -94,7 +94,7 @@ def analyze_legacy_data():
     stats = Stats.objects.all()
     print(f"\n📈 ESTADÍSTICAS:")
     print(f"   Total: {stats.count()}")
-    recent_stats = stats.filter(dateEnd__gte=datetime.now()-timedelta(days=30))
+    recent_stats = stats.filter(date_end__gte=datetime.now()-timedelta(days=30))
     print(f"   Últimos 30 días: {recent_stats.count()}")
     
     # Análisis de sensores PSI

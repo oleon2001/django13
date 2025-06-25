@@ -213,7 +213,7 @@ class DataMigrator:
                                 position=legacy_device.position,
                                 speed=legacy_device.speed,
                                 course=legacy_device.course,
-                                date=legacy_device.date,
+                                last_connection=legacy_device.date,
                                 last_log=legacy_device.lastLog,
                                 owner=legacy_device.owner,
                                 icon=legacy_device.icon,

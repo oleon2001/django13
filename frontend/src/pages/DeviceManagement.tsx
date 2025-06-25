@@ -165,10 +165,44 @@ const DeviceManagement: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validaciones del lado del cliente
+        if (!formData.imei || formData.imei.trim() === '') {
+            startTransition(() => {
+                setError('El IMEI es requerido');
+            });
+            return;
+        }
+        
+        // Validar que el IMEI tenga exactamente 15 dígitos
+        const imeiDigits = formData.imei.replace(/\D/g, ''); // Solo dígitos
+        if (imeiDigits.length !== 15) {
+            startTransition(() => {
+                setError('El IMEI debe tener exactamente 15 dígitos');
+            });
+            return;
+        }
+        
+        // Validar que el IMEI sea un número válido
+        if (isNaN(parseInt(imeiDigits))) {
+            startTransition(() => {
+                setError('El IMEI debe ser un número válido');
+            });
+            return;
+        }
+        
+        // Validar que el nombre no esté vacío
+        if (!formData.name || formData.name.trim() === '') {
+            startTransition(() => {
+                setError('El nombre del dispositivo es requerido');
+            });
+            return;
+        }
+        
         try {
             const deviceData: Partial<Device> = {
-                imei: parseInt(formData.imei, 10),
-                name: formData.name,
+                imei: parseInt(imeiDigits, 10),
+                name: formData.name.trim(),
             };
 
             if (editingDevice) {
@@ -177,10 +211,12 @@ const DeviceManagement: React.FC = () => {
                 await createDevice(deviceData);
             }
             handleCloseDialog();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error saving device:', err);
             startTransition(() => {
-                setError(t('errors.saving'));
+                // Mostrar el error específico del servidor si está disponible
+                const errorMessage = err.response?.data?.error || err.message || t('errors.saving');
+                setError(errorMessage);
             });
         }
     };
@@ -662,7 +698,22 @@ const DeviceManagement: React.FC = () => {
                                 onChange={handleInputChange}
                                 required
                                 disabled={!!editingDevice}
-                                helperText={editingDevice ? t('deviceManagement.imeiCannotBeModified') : t('deviceManagement.enterDeviceImei')}
+                                inputProps={{
+                                    maxLength: 19,
+                                    pattern: '[0-9\\s\\-]*'
+                                }}
+                                helperText={
+                                    editingDevice 
+                                        ? t('deviceManagement.imeiCannotBeModified') 
+                                        : formData.imei 
+                                            ? `Dígitos: ${formData.imei.replace(/\D/g, '').length}/15` 
+                                            : t('deviceManagement.enterDeviceImei')
+                                }
+                                error={
+                                    !editingDevice && 
+                                    formData.imei.length > 0 && 
+                                    formData.imei.replace(/\D/g, '').length !== 15
+                                }
                             />
                             <TextField
                                 name="name"

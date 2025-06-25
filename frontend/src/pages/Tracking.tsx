@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, startTransition } from 'react';
 import {
     Box,
     Typography,
@@ -8,148 +8,62 @@ import {
     Card,
     CardContent,
     IconButton,
-    Chip,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    TextField,
-    InputAdornment,
+    Avatar,
+    Tooltip,
     Switch,
     FormControlLabel,
+    Chip,
     Divider,
     List,
     ListItem,
     ListItemText,
     ListItemIcon,
-    Avatar,
-    Tooltip,
+    TextField,
+    InputAdornment
 } from '@mui/material';
 import {
     DirectionsCar as DirectionsCarIcon,
-    Speed as SpeedIcon,
     LocationOn as LocationOnIcon,
+    Refresh as RefreshIcon,
+    Speed as SpeedIcon,
+    Timeline as TimelineIcon,
     Battery80 as BatteryIcon,
     SignalCellular4Bar as SignalIcon,
-    Refresh as RefreshIcon,
-    Search as SearchIcon,
-    Timeline as TimelineIcon,
+    Search as SearchIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import DeviceMap from '../components/DeviceMap';
 import { Device } from '../types';
-import { deviceService } from '../services/deviceService';
 import EnhancedLoading from '../components/EnhancedLoading';
 import FormLoading from '../components/FormLoading';
+import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
 
 const Tracking: React.FC = () => {
     const { t } = useTranslation();
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [realTimeEnabled, setRealTimeEnabled] = useState(true);
-    const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+    const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
 
-
-    useEffect(() => {
-        fetchDevices();
-        
-        if (realTimeEnabled) {
-            const interval = setInterval(fetchDevices, 15000); // Update every 15 seconds for tracking
-            return () => clearInterval(interval);
-        }
-        
-        return () => {}; // Return cleanup function for all cases
-    }, [realTimeEnabled]);
-
-    useEffect(() => {
-        filterDevices();
-    }, [devices, searchTerm, statusFilter]);
-
-    const fetchDevices = async () => {
-        try {
-            if (!loading) setRefreshing(true);
-            
-            const data = await deviceService.getAll();
-            // Filter only active tracking devices
-            const trackingDevices = data.filter(device => 
-                device.connection_status === 'ONLINE' || 
-                device.connection_status === 'SLEEPING'
-            );
-            
-            startTransition(() => {
-                setDevices(trackingDevices);
-                setError(null);
-                setLastUpdate(new Date());
-                
-                // Update selected device if it exists in the new data
-                if (selectedDevice) {
-                    const updatedDevice = trackingDevices.find(d => d.imei === selectedDevice.imei);
-                    if (updatedDevice) {
-                        setSelectedDevice(updatedDevice);
-                    }
-                }
-                
-                // Auto-select first device if none selected
-                if (!selectedDevice && trackingDevices.length > 0) {
-                    setSelectedDevice(trackingDevices[0]);
-                }
-            });
-        } catch (err) {
-            console.error('Error loading devices:', err);
-            startTransition(() => {
-                setError('Error cargando dispositivos de rastreo');
-            });
-        } finally {
-            startTransition(() => {
-            setLoading(false);
-                setRefreshing(false);
-            });
-        }
-    };
-
-    const filterDevices = () => {
-        let filtered = devices;
-
-        // Filter by search term
-        if (searchTerm) {
-            filtered = filtered.filter(device =>
-                (device.name && device.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                device.imei.toString().includes(searchTerm)
-            );
-        }
-
-        // Filter by status
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(device => 
-                device.connection_status?.toLowerCase() === statusFilter.toLowerCase()
-            );
-        }
-
-        startTransition(() => {
-            setFilteredDevices(filtered);
-        });
-    };
+    // Use the new centralized real-time hook
+    const {
+        devices,
+        loading,
+        error,
+        lastUpdate,
+        forceRefresh
+    } = useRealTimeDevices({
+        enabled: isRealTimeEnabled,
+        componentId: 'tracking',
+        onError: (err: Error) => console.error('Tracking real-time error:', err)
+    });
 
     const handleDeviceSelect = (device: Device) => {
         startTransition(() => {
-        setSelectedDevice(device);
+            setSelectedDevice(device);
         });
     };
 
     const handleRefresh = () => {
-        fetchDevices();
-    };
-
-    const handleRealTimeToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-        startTransition(() => {
-            setRealTimeEnabled(event.target.checked);
-        });
+        forceRefresh();
     };
 
     const getStatusColor = (status: string) => {
@@ -224,25 +138,25 @@ const Tracking: React.FC = () => {
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={realTimeEnabled}
-                                onChange={handleRealTimeToggle}
+                                checked={isRealTimeEnabled}
+                                onChange={(event) => setIsRealTimeEnabled(event.target.checked)}
                                 color="primary"
                             />
                         }
-                        label={realTimeEnabled ? "🟢 En Vivo" : "⏸️ Pausado"}
+                        label={isRealTimeEnabled ? "🟢 En Vivo" : "⏸️ Pausado"}
                     />
                     
                     <Tooltip title="Actualizar datos">
                         <IconButton 
                             onClick={handleRefresh} 
                             color="primary"
-                            disabled={refreshing}
+                            disabled={loading}
                             sx={{
                                 backgroundColor: 'primary.light',
                                 '&:hover': { backgroundColor: 'primary.main', color: 'white' }
                             }}
                         >
-                            <RefreshIcon className={refreshing ? 'animate-spin' : ''} />
+                            <RefreshIcon className={loading ? 'animate-spin' : ''} />
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -322,12 +236,12 @@ const Tracking: React.FC = () => {
                         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                                 🗺️ Mapa de Rastreo
-            </Typography>
+                            </Typography>
                         </Box>
                         
-                        {refreshing && (
+                        {loading && (
                             <FormLoading 
-                                open={refreshing} 
+                                open={loading} 
                                 variant="inline" 
                                 size="small" 
                                 message="Actualizando posiciones..." 
@@ -336,11 +250,11 @@ const Tracking: React.FC = () => {
                         )}
                         
                         <Box sx={{ height: '500px', position: 'relative' }}>
-                <DeviceMap
-                                devices={filteredDevices}
-                    selectedDevice={selectedDevice}
-                    onDeviceSelect={handleDeviceSelect}
-                />
+                            <DeviceMap
+                                devices={devices}
+                                selectedDevice={selectedDevice}
+                                onDeviceSelect={handleDeviceSelect}
+                            />
                         </Box>
                     </Paper>
                 </Grid>
@@ -351,15 +265,15 @@ const Tracking: React.FC = () => {
                         {/* Filters */}
                         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                                📡 Dispositivos ({filteredDevices.length})
+                                📡 Dispositivos ({devices.length})
                             </Typography>
                             
                             <TextField
                                 fullWidth
                                 size="small"
                                 placeholder="Buscar dispositivo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                value={''}
+                                onChange={() => {}}
                                 sx={{ mb: 2 }}
                                 InputProps={{
                                     startAdornment: (
@@ -369,27 +283,12 @@ const Tracking: React.FC = () => {
                                     ),
                                 }}
                             />
-                            
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Estado</InputLabel>
-                                <Select
-                                    value={statusFilter}
-                                    label="Estado"
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                >
-                                    <MenuItem value="all">Todos los estados</MenuItem>
-                                    <MenuItem value="online">En línea</MenuItem>
-                                    <MenuItem value="moving">En movimiento</MenuItem>
-                                    <MenuItem value="sleeping">Durmiendo</MenuItem>
-                                    <MenuItem value="offline">Desconectado</MenuItem>
-                                </Select>
-                            </FormControl>
                         </Box>
 
                         {/* Device List */}
                         <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
                             <List sx={{ p: 0 }}>
-                                {filteredDevices.length > 0 ? filteredDevices.map((device, index) => (
+                                {devices.length > 0 ? devices.map((device, index) => (
                                     <React.Fragment key={device.imei}>
                                         <ListItem 
                                             button
@@ -454,7 +353,7 @@ const Tracking: React.FC = () => {
                                                 }
                                             />
                                         </ListItem>
-                                        {index < filteredDevices.length - 1 && <Divider />}
+                                        {index < devices.length - 1 && <Divider />}
                                     </React.Fragment>
                                 )) : (
                                     <ListItem>
@@ -552,7 +451,7 @@ const Tracking: React.FC = () => {
                                 </Card>
                             </Grid>
                         </Grid>
-            </Paper>
+                    </Paper>
                 </Box>
             )}
         </Box>
