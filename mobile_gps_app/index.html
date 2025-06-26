@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Device Simulator - Falkon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 16px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status.connected {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+
+        .status.disconnected {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+
+        .status.connecting {
+            background: rgba(255, 193, 7, 0.3);
+            border: 1px solid #ffc107;
+        }
+
+        .gps-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .logs {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .log-entry.success {
+            color: #4CAF50;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.info {
+            color: #2196F3;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📱 Falkon GPS</div>
+            <div class="subtitle">Simulador de Dispositivo GPS</div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label for="serverHost">Servidor:</label>
+                <input type="text" id="serverHost" placeholder="IP del servidor" value="localhost">
+            </div>
+            
+            <div class="form-group">
+                <label for="serverPort">Puerto:</label>
+                <select id="serverPort">
+                    <option value="20332">20332 - Wialon</option>
+                    <option value="55300">55300 - Concox</option>
+                    <option value="62000">62000 - Meiligao</option>
+                    <option value="15557">15557 - Satellite</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="deviceImei">IMEI del Dispositivo:</label>
+                <input type="text" id="deviceImei" placeholder="123456789012345" value="123456789012345">
+            </div>
+            
+            <div class="form-group">
+                <label for="devicePassword">Contraseña:</label>
+                <input type="text" id="devicePassword" placeholder="password" value="123456">
+            </div>
+        </div>
+
+        <div id="status" class="status disconnected">
+            Desconectado
+        </div>
+
+        <div class="card">
+            <button id="connectBtn" class="btn btn-primary">
+                🔗 Conectar
+            </button>
+            <button id="disconnectBtn" class="btn btn-secondary" disabled>
+                ❌ Desconectar
+            </button>
+        </div>
+
+        <div class="card" id="gpsCard" style="display: none;">
+            <h3 style="margin-bottom: 15px;">📍 Información GPS</h3>
+            <div class="gps-info">
+                <div class="info-row">
+                    <span>Latitud:</span>
+                    <span id="latitude">-</span>
+                </div>
+                <div class="info-row">
+                    <span>Longitud:</span>
+                    <span id="longitude">-</span>
+                </div>
+                <div class="info-row">
+                    <span>Precisión:</span>
+                    <span id="accuracy">-</span>
+                </div>
+                <div class="info-row">
+                    <span>Velocidad:</span>
+                    <span id="speed">-</span>
+                </div>
+                <div class="info-row">
+                    <span>Rumbo:</span>
+                    <span id="heading">-</span>
+                </div>
+            </div>
+            <button id="sendLocationBtn" class="btn btn-primary">
+                📡 Enviar Ubicación
+            </button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">📋 Logs</h3>
+            <div id="logs" class="logs">
+                <div class="log-entry info">Aplicación iniciada...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GPSDeviceSimulator {
+            constructor() {
+                this.connected = false;
+                this.websocket = null;
+                this.currentPosition = null;
+                this.sendInterval = null;
+                this.watchId = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.startGPSTracking();
+            }
+
+            initializeElements() {
+                this.serverHost = document.getElementById('serverHost');
+                this.serverPort = document.getElementById('serverPort');
+                this.deviceImei = document.getElementById('deviceImei');
+                this.devicePassword = document.getElementById('devicePassword');
+                this.status = document.getElementById('status');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.disconnectBtn = document.getElementById('disconnectBtn');
+                this.sendLocationBtn = document.getElementById('sendLocationBtn');
+                this.gpsCard = document.getElementById('gpsCard');
+                this.logs = document.getElementById('logs');
+                
+                // GPS info elements
+                this.latitudeEl = document.getElementById('latitude');
+                this.longitudeEl = document.getElementById('longitude');
+                this.accuracyEl = document.getElementById('accuracy');
+                this.speedEl = document.getElementById('speed');
+                this.headingEl = document.getElementById('heading');
+            }
+
+            bindEvents() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.sendLocationBtn.addEventListener('click', () => this.sendCurrentLocation());
+            }
+
+            startGPSTracking() {
+                if ('geolocation' in navigator) {
+                    this.log('Iniciando rastreo GPS...', 'info');
+                    
+                    const options = {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 1000
+                    };
+
+                    this.watchId = navigator.geolocation.watchPosition(
+                        (position) => this.updatePosition(position),
+                        (error) => this.handleGPSError(error),
+                        options
+                    );
+                } else {
+                    this.log('GPS no disponible en este dispositivo', 'error');
+                }
+            }
+
+            updatePosition(position) {
+                this.currentPosition = position;
+                this.gpsCard.style.display = 'block';
+                
+                // Update UI
+                this.latitudeEl.textContent = position.coords.latitude.toFixed(6);
+                this.longitudeEl.textContent = position.coords.longitude.toFixed(6);
+                this.accuracyEl.textContent = `${Math.round(position.coords.accuracy)}m`;
+                this.speedEl.textContent = position.coords.speed ? 
+                    `${Math.round(position.coords.speed * 3.6)} km/h` : '0 km/h';
+                this.headingEl.textContent = position.coords.heading ? 
+                    `${Math.round(position.coords.heading)}°` : '-';
+                
+                this.log(`GPS actualizado: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`, 'success');
+            }
+
+            handleGPSError(error) {
+                let message = 'Error GPS: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        message += 'Permisos de ubicación denegados';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message += 'Ubicación no disponible';
+                        break;
+                    case error.TIMEOUT:
+                        message += 'Timeout obteniendo ubicación';
+                        break;
+                    default:
+                        message += 'Error desconocido';
+                        break;
+                }
+                this.log(message, 'error');
+            }
+
+            async connect() {
+                if (this.connected) return;
+
+                const host = this.serverHost.value || 'localhost';
+                const port = this.serverPort.value;
+                const imei = this.deviceImei.value;
+                const password = this.devicePassword.value;
+
+                if (!imei) {
+                    this.log('IMEI requerido', 'error');
+                    return;
+                }
+
+                this.updateStatus('connecting', 'Conectando...');
+                this.connectBtn.disabled = true;
+
+                try {
+                    // Simulate TCP connection using WebSocket proxy or HTTP
+                    await this.simulateConnection(host, port, imei, password);
+                } catch (error) {
+                    this.log(`Error de conexión: ${error.message}`, 'error');
+                    this.updateStatus('disconnected', 'Desconectado');
+                    this.connectBtn.disabled = false;
+                }
+            }
+
+            async simulateConnection(host, port, imei, password) {
+                // Since we can't make direct TCP connections from browser,
+                // we'll simulate the protocol and log what would be sent
+                
+                this.log(`Conectando a ${host}:${port}`, 'info');
+                this.log(`IMEI: ${imei}`, 'info');
+                
+                // Simulate login packet (Wialon protocol)
+                const loginPacket = `#L#${imei};${password}\r\n`;
+                this.log(`Enviando login: ${loginPacket.trim()}`, 'info');
+                
+                // Simulate successful connection
+                setTimeout(() => {
+                    this.connected = true;
+                    this.updateStatus('connected', 'Conectado ✓');
+                    this.connectBtn.disabled = false;
+                    this.disconnectBtn.disabled = false;
+                    this.log('¡Conectado al servidor!', 'success');
+                    
+                    // Start sending location automatically every 10 seconds
+                    this.sendInterval = setInterval(() => {
+                        if (this.currentPosition) {
+                            this.sendCurrentLocation();
+                        }
+                    }, 10000);
+                }, 2000);
+            }
+
+            disconnect() {
+                if (!this.connected) return;
+
+                this.connected = false;
+                if (this.sendInterval) {
+                    clearInterval(this.sendInterval);
+                    this.sendInterval = null;
+                }
+
+                this.updateStatus('disconnected', 'Desconectado');
+                this.connectBtn.disabled = false;
+                this.disconnectBtn.disabled = true;
+                this.log('Desconectado del servidor', 'info');
+            }
+
+            sendCurrentLocation() {
+                if (!this.connected || !this.currentPosition) {
+                    this.log('No conectado o sin ubicación GPS', 'error');
+                    return;
+                }
+
+                const pos = this.currentPosition.coords;
+                const now = new Date();
+                
+                // Format date and time for Wialon protocol
+                const date = String(now.getDate()).padStart(2, '0') + 
+                            String(now.getMonth() + 1).padStart(2, '0') + 
+                            String(now.getFullYear()).substr(2);
+                const time = String(now.getHours()).padStart(2, '0') + 
+                            String(now.getMinutes()).padStart(2, '0') + 
+                            String(now.getSeconds()).padStart(2, '0');
+
+                // Convert coordinates to Wialon format (degrees and minutes)
+                const lat = Math.abs(pos.latitude);
+                const lon = Math.abs(pos.longitude);
+                const lat1 = Math.floor(lat);
+                const lat2 = (lat - lat1) * 60;
+                const lon1 = Math.floor(lon);
+                const lon2 = (lon - lon1) * 60;
+
+                const speed = pos.speed ? Math.round(pos.speed * 3.6) : 0;
+                const course = pos.heading || 0;
+                const altitude = pos.altitude || 0;
+
+                // Build Wialon data packet
+                const dataPacket = `#D#${date};${time};${lat1};${lat2.toFixed(4)};${lon1};${lon2.toFixed(4)};${speed};${course};${altitude};8;1.0;0;0;0;;NA\r\n`;
+                
+                this.log(`Enviando ubicación: ${dataPacket.trim()}`, 'success');
+                this.log(`Lat: ${pos.latitude.toFixed(6)}, Lon: ${pos.longitude.toFixed(6)}`, 'info');
+                
+                // In a real implementation, this would be sent via TCP socket
+                // For now, we're just logging what would be sent
+            }
+
+            updateStatus(type, message) {
+                this.status.className = `status ${type}`;
+                this.status.textContent = message;
+                
+                if (type === 'connecting') {
+                    this.status.classList.add('pulse');
+                } else {
+                    this.status.classList.remove('pulse');
+                }
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                this.logs.appendChild(logEntry);
+                this.logs.scrollTop = this.logs.scrollHeight;
+                
+                // Keep only last 50 entries
+                while (this.logs.children.length > 50) {
+                    this.logs.removeChild(this.logs.firstChild);
+                }
+            }
+        }
+
+        // Initialize the app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new GPSDeviceSimulator();
+        });
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html> 

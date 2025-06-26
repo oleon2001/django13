@@ -4,7 +4,7 @@ Base models for the tracking application.
 from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.utils import timezone
-from skyguard.apps.gps.models import Device
+from skyguard.apps.gps.models import GPSDevice
 
 
 class Alert(models.Model):
@@ -19,7 +19,7 @@ class Alert(models.Model):
         ('OTHER', 'Other Alert'),
     ]
 
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='alerts')
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='alerts')
     alert_type = models.CharField(max_length=20, choices=ALERT_TYPES)
     position = gis_models.PointField(null=True, blank=True)
     message = models.TextField()
@@ -62,7 +62,7 @@ class Geofence(models.Model):
 
 class Route(models.Model):
     """Model for tracking routes."""
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='routes')
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='routes')
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True, blank=True)
     distance = models.FloatField(default=0)  # in kilometers

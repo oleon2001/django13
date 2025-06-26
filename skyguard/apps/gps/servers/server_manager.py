@@ -278,7 +278,7 @@ class GPSServerManager:
         
     def get_statistics(self) -> Dict[str, Any]:
         """Get GPS server statistics."""
-        from skyguard.apps.gps.models import Device, Event
+        from skyguard.apps.gps.models import GPSDevice, GPSEvent
         from django.utils import timezone
         from datetime import timedelta
         
@@ -288,17 +288,17 @@ class GPSServerManager:
         
         stats = {
             'timestamp': now.isoformat(),
-            'total_devices': Device.objects.count(),
-            'active_devices': Device.objects.filter(is_active=True).count(),
-            'events_last_hour': Event.objects.filter(timestamp__gte=last_hour).count(),
-            'events_last_day': Event.objects.filter(timestamp__gte=last_day).count(),
+            'total_devices': GPSDevice.objects.count(),
+            'active_devices': GPSDevice.objects.filter(is_active=True).count(),
+            'events_last_hour': GPSEvent.objects.filter(timestamp__gte=last_hour).count(),
+            'events_last_day': GPSEvent.objects.filter(timestamp__gte=last_day).count(),
             'servers': {}
         }
         
         # Server-specific statistics
         for server_name, config in self.server_configs.items():
             protocol = config.get('protocol', '').lower()
-            device_count = Device.objects.filter(protocol=server_name).count()
+            device_count = GPSDevice.objects.filter(protocol=server_name).count()
             
             stats['servers'][server_name] = {
                 'devices': device_count,

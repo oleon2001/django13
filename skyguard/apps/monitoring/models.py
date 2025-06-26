@@ -3,12 +3,12 @@ Models for the monitoring application.
 """
 from django.db import models
 from django.utils import timezone
-from skyguard.apps.gps.models import Device
+from skyguard.apps.gps.models import GPSDevice
 
 
 class DeviceStatus(models.Model):
     """Model for device status monitoring."""
-    device = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='status')
+    device = models.OneToOneField(GPSDevice, on_delete=models.CASCADE, related_name='status')
     is_online = models.BooleanField(default=False)
     last_heartbeat = models.DateTimeField(null=True, blank=True)
     battery_level = models.FloatField(null=True, blank=True)
@@ -37,7 +37,7 @@ class MaintenanceLog(models.Model):
         ('OTHER', 'Other'),
     ]
 
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='maintenance_logs')
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='maintenance_logs')
     maintenance_type = models.CharField(max_length=20, choices=MAINTENANCE_TYPES)
     description = models.TextField()
     performed_by = models.ForeignKey(
@@ -73,7 +73,7 @@ class SystemLog(models.Model):
     message = models.TextField()
     source = models.CharField(max_length=100)
     device = models.ForeignKey(
-        Device,
+        GPSDevice,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -109,7 +109,7 @@ class Notification(models.Model):
         related_name='notifications'
     )
     device = models.ForeignKey(
-        Device,
+        GPSDevice,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

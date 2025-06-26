@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',  # GeoDjango
     'django.contrib.sites',  # Habilita el framework de sites
+    'channels',  # Django Channels for WebSockets
     # Third party apps
     'rest_framework',
     'corsheaders',

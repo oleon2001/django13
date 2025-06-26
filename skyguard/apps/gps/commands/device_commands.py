@@ -6,7 +6,7 @@ import struct
 from enum import Enum
 from typing import Optional, Dict, Any
 from django.conf import settings
-from skyguard.apps.gps.models import Device
+from skyguard.apps.gps.models import GPSDevice
 
 
 class CommandType(Enum):
@@ -28,7 +28,7 @@ class CommandType(Enum):
 class DeviceCommand:
     """Base class for device commands."""
     
-    def __init__(self, device: Device, command_type: CommandType, data: Optional[Dict[str, Any]] = None):
+    def __init__(self, device: GPSDevice, command_type: CommandType, data: Optional[Dict[str, Any]] = None):
         """Initialize the command."""
         self.device = device
         self.command_type = command_type
@@ -85,8 +85,8 @@ def send_command(device_name: str, command_type: CommandType, protocol: str = 'b
         protocol: Protocol to use (bluetooth, concox, meiligao)
     """
     try:
-        device = Device.objects.get(name=device_name)
-    except Device.DoesNotExist:
+        device = GPSDevice.objects.get(name=device_name)
+    except GPSDevice.DoesNotExist:
         raise ValueError(f"Device {device_name} not found")
         
     command_classes = {

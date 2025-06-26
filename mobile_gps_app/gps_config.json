@@ -1,0 +1,10 @@
+{
+    "host": "localhost",
+    "port": 20332,
+    "imei": "123456789012345",
+    "password": "123456",
+    "interval": 10,
+    "protocol": "wialon",
+    "device_name": "Mi Telefono GPS",
+    "auto_register": true
+} 
