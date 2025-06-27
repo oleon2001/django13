@@ -1,0 +1,15 @@
+{
+    "host": "localhost",
+    "port": 20332,
+    "imei": "352749380148144",
+    "password": "123456",
+    "interval": 10,
+    "protocol": "wialon",
+    "device_name": "celular oswaldo",
+    "auto_register": true,
+    "use_android_gps": true,
+    "fallback_to_ip": true,
+    "fallback_to_mock": false,
+    "debug": true,
+    "comment": "Configuración actualizada para protocolo Wialon (puerto 20332)"
+} 
