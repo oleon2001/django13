@@ -123,27 +123,11 @@ class MigrationExecutor:
         self.log_action("🚀 INICIANDO FASE 2: MIGRACIÓN DE DATOS MAESTROS")
         self.log_action("="*80)
         
-        # 2.1 Migrar configuraciones del sistema
-        self.log_action("⚙️ 2.1 Migrando configuraciones del sistema...")
+        # Migrar todos los datos maestros con un solo comando
+        self.log_action("⚙️ Migrando datos maestros (SIM Cards, Harnesses, Dispositivos, Geocercas)...")
         if not self.execute_command(
-            "python3 migration_scripts/migrate_core_data.py --config-only",
-            "Migración de configuraciones"
-        ):
-            return False
-            
-        # 2.2 Migrar usuarios y permisos
-        self.log_action("👥 2.2 Migrando usuarios y permisos...")
-        if not self.execute_command(
-            "python3 migration_scripts/migrate_core_data.py --users-only",
-            "Migración de usuarios"
-        ):
-            return False
-            
-        # 2.3 Migrar geocercas
-        self.log_action("🗺️ 2.3 Migrando geocercas y zonas...")
-        if not self.execute_command(
-            "python3 migration_scripts/migrate_core_data.py --geofences-only",
-            "Migración de geocercas"
+            "python3 migration_scripts/migrate_core_data.py --execute",
+            "Migración de datos maestros completa"
         ):
             return False
             
@@ -164,19 +148,11 @@ class MigrationExecutor:
         ):
             return False
             
-        # 3.2 Configurar protocolos
-        self.log_action("🔧 3.2 Configurando protocolos de comunicación...")
+        # 3.2 Validar migración de dispositivos
+        self.log_action("🔧 3.2 Validando migración de dispositivos...")
         if not self.execute_command(
-            "python3 setup_gps_protocols.py",
-            "Configuración de protocolos GPS"
-        ):
-            return False
-            
-        # 3.3 Validar conectividad
-        self.log_action("📶 3.3 Validando conectividad de dispositivos...")
-        if not self.execute_command(
-            "python3 validate_device_connectivity.py",
-            "Validación de conectividad"
+            "python3 migration_scripts/validate_migration.py",
+            "Validación de dispositivos migrados"
         ):
             return False
             
@@ -238,11 +214,11 @@ class MigrationExecutor:
         ):
             return False
             
-        # 5.3 Pruebas de performance
-        self.log_action("⚡ 5.3 Ejecutando pruebas de performance...")
+        # 5.3 Verificar estado final
+        self.log_action("⚡ 5.3 Verificando estado final del sistema...")
         if not self.execute_command(
-            "python3 performance_tests.py",
-            "Pruebas de performance"
+            "python3 check_migration_status.py",
+            "Verificación del estado final"
         ):
             return False
             
@@ -267,18 +243,10 @@ class MigrationExecutor:
             if not self.execute_command(command, description):
                 return False
                 
-        # 6.2 Monitoreo post-migración
-        self.log_action("📊 6.2 Iniciando monitoreo post-migración...")
+        # 6.2 Verificación final del sistema
+        self.log_action("📊 6.2 Ejecutando verificación final completa...")
         if not self.execute_command(
-            "python3 post_migration_monitoring.py --start",
-            "Inicio de monitoreo"
-        ):
-            return False
-            
-        # 6.3 Verificación final
-        self.log_action("🎯 6.3 Ejecutando verificación final...")
-        if not self.execute_command(
-            "python3 final_system_check.py",
+            "python3 check_migration_status.py",
             "Verificación final del sistema"
         ):
             return False

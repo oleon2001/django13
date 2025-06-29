@@ -14,6 +14,10 @@ from skyguard.apps.gps.servers.meiligao_server import start_meiligao_server
 from skyguard.apps.gps.servers.sat_server import SATServer
 from skyguard.apps.gps.servers.wialon_server import WialonServer
 from skyguard.apps.gps.services.email_processor import process_device_emails
+from skyguard.apps.gps.servers.sgavl_server import start_sgavl_server
+from skyguard.apps.gps.servers.blu_server import start_blu_server
+from skyguard.apps.gps.servers.blu_server_boot import start_blu_boot_server
+from skyguard.apps.gps.servers.update_server import start_update_server
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +66,38 @@ class GPSServerManager:
                 'protocol': 'TCP',
                 'description': 'Wialon GPS Tracker Protocol',
                 'start_function': self._start_wialon_server
+            },
+            'sgavl': {
+                'enabled': True,
+                'host': '',
+                'port': 60010,
+                'protocol': 'TCP',
+                'description': 'SGAvl personalizado',
+                'start_function': start_sgavl_server
+            },
+            'blu': {
+                'enabled': True,
+                'host': '',
+                'port': 50100,
+                'protocol': 'UDP',
+                'description': 'BLU personalizado',
+                'start_function': start_blu_server
+            },
+            'blu_boot': {
+                'enabled': True,
+                'host': '',
+                'port': 60000,
+                'protocol': 'UDP',
+                'description': 'Bootloader BLU',
+                'start_function': start_blu_boot_server
+            },
+            'update': {
+                'enabled': True,
+                'host': '',
+                'port': 60020,
+                'protocol': 'TCP',
+                'description': 'Firmware OTA UpdateServer',
+                'start_function': start_update_server
             }
         }
         

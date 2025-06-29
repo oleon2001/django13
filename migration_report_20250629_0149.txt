@@ -1,0 +1,22 @@
+REPORTE DE MIGRACIÓN SKYGUARD
+==================================================
+Fecha: 2025-06-29 01:49:30.037736
+Duración: 0:02:53.657975
+Modo: PRODUCCIÓN
+
+ADVERTENCIAS:
+- ⚠️ Backup manual requerido antes de continuar
+- Ejecute: pg_dump skyguard > backup_$(date +%Y%m%d).sql
+- ⚠️ Advertencias en validación
+
+ACCIONES COMPLETADAS:
+- Ejecutando migración de dispositivos...
+- ✅ Dispositivos GPS migrados
+- Validando migración...
+- ================================================================================
+- 📊 RESUMEN DE MIGRACIÓN
+- ================================================================================
+- ⏱️ Tiempo total: 0:02:53.657975
+- ✅ Acciones exitosas: 32
+- ⚠️ Advertencias: 3
+- ❌ Errores: 0
