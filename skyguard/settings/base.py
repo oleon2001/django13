@@ -30,6 +30,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'whitenoise.runserver_nostatic',  # Static files
+    # Celery apps
+    'django_celery_beat',
+    'django_celery_results',
     # Local apps
     'skyguard.core',
     'skyguard.apps.gps',

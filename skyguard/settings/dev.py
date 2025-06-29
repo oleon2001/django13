@@ -135,4 +135,35 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+
+# Celery Beat Schedule (tareas periódicas)
+CELERY_BEAT_SCHEDULE = {
+    'check-devices-heartbeat': {
+        'task': 'skyguard.apps.gps.tasks.check_devices_heartbeat',
+        'schedule': 60.0,  # Cada 60 segundos
+        'kwargs': {'timeout_minutes': 1}
+    },
+}
+
+# Celery Task Routes
+CELERY_TASK_ROUTES = {
+    'skyguard.apps.gps.tasks.*': {'queue': 'gps_tasks'},
+}
+
+# Celery Task Annotations
+CELERY_TASK_ANNOTATIONS = {
+    'skyguard.apps.gps.tasks.check_devices_heartbeat': {
+        'rate_limit': '60/m',  # Máximo 60 por minuto
+        'time_limit': 120,     # 2 minutos máximo
+    },
 } 

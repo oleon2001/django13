@@ -139,21 +139,17 @@ class WialonProtocolHandler(IProtocolHandler):
         try:
             if not data:
                 return False
-                
-            data = data.strip()
-            if not data:
-                return False
-                
-            # Check packet type
-            if not (data.startswith(b'#L#') or data.startswith(b'#D#')):
-                return False
-                
-            # Check packet end
+            # Validar primero el final del paquete
             if not data.endswith(b'\r\n'):
                 return False
-                
+            # Ahora quitar espacios para validar el tipo
+            data_stripped = data.strip()
+            if not data_stripped:
+                return False
+            # Check packet type
+            if not (data_stripped.startswith(b'#L#') or data_stripped.startswith(b'#D#') or data_stripped.startswith(b'#P#')):
+                return False
             return True
-            
         except Exception as e:
             logger.error(f"Error validating packet: {e}")
             return False
