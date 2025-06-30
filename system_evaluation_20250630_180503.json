@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-06-30T18:05:01.867654",
+  "tests": {
+    "Database Connection": {
+      "status": "PASS",
+      "details": "Dispositivos: 2, Usuarios: 3",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:01.883895"
+    },
+    "Models Creation": {
+      "status": "ERROR",
+      "details": null,
+      "error": "'NoneType' object has no attribute 'group_send'",
+      "timestamp": "2025-06-30T18:05:02.203307"
+    },
+    "Protocol Handlers": {
+      "status": "PASS",
+      "details": "Concox: ConcoxProtocolHandler, Wialon: WialonProtocolHandler, Valid packet: True",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:02.203432"
+    },
+    "Services": {
+      "status": "ERROR",
+      "details": null,
+      "error": "Error processing location: 'position'",
+      "timestamp": "2025-06-30T18:05:02.211657"
+    },
+    "API Endpoints": {
+      "status": "PASS",
+      "details": "Devices: False, Status: False, Sessions: False",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:02.877122"
+    },
+    "Celery Tasks": {
+      "status": "PASS",
+      "details": "Heartbeat: 0 devices, Quality: 1 updated",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:03.263486"
+    },
+    "Authentication": {
+      "status": "PASS",
+      "details": "Login: True, Endpoint access: False",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:03.942804"
+    },
+    "WebSocket Signals": {
+      "status": "ERROR",
+      "details": null,
+      "error": "'NoneType' object has no attribute 'group_send'",
+      "timestamp": "2025-06-30T18:05:03.971096"
+    },
+    "Data Integrity": {
+      "status": "PASS",
+      "details": "All 5 devices have valid data",
+      "error": null,
+      "timestamp": "2025-06-30T18:05:03.975818"
+    }
+  },
+  "summary": {
+    "total_tests": 9,
+    "passed": 6,
+    "failed": 0,
+    "errors": 3
+  }
+}

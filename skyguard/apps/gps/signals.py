@@ -6,11 +6,24 @@ from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from datetime import datetime
+import logging
 
 from .models import GPSDevice, GPSLocation, GPSEvent
 
+logger = logging.getLogger(__name__)
 
-channel_layer = get_channel_layer()
+# Obtener channel layer de forma segura
+def get_safe_channel_layer():
+    """Get channel layer safely, handling None case."""
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            logger.warning("Channel layer is None - WebSocket notifications disabled")
+            return None
+        return channel_layer
+    except Exception as e:
+        logger.warning(f"Error getting channel layer: {e} - WebSocket notifications disabled")
+        return None
 
 
 @receiver(post_save, sender=GPSLocation)
@@ -69,25 +82,35 @@ def broadcast_gps_location_update(sender, instance, created, **kwargs):
         
         # Broadcast to user's room
         if device.owner:
-            async_to_sync(channel_layer.group_send)(
-                f"gps_user_{device.owner.id}",
-                update_data
-            )
+            channel_layer = get_safe_channel_layer()
+            if channel_layer:
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"gps_user_{device.owner.id}",
+                        update_data
+                    )
+                except Exception as e:
+                    logger.error(f"Error broadcasting location update: {e}")
         
         # Broadcast to analytics room
-        async_to_sync(channel_layer.group_send)(
-            "gps_analytics",
-            {
-                'type': 'analytics_update',
-                'data': {
-                    'event_type': 'location_update',
-                    'device_imei': str(device.imei),
-                    'timestamp': instance.timestamp.isoformat(),
-                    'speed': instance.speed,
-                    'position': update_data['position']
-                }
-            }
-        )
+        channel_layer = get_safe_channel_layer()
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    "gps_analytics",
+                    {
+                        'type': 'analytics_update',
+                        'data': {
+                            'event_type': 'location_update',
+                            'device_imei': str(device.imei),
+                            'timestamp': instance.timestamp.isoformat(),
+                            'speed': instance.speed,
+                            'position': update_data['position']
+                        }
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error broadcasting analytics update: {e}")
 
 
 @receiver(post_save, sender=GPSDevice)
@@ -108,10 +131,15 @@ def broadcast_device_status_change(sender, instance, created, **kwargs):
             
             # Broadcast to user's room
             if instance.owner:
-                async_to_sync(channel_layer.group_send)(
-                    f"gps_user_{instance.owner.id}",
-                    update_data
-                )
+                channel_layer = get_safe_channel_layer()
+                if channel_layer:
+                    try:
+                        async_to_sync(channel_layer.group_send)(
+                            f"gps_user_{instance.owner.id}",
+                            update_data
+                        )
+                    except Exception as e:
+                        logger.error(f"Error broadcasting device status change: {e}")
 
 
 @receiver(post_save, sender=GPSEvent)
@@ -139,22 +167,32 @@ def broadcast_gps_event(sender, instance, created, **kwargs):
         
         # Broadcast to user's room
         if device.owner:
-            async_to_sync(channel_layer.group_send)(
-                f"gps_user_{device.owner.id}",
-                alarm_data
-            )
+            channel_layer = get_safe_channel_layer()
+            if channel_layer:
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"gps_user_{device.owner.id}",
+                        alarm_data
+                    )
+                except Exception as e:
+                    logger.error(f"Error broadcasting alarm notification: {e}")
         
         # Also broadcast to analytics for monitoring
-        async_to_sync(channel_layer.group_send)(
-            "gps_analytics",
-            {
-                'type': 'analytics_update',
-                'data': {
-                    'event_type': 'alarm',
-                    'device_imei': str(device.imei),
-                    'alarm_type': instance.type,
-                    'severity': severity,
-                    'timestamp': instance.timestamp.isoformat()
-                }
-            }
-        ) 
+        channel_layer = get_safe_channel_layer()
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    "gps_analytics",
+                    {
+                        'type': 'analytics_update',
+                        'data': {
+                            'event_type': 'alarm',
+                            'device_imei': str(device.imei),
+                            'alarm_type': instance.type,
+                            'severity': severity,
+                            'timestamp': instance.timestamp.isoformat()
+                        }
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error broadcasting analytics alarm update: {e}") 

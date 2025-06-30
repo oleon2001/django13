@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:9.6-2.5
+    container_name: falkun_db
+    environment:
+      POSTGRES_DB: falkun
+      POSTGRES_USER: falkun_user
+      POSTGRES_PASSWORD: falkun_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U falkun_user -d falkun"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Opcional: pgAdmin para administrar la base de datos
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: falkun_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@falkun.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  pgadmin_data: 

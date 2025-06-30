@@ -1,0 +1,1 @@
+/home/django13/.bash_logout

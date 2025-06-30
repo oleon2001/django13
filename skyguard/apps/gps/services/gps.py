@@ -3,6 +3,7 @@ GPS service implementation.
 """
 from typing import List, Optional, Any
 from django.utils import timezone
+from django.contrib.gis.geos import Point
 
 from skyguard.core.interfaces import ILocationService, IEventService, IGPSDeviceRepository
 from skyguard.core.exceptions import (
@@ -37,18 +38,36 @@ class GPSService(ILocationService, IEventService):
             InvalidLocationDataError: If location data is invalid
         """
         try:
-            # Validate required fields
-            required_fields = ['latitude', 'longitude', 'timestamp']
+            # Validar y normalizar estructura de datos
+            if 'position' not in location_data:
+                # Si no hay position, crear desde lat/lon
+                if 'latitude' in location_data and 'longitude' in location_data:
+                    lat = float(location_data['latitude'])
+                    lon = float(location_data['longitude'])
+                    location_data['position'] = Point(lon, lat)  # Point(x, y) = Point(lon, lat)
+                else:
+                    raise InvalidLocationDataError('Missing position or latitude/longitude')
+            
+            # Validar campos requeridos
+            required_fields = ['timestamp']
             if not all(field in location_data for field in required_fields):
                 raise InvalidLocationDataError('Missing required location fields')
             
-            # Create location record
+            # Asegurar que position es un objeto Point
+            if not isinstance(location_data['position'], Point):
+                if isinstance(location_data['position'], (list, tuple)):
+                    lon, lat = location_data['position']
+                    location_data['position'] = Point(lon, lat)
+                else:
+                    raise InvalidLocationDataError('Invalid position format')
+            
+            # Crear registro de ubicación
             location = self.repository.create_location(device, location_data)
             
-            # Update device position
+            # Actualizar posición del dispositivo
             self.repository.update_device_position(device.imei, location.position)
             
-            # Create track event
+            # Crear evento de tracking
             event_data = {
                 'type': 'TRACK',
                 'timestamp': location.timestamp,
@@ -59,6 +78,7 @@ class GPSService(ILocationService, IEventService):
                 'odometer': device.odometer
             }
             self.process_event(device, event_data)
+            
         except Exception as e:
             raise InvalidLocationDataError(f'Error processing location: {str(e)}')
 

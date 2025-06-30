@@ -10,7 +10,7 @@ import json
 from .models import GPSDevice, GPSLocation, GPSEvent
 from .services import GPSService
 from .repositories import GPSDeviceRepository
-from .protocols import GPSProtocolHandler
+from .protocols import GPSProtocolHandler, ConcoxProtocolHandler, WialonProtocolHandler
 
 
 class GPSDeviceTests(TestCase):
@@ -22,7 +22,6 @@ class GPSDeviceTests(TestCase):
             imei=123456789012345,
             name='Test Device',
             protocol='concox',
-            firmware_version='1.0.0',
             position=Point(0, 0),
             is_active=True
         )
@@ -148,7 +147,6 @@ class GPSViewTests(TestCase):
             imei=123456789012345,
             name='Test Device',
             protocol='concox',
-            firmware_version='1.0.0',
             position=Point(0, 0),
             is_active=True
         )
@@ -214,8 +212,8 @@ class GPSViewTests(TestCase):
         # Check response
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
-        self.assertIn('history', data)
-        self.assertEqual(len(data['history']), 1)
+        self.assertIn('locations', data)
+        self.assertEqual(len(data['locations']), 1)
     
     def test_device_events_endpoint(self):
         """Test device events endpoint."""
@@ -223,11 +221,11 @@ class GPSViewTests(TestCase):
         event = GPSEvent.objects.create(
             device=self.device,
             type='TRACK',
-            timestamp=timezone.now(),
             position=Point(1, 1),
             speed=50.0,
             course=90.0,
-            altitude=100.0
+            altitude=100.0,
+            timestamp=timezone.now()
         )
         
         # Send GET request

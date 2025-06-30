@@ -1,0 +1,72 @@
+{% extends 'base_map.html' %}
+{% load l10n %}
+
+{% block custom-js %}{% localize on %}
+// Create all event objects
+CIRCLEico = { path: google.maps.SymbolPath.CIRCLE, scale: 5, strokeColor: "white", fillColor: "black", fillOpacity: 1, strokeWeight: 3}
+
+var map;
+var infoWindow = new google.maps.InfoWindow({content: "info", disableAutoPan: true});
+var assets;
+
+assets = [{% for e in object_list %}
+	{ marker: new google.maps.Marker({ map: null , draggable: false,
+			position: new google.maps.LatLng( {{ e.position.1 }}, {{ e.position.0 }}), icon: CIRCLEico }),
+	  info: "<h2>{{ e.lane.prefix }}{{ e.number1 }}</h2>{{ e.carSerial }}<p>{{ e.carDateTz }}"
+	},
+{% endfor %} ]
+
+function showAsset(ev)
+{
+    infoWindow.close();
+	infoWindow.setContent(assets[ev].info);
+	infoWindow.setPosition(assets[ev].marker.position);      // event.latLng
+	infoWindow.open(map);
+}
+
+function click()
+{
+    n = this.evIndex;
+    infoWindow.close();
+    infoWindow.setContent(assets[n].info);
+    infoWindow.setPosition(assets[n].marker.position);      // event.latLng
+    infoWindow.open(map);
+}
+
+$(function(){
+	$('#tabss').tabs();
+    // console.log(data...);
+	map = new google.maps.Map(document.getElementById("map"),{mapTypeId: google.maps.MapTypeId.HYBRID});
+	map.fitBounds(new google.maps.LatLngBounds( new google.maps.LatLng({{ bounds.1 }},{{ bounds.0 }}), new google.maps.LatLng({{ bounds.3 }},{{ bounds.2 }})));
+    for (i = 0; i < assets.length; i++) {
+		assets[i].marker.setMap(map);
+		assets[i].marker.evIndex = i;
+		google.maps.event.addListener(assets[i].marker,'click',click);
+    }
+});
+
+{% endlocalize %}
+{% endblock custom-js %}
+{% block sidebar %}
+<h2>{{ object_list.0.lane.park.description }}</h2>
+{% if total %}Total: {{total }}{% endif %}
+<div id="tabss">
+    <ul><li><a href="#tab1">{{ mTab }}</a><li><a href="#tab2">Buscar</a></ul>
+    <div id="tab1">
+    <table>
+        {% for e in object_list %}
+        <tr ><td >{{ e.lane.prefix }}{{ e.number1 }}</td><td ><a href="#{{ forloop.counter0 }}" onclick=showAsset({{ forloop.counter0 }})> {{ e.carSerial }}</a></td></tr>
+        {% endfor %}
+    </table>
+    </div>
+    <div id="tab2">
+		<form name="search" method="post">{% csrf_token %}
+			Serie:<p>
+			<textarea NAME="items" COLS=20 ROWS=25></textarea>
+			<p>
+			<input type="submit" value="Submit">
+		</form>
+
+    </div>
+</div>
+{% endblock sidebar %}

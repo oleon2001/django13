@@ -198,25 +198,162 @@ def generate_device_statistics(self):
         # Dispositivos por protocolo
         protocol_stats = GPSDevice.objects.values('protocol').annotate(
             count=Count('id')
-        ).order_by('protocol')
+        )
         
-        # Dispositivos activos en las últimas 24 horas
-        last_24h = timezone.now() - timedelta(hours=24)
-        active_24h = GPSDevice.objects.filter(
-            last_heartbeat__gte=last_24h
-        ).count()
+        # Dispositivos por estado de conexión
+        status_stats = GPSDevice.objects.values('connection_status').annotate(
+            count=Count('id')
+        )
         
-        result = {
-            'timestamp': timezone.now().isoformat(),
+        logger.info(f"Device statistics generated: {stats}")
+        
+        return {
             'general_stats': stats,
-            'protocol_distribution': list(protocol_stats),
-            'active_last_24h': active_24h
+            'protocol_stats': list(protocol_stats),
+            'status_stats': list(status_stats)
         }
         
-        logger.info(f"Generated device statistics: {stats}")
+    except Exception as e:
+        logger.error(f"Error in generate_device_statistics task: {e}")
+        raise self.retry(exc=e, countdown=60, max_retries=3)
+
+
+@shared_task(bind=True)
+def monitor_hardware_gps_connections(self):
+    """
+    Monitorea conexiones de dispositivos GPS de hardware.
+    Basado en la implementación del proyecto django14.
+    """
+    try:
+        from skyguard.apps.gps.services.hardware_gps import hardware_gps_service
+        
+        # Verificar estado del servicio de hardware GPS
+        active_connections = len(hardware_gps_service.active_connections)
+        running = hardware_gps_service.running
+        active_threads = len([t for t in hardware_gps_service.threads if t.is_alive()])
+        
+        # Dispositivos conectados recientemente (últimos 5 minutos)
+        recent_time = timezone.now() - timedelta(minutes=5)
+        recent_devices = GPSDevice.objects.filter(
+            last_connection__gte=recent_time,
+            connection_status='ONLINE'
+        ).count()
+        
+        # Dispositivos por protocolo de hardware
+        hardware_protocols = GPSDevice.objects.filter(
+            protocol__in=['concox', 'meiligao', 'nmea']
+        ).values('protocol').annotate(
+            count=Count('id'),
+            online=Count('id', filter=Q(connection_status='ONLINE'))
+        )
+        
+        result = {
+            'service_running': running,
+            'active_connections': active_connections,
+            'active_threads': active_threads,
+            'recent_devices': recent_devices,
+            'hardware_protocols': list(hardware_protocols),
+            'timestamp': timezone.now().isoformat()
+        }
+        
+        logger.info(f"Hardware GPS monitoring: {result}")
+        
+        # Alertar si el servicio no está corriendo
+        if not running:
+            logger.warning("Hardware GPS service is not running!")
+        
+        # Alertar si no hay dispositivos recientes
+        if recent_devices == 0:
+            logger.warning("No recent GPS device connections detected")
         
         return result
         
     except Exception as e:
-        logger.error(f"Error in generate_device_statistics task: {e}")
+        logger.error(f"Error in monitor_hardware_gps_connections task: {e}")
+        raise self.retry(exc=e, countdown=60, max_retries=3)
+
+
+@shared_task(bind=True)
+def cleanup_old_gps_locations(self, days_old=30):
+    """
+    Limpia ubicaciones GPS antiguas para optimizar la base de datos.
+    
+    Args:
+        days_old (int): Días de antigüedad para considerar una ubicación como antigua
+    """
+    try:
+        from skyguard.apps.gps.models import GPSLocation
+        
+        cutoff_time = timezone.now() - timedelta(days=days_old)
+        
+        # Eliminar ubicaciones antiguas
+        old_locations = GPSLocation.objects.filter(timestamp__lt=cutoff_time)
+        count = old_locations.count()
+        old_locations.delete()
+        
+        logger.info(f"Cleaned up {count} old GPS locations (older than {days_old} days)")
+        
+        return {
+            'locations_deleted': count,
+            'days_old': days_old
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in cleanup_old_gps_locations task: {e}")
+        raise self.retry(exc=e, countdown=60, max_retries=3)
+
+
+@shared_task(bind=True)
+def validate_gps_data_integrity(self):
+    """
+    Valida la integridad de los datos GPS almacenados.
+    """
+    try:
+        from skyguard.apps.gps.models import GPSLocation, GPSEvent
+        
+        # Verificar ubicaciones sin coordenadas válidas
+        invalid_locations = GPSLocation.objects.filter(
+            Q(position__isnull=True) |
+            Q(latitude__isnull=True) |
+            Q(longitude__isnull=True)
+        ).count()
+        
+        # Verificar eventos sin dispositivo
+        orphan_events = GPSEvent.objects.filter(device__isnull=True).count()
+        
+        # Verificar ubicaciones duplicadas (mismo dispositivo, misma posición, mismo tiempo)
+        duplicate_locations = GPSLocation.objects.raw("""
+            SELECT id FROM skyguard_apps_gps_gpslocation 
+            WHERE (device_id, position, timestamp) IN (
+                SELECT device_id, position, timestamp 
+                FROM skyguard_apps_gps_gpslocation 
+                GROUP BY device_id, position, timestamp 
+                HAVING COUNT(*) > 1
+            )
+        """)
+        duplicate_count = len(list(duplicate_locations))
+        
+        result = {
+            'invalid_locations': invalid_locations,
+            'orphan_events': orphan_events,
+            'duplicate_locations': duplicate_count,
+            'timestamp': timezone.now().isoformat()
+        }
+        
+        logger.info(f"GPS data integrity check: {result}")
+        
+        # Alertar sobre problemas encontrados
+        if invalid_locations > 0:
+            logger.warning(f"Found {invalid_locations} invalid GPS locations")
+        
+        if orphan_events > 0:
+            logger.warning(f"Found {orphan_events} orphan GPS events")
+        
+        if duplicate_count > 0:
+            logger.warning(f"Found {duplicate_count} duplicate GPS locations")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in validate_gps_data_integrity task: {e}")
         raise self.retry(exc=e, countdown=60, max_retries=3) 

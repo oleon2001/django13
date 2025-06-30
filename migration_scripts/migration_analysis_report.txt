@@ -1,5 +1,5 @@
 REPORTE DE ANÁLISIS DE MIGRACIÓN
-Generado: 2025-06-25 20:06:42.608647
+Generado: 2025-06-30 17:49:14.584859
 Total registros: 6
 Tiempo estimado: 2.0 horas
 Problemas encontrados: 2

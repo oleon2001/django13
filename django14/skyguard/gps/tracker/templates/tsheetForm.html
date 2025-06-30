@@ -1,0 +1,27 @@
+{% extends 'base_form.html' %}
+
+{% block content-form %}
+<form action="" method="post">{% csrf_token %}
+    <p>Fecha: {% if stage == 0 %}{{ form.date }}{% else %}{{ form.date.value }}{{ form.date.as_hidden }}{% endif %}</p>
+	{% if stage >= 1 %}
+	<p>Unidad: {% if stage == 1 %}{{ form.unidad }}{% else %}{{ form.unidad.value }}{{ form.unidad.as_hidden }}{% endif %}</p>
+	{% endif %}	{% if stage >= 2 %}
+	<p>Vuelta 1: {{ form.v1Ini }} {{ form.v1End }}</p>
+	<p>Vuelta 2: {{ form.v2Ini }} {{ form.v2End }}</p>
+	<p>Vuelta 3: {{ form.v3Ini }} {{ form.v3End }}</p>
+	<p>Vuelta 4: {{ form.v4Ini }} {{ form.v4End }}</p>
+	<p>Vuelta 5: {{ form.v5Ini }} {{ form.v5End }}</p>
+	<p>Vuelta 6: {{ form.v6Ini }} {{ form.v6End }}</p>
+	<p>Vuelta 7: {{ form.v7Ini }} {{ form.v7End }}</p>
+	<p>Vuelta 8: {{ form.v8Ini }} {{ form.v8End }}</p>
+	<p>Vuelta 9: {{ form.v9Ini }} {{ form.v9End }}</p>
+	<p>Vuelta 10: {{ form.v10Ini }} {{ form.v10End }}</p>
+	{% endif %}
+	{{ form.errors }}
+
+    <input type="submit" value="{{ form.submit_text }}" />
+</form>
+{% if stage == 3 %}<form action="" method="post">{% csrf_token %}{{ form.date.as_hidden }}<input type="submit" value="Limpiar" /></form>
+<form action="" method="post">{% csrf_token %}{{ form.date.as_hidden }}{{ form.unidad.as_hidden }}{{ form.fromTicket.as_hidden }}<input type="submit" value="Revertir a Ticket" /></form>
+<!-- button onClick="window.location.href=window.location.href">Limpiar</button -->{% endif %}
+{% endblock content-form %}

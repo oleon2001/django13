@@ -1,0 +1,72 @@
+{% extends "base_map.html" %}
+{% load l10n %}
+
+{% block custom-js %}{% localize off %}
+var map;
+var infoWindow = new google.maps.InfoWindow({content: "info", disableAutoPan: true});
+var geoFenceList;
+
+infoWindow.active = -1;
+
+function click(event)
+{
+    n = this.myIndex;
+	if (infoWindow.active != -1)
+	{
+		clearTimeout(infoWindow.tid);
+		geoFenceList[infoWindow.active].poly.setOptions({strokeColor:"#0000FF", strokeWeight: 1});
+	}
+	infoWindow.active = n;
+    infoWindow.close();
+
+    infoWindow.tid = setTimeout(function(){
+		geoFenceList[n].poly.setOptions({strokeColor:"#0000FF", strokeWeight: 1});
+		infoWindow.close();},3000);
+    this.setOptions({strokeColor:"#FF0000", strokeWeight: 5});
+
+	content = '<b>' + geoFenceList[n].name + '</b>';
+    infoWindow.setContent(content);
+    infoWindow.setPosition(event.latLng);      // event.latLng
+    infoWindow.open(map);
+}
+
+geoFenceList = [
+	{% for i in object_list %} {
+		name: "{{ i.name }}",
+		bounds: new google.maps.LatLngBounds(
+				new google.maps.LatLng({{ i.fence.extent.1 }},{{ i.fence.extent.0 }}),
+				new google.maps.LatLng({{ i.fence.extent.3 }},{{ i.fence.extent.2 }})),
+		poly: new google.maps.Polygon({	strokeWeight: 1,
+			strokeOpacity: 1.0, strokeColor: '#0000FF',
+			fillOpacity: 0.3, 	fillColor: '#5555FF', }),
+		path: new google.maps.MVCArray([{% for c in i.fence.tuple.0 %}	new google.maps.LatLng({{ c.1 }},{{ c.0 }}), {% endfor %}]),
+	}, {% endfor %}
+]
+
+$(function(){
+	// $('#tabss').tabs();
+    // console.log(data...);
+	map = new google.maps.Map(document.getElementById("map"),{mapTypeId: google.maps.MapTypeId.ROADMAP});
+	map.fitBounds(new google.maps.LatLngBounds( new google.maps.LatLng({{ bounds.1 }},{{ bounds.0 }}), new google.maps.LatLng({{ bounds.3 }},{{ bounds.2 }})));
+	{% if object_list %}
+    for (i = 0; i < {{ object_list|length }}; i++) {
+		geoFenceList[i].poly.setPaths(new google.maps.MVCArray([geoFenceList[i].path]));
+		geoFenceList[i].poly.setMap(map);
+		geoFenceList[i].poly.myIndex = i;
+		google.maps.event.addListener(geoFenceList[i].poly, 'click', click);
+    }
+	{% endif %}
+});
+
+{% endlocalize %}{% endblock %}
+
+{% block sidebar %}
+<h2>{{ user.username }}</h2>
+<h3>Geocercas </h3>
+<table>
+	{% for i in object_list %}
+		<tr><td><a href="{% url fence fid=i.id %}">{{ i.name }}</a></td></tr>
+	{% endfor %}
+</table>
+<button  onclick="location.href='{% url fence fid='' %}';" type="button">Nueva Geocerca</button>
+{% endblock %}

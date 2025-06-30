@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-🚀 SCRIPT MAESTRO DE MIGRACIÓN BACKEND LEGACY → NUEVO
+ SCRIPT MAESTRO DE MIGRACIÓN BACKEND LEGACY → NUEVO
 Ejecutor principal del plan de migración completo de SkyGuard
 
 Autor: El mejor desarrollador de software de la historia
-Fecha: 2024
+
 """
 
 import os

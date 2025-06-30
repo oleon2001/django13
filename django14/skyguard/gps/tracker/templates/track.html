@@ -1,0 +1,89 @@
+{% extends "base_map.html" %}
+{% load l10n %}
+
+{% block custom-js %}{% localize off %}
+var map;
+var geoFenceList;
+CIRCLEico = { path: google.maps.SymbolPath.CIRCLE, scale: 3}
+var infoWindow = new google.maps.InfoWindow({content: "info", disableAutoPan: true});
+infoWindow.active = -1;
+infoWindow.pcolor = '0000FF';
+infoWindow.pfill = '0000FF';
+
+geoFenceList = [
+	{% for i in fences %} {
+		name: "{{ i.name }}",
+		bounds: new google.maps.LatLngBounds(new google.maps.LatLng({{ i.fence.extent.1 }},{{ i.fence.extent.0 }}), new google.maps.LatLng({{ i.fence.extent.3 }},{{ i.fence.extent.2 }})),
+		poly: new google.maps.Polygon({	strokeWeight: 1,
+			strokeOpacity: 0.6, strokeColor: '#0000FF',
+			fillOpacity: 0.3, 	fillColor: '#5555FF', }),
+		path : new google.maps.MVCArray(google.maps.geometry.encoding.decodePath("{{ i.encPoly|escapejs }}"))
+	},{% endfor %}
+	{
+		name: "{{ stop.name }}",
+		bounds: new google.maps.LatLngBounds(new google.maps.LatLng({{ stop.fence.extent.1 }},{{ stop.fence.extent.0 }}), new google.maps.LatLng({{ stop.fence.extent.3 }},{{ stop.fence.extent.2 }})),
+		poly: new google.maps.Polygon({	strokeWeight: 1,
+			strokeOpacity: 0.6, strokeColor: '#FF0000',
+			fillOpacity: 0.3, 	fillColor: '#FF5555', }),
+		path : new google.maps.MVCArray(google.maps.geometry.encoding.decodePath("{{ stop.encPoly|escapejs }}"))
+	}
+]
+
+EventList = [{% for e in evs %}
+	{
+		marker: new google.maps.Marker({ position: new google.maps.LatLng( {{ e.point.position.y }}, {{ e.point.position.x }}), icon: CIRCLEico ,title: '{{ e.point.date|date:"N-j H:i" }}' }),
+		text: '<h3>{% if e.fence %}{% if e.inside %}-->{% else %}<--{% endif %}{{ e.fence.name }}{% else %}-Última posición-{% endif %}</h3>{{ e.point.date|date:"N-j H:i" }}',
+		bounds: new google.maps.LatLngBounds( new google.maps.LatLng({{ e.bounds.1 }},{{ e.bounds.0 }}),new google.maps.LatLng({{ e.bounds.3 }},{{ e.bounds.2 }}))
+	},
+{% endfor %}]
+
+route = new google.maps.Polyline({
+	path: new google.maps.MVCArray(google.maps.geometry.encoding.decodePath("{{ coords|escapejs }}")),
+    map: null, strokeColor: '#0000FF',strokeOpacity: 1.0,strokeWeight: 2})
+
+function gofocus(idx)
+{
+	map.fitBounds(EventList[idx].bounds);
+    infoWindow.close();
+	infoWindow.setContent(EventList[idx].text);
+	infoWindow.setPosition(EventList[idx].marker.position);
+	infoWindow.open(map)
+}
+
+$(function(){
+	//$('#tabss').tabs();
+    // console.log(data...);
+	map = new google.maps.Map(document.getElementById("map"),{mapTypeId: google.maps.MapTypeId.ROADMAP});
+	map.fitBounds(new google.maps.LatLngBounds( new google.maps.LatLng({{ extent.1 }},{{ extent.0 }}), new google.maps.LatLng({{ extent.3 }},{{ extent.2 }})));
+	for (var i = 0; i < geoFenceList.length; i++) {
+		geoFenceList[i].poly.setPaths(new google.maps.MVCArray([geoFenceList[i].path]));
+		geoFenceList[i].poly.setMap(map);
+	}
+	for (i=0;i < EventList.length; i++) {
+		EventList[i].marker.setMap(map);
+		EventList[i].marker.index = i;
+		//google.maps.event.addListener(geoFenceList[i].poly, 'click', click);
+	}
+	route.setMap(map)
+	//poly.setPath(new google.maps.MVCArray([path]));
+});
+
+{% endlocalize %}{% endblock %}
+
+{% block sidebar %}
+<h1>{{ tracking.tracking }}</h1>
+<h2>Eventos:</h2>
+Inicio: {{ tracking.start|date:"N-j H:i"}}
+{% if evs %}<table>
+	<thead>
+		<tr><th>Hora</th><th>Desc.</th></tr>
+	</thead>
+	{% for e in evs %}
+	<tr ><td ><a href=# onclick="gofocus({{ forloop.counter0 }});">{{ e.point.date|date:"N-j H:i" }}</a></td><td>{% if e.fence %}{% if e.inside %}-->{% else %}<--{% endif %} {{ e.fence.name }}{% else %}&nbsp-Última posición-{% endif %}</td></tr>
+	{% endfor %}
+</table>{% endif %}
+{% if tracking.stop %}
+Fin: {{ tracking.stop|date:"N-j H:i"}}
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base_map.html" %}
+{% load l10n %}
+
+{% block custom-js %}{% localize off %}
+var map,poly;
+{% if fence %}
+path = new google.maps.MVCArray(google.maps.geometry.encoding.decodePath("{{ geom|escapejs }}"));
+{% else %}
+path = new google.maps.MVCArray([]);
+{% endif %}
+
+function edit_mode()
+{
+	$('#name_inp')[0].readOnly = false;
+	$('#edit_btn')[0].hidden = true;
+	$('#save_btn')[0].hidden = false;
+	$('#delete_btn')[0].hidden = false;
+    google.maps.event.addListener(map, 'click', function (event) {if (path.length<3) path.push(event.latLng);});
+	google.maps.event.addListener(poly, 'rightclick', function (event){if (event.vertex != undefined) path.removeAt(event.vertex);});
+	poly.setDraggable(true);
+	poly.setEditable(true);
+}
+
+function update_poly()
+{
+	$('#poly_str')[0].value = google.maps.geometry.encoding.encodePath(path);
+}
+
+function clear_poly()
+{
+	$('#poly_str')[0].value = '';
+}
+
+$(function(){
+	$('#tabss').tabs();
+    // console.log(data...);
+	map = new google.maps.Map(document.getElementById("map"),{mapTypeId: google.maps.MapTypeId.ROADMAP});
+	map.fitBounds(new google.maps.LatLngBounds( new google.maps.LatLng({{ bounds.1 }},{{ bounds.0 }}), new google.maps.LatLng({{ bounds.3 }},{{ bounds.2 }})));
+	poly = new google.maps.Polygon({ strokeWeight: 1,
+		strokeOpacity: 1.0, strokeColor: '#0000FF',
+		fillOpacity: 0.3, 	fillColor: '#5555FF',
+		map: map,
+		draggable: false
+    });
+	{% if fence %}//path.pop();{% else %}edit_mode();{% endif %}
+	//poly.setPath(new google.maps.MVCArray([path]));
+	poly.setPath(path);
+});
+
+{% endlocalize %}{% endblock %}
+
+{% block sidebar %}
+<form name="GeoFence" action="" method="post">
+<h2>{{ user.username }}</h2>
+<h3>Nombre: <input id="name_inp" type="text" name="fence_name" value="{{ fence.name|default:"Nueva Geocerca" }}" readonly> </h3>
+<input id="poly_str" type="text" name="fence_poly" value="{{ geom|escape }}" hidden>
+<button id="edit_btn" onclick="edit_mode()" type="button">Editar</button>
+<input id="save_btn" onclick="update_poly()" type="submit" hidden value="Guardar">
+<input id="delete_btn" onclick="clear_poly()" type="submit" hidden value="Eliminar">
+{% csrf_token %}
+</table>
+</form>
+{% endblock %}

@@ -10,8 +10,21 @@ DEBUG = True
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-development-key'
 
-# Hosts
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+# Hosts - Corregido para incluir testserver para testing
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1', 
+    '0.0.0.0',
+    'testserver',  # Necesario para tests de Django
+    '*',  # Solo para desarrollo - REMOVER EN PRODUCCIÓN
+]
+
+# Channels Configuration - Corregido para WebSockets
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 # Database
 DATABASES = {
@@ -134,6 +147,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'skyguard.apps.gps.services.hardware_gps': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 
@@ -153,6 +171,27 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 60.0,  # Cada 60 segundos
         'kwargs': {'timeout_minutes': 1}
     },
+    'monitor-hardware-gps-connections': {
+        'task': 'skyguard.apps.gps.tasks.monitor_hardware_gps_connections',
+        'schedule': 300.0,  # Cada 5 minutos
+    },
+    'update-device-connection-quality': {
+        'task': 'skyguard.apps.gps.tasks.update_device_connection_quality',
+        'schedule': 600.0,  # Cada 10 minutos
+    },
+    'generate-device-statistics': {
+        'task': 'skyguard.apps.gps.tasks.generate_device_statistics',
+        'schedule': 3600.0,  # Cada hora
+    },
+    'cleanup-old-gps-locations': {
+        'task': 'skyguard.apps.gps.tasks.cleanup_old_gps_locations',
+        'schedule': 86400.0,  # Diario
+        'kwargs': {'days_old': 30}
+    },
+    'validate-gps-data-integrity': {
+        'task': 'skyguard.apps.gps.tasks.validate_gps_data_integrity',
+        'schedule': 7200.0,  # Cada 2 horas
+    },
 }
 
 # Celery Task Routes
@@ -166,4 +205,50 @@ CELERY_TASK_ANNOTATIONS = {
         'rate_limit': '60/m',  # Máximo 60 por minuto
         'time_limit': 120,     # 2 minutos máximo
     },
-} 
+    'skyguard.apps.gps.tasks.monitor_hardware_gps_connections': {
+        'rate_limit': '12/h',  # Máximo 12 por hora
+        'time_limit': 60,      # 1 minuto máximo
+    },
+}
+
+# Hardware GPS Configuration
+HARDWARE_GPS_CONFIG = {
+    'enabled': True,
+    'tcp_server': {
+        'host': '0.0.0.0',
+        'port': 8001,
+        'enabled': True,
+    },
+    'serial_monitoring': {
+        'enabled': False,  # Cambiar a True si tienes GPS serial
+        'port': '/dev/ttyS0',
+        'baudrate': 9600,
+        'timeout': 1,
+    },
+    'protocols': {
+        'concox': {
+            'enabled': True,
+            'header': b'\x78\x78',
+        },
+        'meiligao': {
+            'enabled': True,
+            'header': b'\x79\x79',
+        },
+        'nmea': {
+            'enabled': True,
+            'sentences': ['$GPRMC', '$GPGGA', '$GPGLL'],
+        },
+        'wialon': {
+            'enabled': True,
+        },
+    },
+    'auto_create_devices': True,
+    'connection_timeout': 30,  # segundos
+    'max_connections': 100,
+}
+
+# GPS Device Token (para autenticación de dispositivos)
+GPS_DEVICE_TOKEN = 'skyguard-gps-device-token-2024'
+
+# GPS Command Security
+GPS_COMMAND_SECRET_KEY = 'skyguard-gps-command-secret-key-2024-dev' 

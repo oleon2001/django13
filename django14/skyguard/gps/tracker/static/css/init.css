@@ -1,0 +1,107 @@
+@charset "utf-8";
+/* CSS Document */
+html, body { height: 100%; }
+body {
+	margin:0;
+	padding:0;
+	border:0;			/* This removes the border around the viewport in old versions of IE */
+	/*width:100%;*
+	height:100%;*/
+	background:#fff;
+	font-size:small;
+    }
+a {
+	color:#369;
+	}
+a:hover {
+	color:#fff;
+	background:#369;
+	text-decoration:none;
+	}
+h1, h2, h3 {
+	margin:.8em 0 .2em 0;
+	padding:0;
+	}
+p {
+	margin:.4em 0 .8em 0;
+	padding:0;
+	}
+img {
+margin: 0px 0 0px;
+font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+}
+/* Header styles */
+#header {
+	clear:both;
+	float:left;
+	width:100%;
+	border-bottom:0px solid #000;
+	background:#eee;
+}
+#header p, #header h1, #header h2 {
+	padding:0em 0px 0 0px;
+	margin:0;
+	/*position:absolute;*/
+	bottom:100%;
+}
+#header ul {
+	clear:left;
+	float:left;
+	width:100%;
+	list-style:none;
+	margin:0px 0 0 0;
+	padding:0;
+}
+
+#header img {
+	float: left;
+	}
+/* 'widths' sub menu */
+#layoutdims {
+	/* clear:both;*/
+	background:#eee;
+	border-top:1px solid #000;
+	margin:0;
+	padding:2px 6px !important;
+	text-align:right;
+	border-right: 1px solid #000;
+	border-bottom: 1px solid #000;
+	border-left: 1px solid #000;
+	}
+
+	/* column container */
+	.colmask {
+		position:relative;		/* This fixes the IE7 overflow hidden bug and stops the layout jumping out of place */
+	    clear:both;
+	    float:left;
+        width:100%;		/* width of whole page */
+		height:80%;
+		overflow:hidden;	/* This chops off any overhanging divs */
+	}
+	/* 2 column left menu settings */
+	.leftmenu {
+	    background:#FFF;
+	}
+
+	.leftmenu .col1 {
+	float:left;
+	height:100%;
+	width: 290px;
+	height:auto;
+	}
+    .leftmenu .col2 {
+	/*float:left;*/
+	width:auto;
+	min-height:300px;
+    }
+	/* Footer styles */
+	#footer {
+        clear:both;
+        float:left;
+        width:100%;
+		border-top:1px solid #000;
+    }
+    #footer p {
+        padding:10px;
+        margin:0;
+    }

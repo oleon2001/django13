@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block additional-scripts  %}
+<link href="{{ STATIC_URL }}css/ui/jquery.ui.all.css" rel="stylesheet" type="text/css">
+<script type = "text/javascript" src = "//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+<script type = "text/javascript" src = "//ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=geometry&key={{ apikey }}&sensor=true"></script>
+<script type="text/javascript" src="/static/jquery.spinner.js"></script>
+<script type="text/javascript" src="/static/jquery_easing.js"></script>
+<script type="text/javascript" src="/static/markerAnimate.js"></script>
+<script type="text/javascript">
+  String.prototype.format = function() {
+	  var formatted = this;
+	  for(arg in arguments) {
+		  formatted = formatted.replace("{" + arg + "}", arguments[arg]);
+	  }
+	  return formatted;
+  };
+
+  var sort_by = function(field, reverse, primer) {
+	var key = function (x) {
+	  return primer ? primer(x[field]) : x[field]
+	};
+	return function (a,b) {
+	  var A = key(a), B = key(b);
+	  return (A < B ? -1 : (A > B ? 1 : 0)) * [1,-1][+reverse];
+	}
+  }
+{% block custom-js %}{% endblock custom-js %}
+</script>
+{% endblock additional-scripts  %}
+{%block content %}
+    <div id="sidebar">{% block sidebar %}{% endblock %}</div>
+    <div id="content-map"><div id="map"></div></div>
+{%endblock content %}

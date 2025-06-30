@@ -1,0 +1,195 @@
+{% extends "base_map.html" %}
+{% load l10n %}
+
+{% block custom-js %}{% localize off %}
+// Create all event objects
+// {{ avl.position.x }}, {{ avl.position.y }}, {{ display_pos }}
+CIRCLEico = { path: google.maps.SymbolPath.CIRCLE, scale: 3}
+ARROWico  = { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3}
+
+var map;
+var infoWindow = new google.maps.InfoWindow({content: "info", disableAutoPan: true});
+var eventObjects;
+
+eventObjects = [
+    {% for e in events %}
+        {
+        {% if e.points %}
+            bounds: new google.maps.LatLngBounds( new google.maps.LatLng({{ e.bounds.sw.latitude }},{{ e.bounds.sw.longitude }}),
+                                                  new google.maps.LatLng({{ e.bounds.ne.latitude }},{{ e.bounds.ne.longitude }})),
+            marker: new google.maps.Marker({ map: null, draggable: false, position: new google.maps.LatLng( {{ e.points.0.1 }}, {{ e.points.0.0 }}), icon: {{ e.icon }} }),
+            info: "<h2>{{e.time}}</h2>{{ e.desc }}",
+        {% else %}
+            marker: null,
+        {% endif %}
+        {% if e.points|length < 2 %}
+            poly: null,
+        {% else %}
+            poly: new google.maps.Polyline({ path: new google.maps.MVCArray( [{% for p in e.points %}new google.maps.LatLng({{ p.1 }},{{ p.0 }}),{% endfor %}]),
+                map: null, strokeColor: '#0000FF',strokeOpacity: 1.0,strokeWeight: 2})
+        {% endif%}
+        },
+    {% endfor %}
+]
+
+function showNoneBut(ev)
+{
+    for (var i = 0; i < eventObjects.length; i++) {
+        if (i != ev)
+        {
+            if (eventObjects[i].marker) eventObjects[i].marker.setMap(null);
+            if (eventObjects[i].poly) eventObjects[i].poly.setMap(null);
+        }
+    }
+}
+
+function showAll()
+{
+    for (var i = 0; i < eventObjects.length; i++) {
+        if (eventObjects[i].marker) eventObjects[i].marker.setMap(map);
+        if (eventObjects[i].poly) eventObjects[i].poly.setMap(map);
+    }
+}
+
+function showEvent(ev)
+{
+    if (eventObjects[ev].bounds)
+    {
+        map.fitBounds(eventObjects[ev].bounds);
+        if (eventObjects[ev].poly)
+        {
+            showNoneBut(ev);
+            setTimeout(function(){eventObjects[ev].poly.setOptions({strokeColor:"#0000FF", strokeWeight: 2}); showAll();},3500);
+            eventObjects[ev].poly.setOptions({strokeColor:"#FF0000", strokeWeight: 5});
+            infoWindow.close();
+            infoWindow.setContent(eventObjects[ev].info);
+            infoWindow.setPosition(eventObjects[ev].marker.position);      // event.latLng
+            infoWindow.open(map)
+        }
+    }
+}
+
+function click()
+{
+    n = this.evIndex;
+    setTimeout(function(){eventObjects[n].poly.setOptions({strokeColor:"#0000FF", strokeWeight: 2});},1500);
+    eventObjects[n].poly.setOptions({strokeColor:"#FF0000", strokeWeight: 5});
+    infoWindow.close();
+    infoWindow.setContent(eventObjects[n].info);
+    infoWindow.setPosition(eventObjects[n].marker.position);      // event.latLng
+    infoWindow.open(map)
+    //showEvent(i);
+}
+
+function doDevAction(text)
+{
+  tabs = $('#tabs');
+  opts = { img: '/static/img/loader.gif',
+			position: 'center',
+			hide: true,
+			width: 100,
+			height: 88,
+		};
+  $.ajax('',{
+		async: true,
+		type: "post",
+		dataType: "json",
+		data: {action: text},
+		error: function() { alert("Error en peticion");},
+		success: function(res) { alert("Peticion aceptada:"+res.result); window.location =''; },
+		beforeSend: function() { tabs.spinner(opts);},
+		complete: function() { tabs.spinner('remove');},
+	});
+}
+
+function doDevActionDelayed(text)
+{
+  tabs = $('#tabs');
+  opts = { img: '/static/img/loader.gif',
+			position: 'center',
+			hide: true,
+			width: 100,
+			height: 88,
+		};
+  $.ajax('',{
+		async: true,
+		type: "post",
+		dataType: "json",
+		data: {action: text},
+		error: function() { alert("Error en peticion");},
+		success: function(res) { alert("Peticion aceptada:"+res.result); window.setTimeout(function(){window.location = '';},25000) },
+		beforeSend: function() { tabs.spinner(opts);},
+		complete: function() { tabs.spinner('remove');},
+	});
+}
+
+function confirmDevActionDelayed(text)
+{
+	if (confirm("Esta seguro?"))
+		doDevActionDelayed(text);
+}
+
+$(function(){
+	$('#tabss').tabs();
+    // console.log(data...);
+{% if bounds %}
+	map = new google.maps.Map(document.getElementById("map"),{mapTypeId: google.maps.MapTypeId.ROADMAP});
+	map.fitBounds(new google.maps.LatLngBounds( new google.maps.LatLng({{ bounds.sw.latitude}},{{ bounds.sw.longitude }}), new google.maps.LatLng({{ bounds.ne.latitude}},{{ bounds.ne.longitude }})));
+    for (i = 0; i < eventObjects.length; i++) {
+        if (eventObjects[i].marker) {
+            eventObjects[i].marker.setMap(map);
+            eventObjects[i].marker.evIndex = i;
+            google.maps.event.addListener(eventObjects[i].marker,'click',click);
+        }
+        if (eventObjects[i].poly) {
+            eventObjects[i].poly.setMap(map);
+            eventObjects[i].poly.evIndex = i;
+            google.maps.event.addListener(eventObjects[i].poly,'click',click);
+        }
+    }
+{% endif %}
+});
+
+{% endlocalize %}{% endblock %}
+
+{% block sidebar %}
+<h2>{{ avl.name }}</h2>
+<h3>Eventos </h3>
+{%if urlprev %}<button onclick="self.location ='{{ urlprev }}'" type="button">&lt;</button>{% endif %}
+{{ date.date|date:"d-b-Y" }}
+{%if urlnext %}<button onclick="self.location = '{{ urlnext }}'" type="button">&gt;</button>{% endif %}
+<div id="tabss">
+    <ul><li><a href="#tab1">Info</a><li><a href="#tab2">Rastreo</a>{% if gf_events %}<li><a href="#tab3">Geocercas</a>{% endif %}</ul>
+    {% if gf_events %}<div id="tab3">
+    <table>
+        <thead>
+            <tr><th>Hora</th><th>Desc.</th></tr>
+        </thead>
+        {% for e in gf_events %}
+        <tr ><td >{{ e.time|time:"H:i" }}</td><td>{{ e.desc}}</td></tr>
+        {% endfor %}
+    </table>
+    </div>{% endif %}
+    <div id="tab2">
+    <table width="300px">
+        <thead>
+            <tr><th width="9px"></th><th width="75px">Hora</th><th width="35px">Km</th><th>Desc.</th></tr>
+        </thead>
+        {% for e in events %}
+        <tr ><td >{{ e.type.0 }}</td><td >{%if e.points %}<a href="#{{ forloop.counter0 }}" onclick=showEvent({{ forloop.counter0 }})> {{ e.time }}</a>{% else %}{{ e.time }}{% endif %}</td><td>{{ e.odom|floatformat:2 }}</td><td>{{ e.desc}}</td></tr>
+        {% endfor %}
+    </table>
+    </div>
+    <div id="tab1">
+    <table>
+        {% for key,value in avl.items %}
+            <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+        {% if urlpsiPDF %}
+        <button onclick="self.location ='{{ urlpsiPDF }}'" type="button">Reporte PSI</button>
+        {% endif %}
+        <!--button onclick="doDevActionDelayed('update')" type="button">Actualizar /button-->
+    </table>
+    </div>
+</div>
+{% endblock %}

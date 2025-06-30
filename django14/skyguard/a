@@ -1,0 +1,293 @@
+BEGIN;
+CREATE TABLE "tracker_stats" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(20) NOT NULL,
+    "ruta" integer,
+    "economico" integer,
+    "date_start" timestamp with time zone,
+    "date_end" timestamp with time zone,
+    "latitud" integer,
+    "longitud" integer,
+    "distancia" integer,
+    "sub_del" integer,
+    "baj_del" integer,
+    "sub_tra" integer,
+    "baj_tra" integer,
+    "speed_avg" integer
+)
+;
+CREATE TABLE "tracker_device" (
+    "imei" bigint NOT NULL PRIMARY KEY,
+    "name" varchar(20) NOT NULL,
+    "speed" smallint NOT NULL,
+    "course" smallint NOT NULL,
+    "date" timestamp with time zone,
+    "lastLog" timestamp with time zone,
+    "owner_id" integer REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "icon" varchar(64) NOT NULL,
+    "type" varchar(64) NOT NULL,
+    "odom" integer,
+    "altitude" integer,
+    UNIQUE ("name", "owner_id")
+)
+;
+CREATE TABLE "tracker_simcard" (
+    "iccid" bigint NOT NULL PRIMARY KEY,
+    "imsi" bigint,
+    "provider" smallint NOT NULL,
+    "phone" varchar(16) NOT NULL
+)
+;
+CREATE TABLE "tracker_sgavl" (
+    "device_ptr_id" bigint NOT NULL PRIMARY KEY REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "serial" integer NOT NULL,
+    "model" smallint NOT NULL,
+    "swversion" varchar(4) NOT NULL,
+    "inputs" integer NOT NULL,
+    "outputs" integer NOT NULL,
+    "alarmMask" integer NOT NULL,
+    "alarms" integer NOT NULL,
+    "fwFile" varchar(16) NOT NULL,
+    "newOutputs" integer,
+    "newInflags" varchar(32) NOT NULL,
+    "lastFwUpdate" timestamp with time zone,
+    "harness_id" integer NOT NULL,
+    "comments" text,
+    "sim_id" bigint UNIQUE REFERENCES "tracker_simcard" ("iccid") DEFERRABLE INITIALLY DEFERRED,
+    "ruta" integer,
+    "economico" integer
+)
+;
+CREATE TABLE "tracker_serversms" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_sgavl" ("device_ptr_id") DEFERRABLE INITIALLY DEFERRED,
+    "msg" varchar(160) NOT NULL,
+    "sent" timestamp with time zone
+)
+;
+CREATE TABLE "tracker_sgharness" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(32) NOT NULL UNIQUE,
+    "in00" varchar(32) NOT NULL,
+    "in01" varchar(32) NOT NULL,
+    "in02" varchar(32) NOT NULL,
+    "in03" varchar(32) NOT NULL,
+    "in04" varchar(32) NOT NULL,
+    "in05" varchar(32) NOT NULL,
+    "in06" varchar(32) NOT NULL,
+    "in07" varchar(32) NOT NULL,
+    "in08" varchar(32) NOT NULL,
+    "in09" varchar(32) NOT NULL,
+    "in10" varchar(32) NOT NULL,
+    "in11" varchar(32) NOT NULL,
+    "in12" varchar(32) NOT NULL,
+    "in13" varchar(32) NOT NULL,
+    "in14" varchar(32) NOT NULL,
+    "in15" varchar(32) NOT NULL,
+    "out00" varchar(32) NOT NULL,
+    "out01" varchar(32) NOT NULL,
+    "out02" varchar(32) NOT NULL,
+    "out03" varchar(32) NOT NULL,
+    "out04" varchar(32) NOT NULL,
+    "out05" varchar(32) NOT NULL,
+    "out06" varchar(32) NOT NULL,
+    "out07" varchar(32) NOT NULL,
+    "out08" varchar(32) NOT NULL,
+    "out09" varchar(32) NOT NULL,
+    "out10" varchar(32) NOT NULL,
+    "out11" varchar(32) NOT NULL,
+    "out12" varchar(32) NOT NULL,
+    "out13" varchar(32) NOT NULL,
+    "out14" varchar(32) NOT NULL,
+    "out15" varchar(32) NOT NULL,
+    "inputCfg" varchar(32) NOT NULL
+)
+;
+ALTER TABLE "tracker_sgavl" ADD CONSTRAINT "harness_id_refs_id_f0e89614" FOREIGN KEY ("harness_id") REFERENCES "tracker_sgharness" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE TABLE "tracker_accellog" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "date" timestamp with time zone NOT NULL,
+    "duration" numeric(6, 4) NOT NULL,
+    "errDuration" numeric(6, 4) NOT NULL,
+    "entry" numeric(6, 4) NOT NULL,
+    "errEntry" numeric(6, 4) NOT NULL,
+    "peak" numeric(6, 4) NOT NULL,
+    "errExit" numeric(6, 4) NOT NULL,
+    "exit" numeric(6, 4) NOT NULL
+)
+;
+CREATE TABLE "tracker_event" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "type" varchar(16) NOT NULL,
+    "speed" smallint NOT NULL,
+    "course" smallint NOT NULL,
+    "date" timestamp with time zone NOT NULL,
+    "odom" integer,
+    "altitude" integer
+)
+;
+CREATE TABLE "tracker_gsmevent" (
+    "event_ptr_id" integer NOT NULL PRIMARY KEY REFERENCES "tracker_event" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "source" varchar(20) NOT NULL,
+    "text" varchar(180) NOT NULL
+)
+;
+CREATE TABLE "tracker_ioevent" (
+    "event_ptr_id" integer NOT NULL PRIMARY KEY REFERENCES "tracker_event" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "inputs" integer NOT NULL,
+    "outputs" integer NOT NULL,
+    "indelta" integer NOT NULL,
+    "outdelta" integer NOT NULL,
+    "alarmdelta" integer NOT NULL,
+    "changes" text NOT NULL
+)
+;
+CREATE TABLE "tracker_resetevent" (
+    "event_ptr_id" integer NOT NULL PRIMARY KEY REFERENCES "tracker_event" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "reason" varchar(180) NOT NULL
+)
+;
+CREATE TABLE "tracker_geofence" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(32) NOT NULL UNIQUE,
+    "owner_id" integer NOT NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "base" integer
+)
+;
+CREATE TABLE "tracker_psiweightlog" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "sensor" varchar(32) NOT NULL,
+    "date" timestamp with time zone NOT NULL,
+    "psi1" numeric(20, 6) NOT NULL,
+    "psi2" numeric(20, 6) NOT NULL
+)
+;
+CREATE TABLE "tracker_psical" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "sensor" varchar(32) NOT NULL,
+    "offpsi1" numeric(10, 6) NOT NULL,
+    "offpsi2" numeric(10, 6) NOT NULL,
+    "mulpsi1" numeric(10, 6) NOT NULL,
+    "mulpsi2" numeric(10, 6) NOT NULL,
+    "name" varchar(32) NOT NULL
+)
+;
+CREATE TABLE "tracker_tracking_fences" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "tracking_id" integer NOT NULL,
+    "geofence_id" integer NOT NULL REFERENCES "tracker_geofence" ("id") DEFERRABLE INITIALLY DEFERRED,
+    UNIQUE ("tracking_id", "geofence_id")
+)
+;
+CREATE TABLE "tracker_tracking" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "tracking" varchar(40) NOT NULL UNIQUE,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "stopFence_id" integer NOT NULL REFERENCES "tracker_geofence" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "start" timestamp with time zone NOT NULL,
+    "stop" timestamp with time zone
+)
+;
+ALTER TABLE "tracker_tracking_fences" ADD CONSTRAINT "tracking_id_refs_id_9b3c8dd9" FOREIGN KEY ("tracking_id") REFERENCES "tracker_tracking" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE TABLE "tracker_alarmlog" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "sensor" varchar(32) NOT NULL,
+    "date" timestamp with time zone NOT NULL,
+    "cksum" integer NOT NULL,
+    "duration" integer NOT NULL,
+    "comment" varchar(24) NOT NULL
+)
+;
+CREATE TABLE "tracker_overlays" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(32) NOT NULL UNIQUE,
+    "owner_id" integer NOT NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED,
+    "base" integer
+)
+;
+CREATE TABLE "tracker_addresscache" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "date" timestamp with time zone NOT NULL,
+    "text" text NOT NULL
+)
+;
+CREATE TABLE "tracker_driver" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(40) NOT NULL,
+    "middle" varchar(40) NOT NULL,
+    "last" varchar(40) NOT NULL,
+    "birth" date NOT NULL,
+    "cstatus" varchar(40) NOT NULL,
+    "payroll" varchar(40) NOT NULL,
+    "socials" varchar(40) NOT NULL,
+    "taxid" varchar(40) NOT NULL,
+    "license" varchar(40),
+    "lic_exp" date,
+    "address" text NOT NULL,
+    "phone" varchar(40) NOT NULL,
+    "phone1" varchar(40),
+    "phone2" varchar(40),
+    "active" boolean NOT NULL
+)
+;
+CREATE TABLE "tracker_ticketslog" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "data" text NOT NULL,
+    "ruta" integer,
+    "date" timestamp with time zone
+)
+;
+CREATE TABLE "tracker_ticketdetails" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "imei_id" bigint NOT NULL REFERENCES "tracker_device" ("imei") DEFERRABLE INITIALLY DEFERRED,
+    "date" timestamp with time zone,
+    "chofer" varchar(80) NOT NULL,
+    "total" integer NOT NULL,
+    "recibido" integer NOT NULL,
+    "ticket" text NOT NULL
+)
+;
+CREATE INDEX "tracker_event_imei_id_date_custom" ON "tracker_event" ("imei_id","date");
+
+CREATE INDEX "tracker_event_imei_id_id_custom" ON "tracker_event" USING btree ("imei_id", "id");
+CREATE INDEX "tracker_psiweightlog_imei_id_date" ON "tracker_psiweightlog" USING btree ("imei_id", "date");
+
+CREATE INDEX "tracker_psiweightlog_imei_id_id" ON "tracker_psiweightlog" USING btree ("imei_id", "id");
+
+CREATE INDEX "tracker_psiweightlog_sensor_date" ON "tracker_psiweightlog" USING btree ("sensor" , "date");
+SELECT AddGeometryColumn('tracker_device', 'position', 4326, 'POINT', 2);
+CREATE INDEX "tracker_device_position_id" ON "tracker_device" USING GIST ( "position" GIST_GEOMETRY_OPS );
+CREATE INDEX "tracker_device_owner_id" ON "tracker_device" ("owner_id");
+CREATE INDEX "tracker_sgavl_harness_id" ON "tracker_sgavl" ("harness_id");
+CREATE INDEX "tracker_serversms_imei_id" ON "tracker_serversms" ("imei_id");
+CREATE INDEX "tracker_accellog_imei_id" ON "tracker_accellog" ("imei_id");
+SELECT AddGeometryColumn('tracker_accellog', 'position', 4326, 'POINT', 2);
+ALTER TABLE "tracker_accellog" ALTER "position" SET NOT NULL;
+CREATE INDEX "tracker_accellog_position_id" ON "tracker_accellog" USING GIST ( "position" GIST_GEOMETRY_OPS );
+CREATE INDEX "tracker_event_imei_id" ON "tracker_event" ("imei_id");
+SELECT AddGeometryColumn('tracker_event', 'position', 4326, 'POINT', 2);
+CREATE INDEX "tracker_event_position_id" ON "tracker_event" USING GIST ( "position" GIST_GEOMETRY_OPS );
+SELECT AddGeometryColumn('tracker_geofence', 'fence', 4326, 'POLYGON', 2);
+ALTER TABLE "tracker_geofence" ALTER "fence" SET NOT NULL;
+CREATE INDEX "tracker_geofence_fence_id" ON "tracker_geofence" USING GIST ( "fence" GIST_GEOMETRY_OPS );
+CREATE INDEX "tracker_geofence_owner_id" ON "tracker_geofence" ("owner_id");
+CREATE INDEX "tracker_psiweightlog_imei_id" ON "tracker_psiweightlog" ("imei_id");
+CREATE INDEX "tracker_psical_imei_id" ON "tracker_psical" ("imei_id");
+CREATE INDEX "tracker_tracking_imei_id" ON "tracker_tracking" ("imei_id");
+CREATE INDEX "tracker_tracking_stopFence_id" ON "tracker_tracking" ("stopFence_id");
+CREATE INDEX "tracker_tracking_start" ON "tracker_tracking" ("start");
+CREATE INDEX "tracker_tracking_stop" ON "tracker_tracking" ("stop");
+CREATE INDEX "tracker_alarmlog_imei_id" ON "tracker_alarmlog" ("imei_id");
+SELECT AddGeometryColumn('tracker_overlays', 'geometry', 4326, 'LINESTRING', 2);
+ALTER TABLE "tracker_overlays" ALTER "geometry" SET NOT NULL;
+CREATE INDEX "tracker_overlays_geometry_id" ON "tracker_overlays" USING GIST ( "geometry" GIST_GEOMETRY_OPS );
+CREATE INDEX "tracker_overlays_owner_id" ON "tracker_overlays" ("owner_id");
+SELECT AddGeometryColumn('tracker_addresscache', 'position', 4326, 'POINT', 2);
+CREATE INDEX "tracker_addresscache_position_id" ON "tracker_addresscache" USING GIST ( "position" GIST_GEOMETRY_OPS );
+CREATE INDEX "tracker_ticketdetails_imei_id" ON "tracker_ticketdetails" ("imei_id");
+COMMIT;
