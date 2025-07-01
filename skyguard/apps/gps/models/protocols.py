@@ -26,6 +26,7 @@ class GPRSSession(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPRS session')
         verbose_name_plural = _('GPRS sessions')
         ordering = ['-start']
@@ -57,6 +58,7 @@ class GPRSPacket(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPRS packet')
         verbose_name_plural = _('GPRS packets')
         ordering = ['-timestamp']
@@ -85,6 +87,7 @@ class GPRSRecord(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPRS record')
         verbose_name_plural = _('GPRS records')
         ordering = ['-timestamp']
@@ -113,6 +116,7 @@ class UDPSession(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('UDP session')
         verbose_name_plural = _('UDP sessions')
         ordering = ['device']
@@ -164,6 +168,7 @@ class ProtocolLog(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('protocol log')
         verbose_name_plural = _('protocol logs')
         ordering = ['-timestamp']

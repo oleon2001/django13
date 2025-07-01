@@ -31,6 +31,7 @@ class DeviceSession(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        app_label = 'gps'
         ordering = ['-start_time']
         indexes = [
             models.Index(fields=['device', 'start_time']),

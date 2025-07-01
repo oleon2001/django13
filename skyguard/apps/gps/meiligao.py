@@ -148,13 +148,13 @@ class MeiligaoRequestHandler(SocketServer.BaseRequestHandler ):
 if __name__ == "__main__":
 	try:
 		server = SocketServer.UDPServer(('', 62000), MeiligaoRequestHandler)
-		print "_"*80
-		print "Server Started."
-		print "-"*80
+		print ("_"*80)
+		print ("Server Started.")
+		print ("-"*80)
 		sys.stdout.flush()
 		server.serve_forever()
 	except KeyboardInterrupt:
-		print "_"*80
-		print "Server received signal, exiting."
-		print "-"*80
+		print ("_"*80)
+		print ("Server received signal, exiting.")
+		print ("-"*80)
 		sys.stdout.flush()

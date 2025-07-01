@@ -1,8 +1,9 @@
 REPORTE DE ANÁLISIS DE MIGRACIÓN
-Generado: 2025-06-29 01:46:51.291068
-Total registros: 6
+Generado: 2025-07-01 13:16:48.210728
+Total registros: 8
 Tiempo estimado: 2.0 horas
-Problemas encontrados: 1
+Problemas encontrados: 2
 
 Problemas:
-- ⚠️  1 dispositivos sin propietario
+- ⚠️  2 dispositivos sin propietario
+- ⚠️  1 dispositivos sin posición registrada

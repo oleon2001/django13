@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	for i in sys.argv[1:]:
 		avls = SGAvl.objects.filter(name__startswith = i).order_by("economico")
 		for a in avls:
-			print a.name
+			print (a.name)
 			sensors = PsiCal.objects.filter(imei = a).order_by('offpsi1')
 			for s in sensors:
 				alm = CheckAlarm(s.sensor)
@@ -66,10 +66,10 @@ if __name__ == "__main__":
 		msg['To'] = TO
 		msg['Subject'] = SUBJECT
 		s = smtplib.SMTP_SSL(SERVER)
-		print s.login(USER,PASS)
-		print s.sendmail(FROM,TOLIST,msg.as_string())
-		print s.quit()
-		print out.getvalue()
+		print (s.login(USER,PASS))
+		print (s.sendmail(FROM,TOLIST,msg.as_string()))
+		print (s.quit())
+		print (out.getvalue())
 		
 		
 		

@@ -1,16 +1,30 @@
 """
-Configuración de Celery Beat para tareas periódicas de GPS.
+Celery configuration for SkyGuard project.
 """
 
+import os
+from celery import Celery
 from celery.schedules import crontab
 
-# Configuración de tareas periódicas
-CELERYBEAT_SCHEDULE = {
+# Set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'skyguard.settings.dev')
+
+app = Celery('skyguard')
+
+# Using a string here means the worker doesn't have to serialize
+# the configuration object to child processes.
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Load task modules from all registered Django apps.
+app.autodiscover_tasks()
+
+# Configure Celery Beat schedule
+app.conf.beat_schedule = {
     # Verificar heartbeat de dispositivos cada minuto
     'check-devices-heartbeat': {
         'task': 'skyguard.apps.gps.tasks.check_devices_heartbeat',
         'schedule': crontab(minute='*'),  # Cada minuto
-                    'kwargs': {'timeout_minutes': 1}
+        'kwargs': {'timeout_minutes': 1}
     },
     
     # Limpiar sesiones antiguas diariamente a las 2:00 AM
@@ -33,30 +47,28 @@ CELERYBEAT_SCHEDULE = {
     },
 }
 
-# Configuración de zona horaria para Celery
-CELERY_TIMEZONE = 'UTC'
-CELERY_ENABLE_UTC = True
-
-# Configuración del broker (Redis)
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-
 # Configuración adicional
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_ROUTES = {
-    'skyguard.apps.gps.tasks.*': {'queue': 'gps_tasks'},
-}
+app.conf.update(
+    timezone='UTC',
+    enable_utc=True,
+    task_serializer='json',
+    result_serializer='json',
+    accept_content=['json'],
+    task_routes={
+        'skyguard.apps.gps.tasks.*': {'queue': 'gps_tasks'},
+    },
+    task_annotations={
+        'skyguard.apps.gps.tasks.check_devices_heartbeat': {
+            'rate_limit': '60/m',  # Máximo 60 por minuto (1 por segundo)
+            'time_limit': 120,     # 2 minutos máximo
+        },
+        'skyguard.apps.gps.tasks.cleanup_old_device_sessions': {
+            'rate_limit': '1/h',   # Máximo 1 por hora
+            'time_limit': 600,     # 10 minutos máximo
+        },
+    }
+)
 
-# Configuración de retry
-CELERY_TASK_ANNOTATIONS = {
-    'skyguard.apps.gps.tasks.check_devices_heartbeat': {
-        'rate_limit': '60/m',  # Máximo 60 por minuto (1 por segundo)
-        'time_limit': 120,     # 2 minutos máximo
-    },
-    'skyguard.apps.gps.tasks.cleanup_old_device_sessions': {
-        'rate_limit': '1/h',   # Máximo 1 por hora
-        'time_limit': 600,     # 10 minutos máximo
-    },
-} 
+@app.task(bind=True)
+def debug_task(self):
+    print(f'Request: {self.request!r}') 

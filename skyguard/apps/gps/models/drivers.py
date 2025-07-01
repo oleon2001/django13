@@ -38,6 +38,7 @@ class Driver(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('driver')
         verbose_name_plural = _('drivers')
         ordering = ['middle_name', 'last_name', 'name']
@@ -71,6 +72,7 @@ class TicketLog(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('ticket log')
         verbose_name_plural = _('ticket logs')
         ordering = ['-date']
@@ -93,6 +95,7 @@ class TicketDetail(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('ticket detail')
         verbose_name_plural = _('ticket details')
         ordering = ['-date']
@@ -114,6 +117,7 @@ class TimeSheetCapture(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('timesheet capture')
         verbose_name_plural = _('timesheet captures')
         ordering = ['-date']
@@ -137,6 +141,7 @@ class CardTransaction(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         db_table = 'tbltarjetas'
         managed = False  # This is an external table
         verbose_name = _('card transaction')

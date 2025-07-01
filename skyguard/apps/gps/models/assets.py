@@ -22,6 +22,7 @@ class CarPark(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('car park')
         verbose_name_plural = _('car parks')
         ordering = ['name']
@@ -44,6 +45,7 @@ class CarLane(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('car lane')
         verbose_name_plural = _('car lanes')
         ordering = ['park', 'prefix']
@@ -65,6 +67,7 @@ class CarSlot(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         unique_together = [('lane', 'number')]
         verbose_name = _('car slot')
         verbose_name_plural = _('car slots')
@@ -102,6 +105,7 @@ class GridlessCar(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('gridless car')
         verbose_name_plural = _('gridless cars')
         ordering = ['-car_date']
@@ -128,6 +132,7 @@ class DemoCar(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('demo car')
         verbose_name_plural = _('demo cars')
         ordering = ['-car_date']

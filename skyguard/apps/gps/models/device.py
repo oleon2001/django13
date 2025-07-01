@@ -95,6 +95,7 @@ class GPSDevice(BaseDevice):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPS device')
         verbose_name_plural = _('GPS devices')
         unique_together = [('name', 'owner')]
@@ -164,6 +165,11 @@ class SimCard(models.Model):
 
     objects = models.Manager()
 
+    class Meta:
+        app_label = 'gps'
+        verbose_name = _('SIM card')
+        verbose_name_plural = _('SIM cards')
+
     def __str__(self):
         return f"{self.phone} ({self.iccid})"
 
@@ -213,6 +219,7 @@ class DeviceHarness(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('device harness')
         verbose_name_plural = _('device harnesses')
 
@@ -274,6 +281,7 @@ class ServerSMS(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('server SMS')
         verbose_name_plural = _('server SMS commands')
         ordering = ['-issued']
@@ -301,6 +309,7 @@ class DeviceStats(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('device statistics')
         verbose_name_plural = _('device statistics')
         ordering = ['-date_end']
@@ -320,6 +329,7 @@ class GPSLocation(BaseLocation):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPS location')
         verbose_name_plural = _('GPS locations')
 
@@ -339,6 +349,7 @@ class GPSEvent(BaseEvent):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GPS event')
         verbose_name_plural = _('GPS events')
 
@@ -353,6 +364,7 @@ class IOEvent(GPSEvent):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('IO event')
         verbose_name_plural = _('IO events')
 
@@ -364,6 +376,7 @@ class GSMEvent(GPSEvent):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('GSM event')
         verbose_name_plural = _('GSM events')
 
@@ -375,6 +388,7 @@ class ResetEvent(GPSEvent):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('reset event')
         verbose_name_plural = _('reset events')
 
@@ -393,6 +407,7 @@ class GeoFence(BaseGeoFence):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('geofence')
         verbose_name_plural = _('geofences')
 
@@ -414,6 +429,7 @@ class GeoFenceEvent(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('geofence event')
         verbose_name_plural = _('geofence events')
         ordering = ['-timestamp']
@@ -438,6 +454,7 @@ class AccelerationLog(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('acceleration log')
         verbose_name_plural = _('acceleration logs')
         ordering = ['device', 'date']
@@ -456,6 +473,7 @@ class Overlay(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('overlay')
         verbose_name_plural = _('overlays')
         ordering = ['name']
@@ -473,6 +491,7 @@ class AddressCache(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('address cache')
         verbose_name_plural = _('address cache')
 

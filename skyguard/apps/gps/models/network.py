@@ -34,6 +34,7 @@ class NetworkEvent(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('network event')
         verbose_name_plural = _('network events')
         ordering = ['-timestamp']
@@ -71,6 +72,7 @@ class NetworkSession(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('network session')
         verbose_name_plural = _('network sessions')
         ordering = ['-start_time']
@@ -95,6 +97,7 @@ class NetworkMessage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('network message')
         verbose_name_plural = _('network messages')
         ordering = ['-timestamp']
@@ -112,6 +115,7 @@ class CellTower(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = 'gps'
         verbose_name = 'Cell Tower'
         verbose_name_plural = 'Cell Towers'
         unique_together = ['mcc', 'mnc', 'lac', 'cell_id']
@@ -128,6 +132,7 @@ class WiFiAccessPoint(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = 'gps'
         verbose_name = 'WiFi Access Point'
         verbose_name_plural = 'WiFi Access Points'
         unique_together = ['mac_address']

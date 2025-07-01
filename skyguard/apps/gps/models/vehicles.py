@@ -92,6 +92,7 @@ class Vehicle(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('vehicle')
         verbose_name_plural = _('vehicles')
         ordering = ['plate']

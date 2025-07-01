@@ -24,6 +24,7 @@ class PressureSensorCalibration(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('pressure sensor calibration')
         verbose_name_plural = _('pressure sensor calibrations')
         unique_together = [('device', 'sensor')]
@@ -44,6 +45,7 @@ class PressureWeightLog(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('pressure weight log')
         verbose_name_plural = _('pressure weight logs')
         ordering = ['-date']
@@ -69,6 +71,7 @@ class AlarmLog(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('alarm log')
         verbose_name_plural = _('alarm logs')
         ordering = ['-date']
@@ -91,6 +94,7 @@ class Tracking(models.Model):
     objects = models.Manager()
 
     class Meta:
+        app_label = 'gps'
         verbose_name = _('tracking session')
         verbose_name_plural = _('tracking sessions')
         ordering = ['-start']

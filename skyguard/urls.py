@@ -28,6 +28,10 @@ urlpatterns = [
     path('api/tracking/', include('skyguard.apps.tracking.urls')),
     path('api/monitoring/', include('skyguard.apps.monitoring.urls')),
     path('api/', include('skyguard.apps.coordinates.urls')),
+    
+    # URLs de aplicaciones migradas
+    path('api/reports/', include('skyguard.apps.reports.urls')),
+    path('api/geofencing/', include('skyguard.apps.geofencing.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
