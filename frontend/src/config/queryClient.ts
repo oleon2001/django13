@@ -14,7 +14,7 @@ export const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutos (anteriormente cacheTime)
       
       // Reintentos en caso de error
-      retry: (failureCount, error) => {
+      retry: (failureCount: number, error: any) => {
         // No reintentar en errores 4xx (excepto 408, 429)
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           if (error?.response?.status === 408 || error?.response?.status === 429) {
@@ -28,7 +28,7 @@ export const queryClient = new QueryClient({
       },
       
       // Función de retry con backoff exponencial
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
       
       // Refetch en window focus
       refetchOnWindowFocus: false,
@@ -263,6 +263,7 @@ export const queryKeys = {
 
   // System queries
   system: {
+    all: ['system'] as const,
     health: () => ['system', 'health'] as const,
     settings: () => ['system', 'settings'] as const,
     protocols: () => ['system', 'protocols'] as const,

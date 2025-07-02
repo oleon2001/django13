@@ -85,9 +85,8 @@ const Vehicles: React.FC = () => {
         // Filter by search term
         if (searchTerm) {
             filtered = filtered.filter(vehicle =>
-                vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 vehicle.model.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
@@ -152,9 +151,9 @@ const Vehicles: React.FC = () => {
         }
     };
 
-    const activeVehicles = vehicles.filter(v => v.status === 'active').length;
-    const maintenanceVehicles = vehicles.filter(v => v.status === 'maintenance').length;
-    const inactiveVehicles = vehicles.filter(v => v.status === 'inactive').length;
+    const activeVehicles = vehicles.filter(v => v.status === 'ACTIVE').length;
+    const maintenanceVehicles = vehicles.filter(v => v.status === 'MAINTENANCE').length;
+    const inactiveVehicles = vehicles.filter(v => v.status === 'INACTIVE').length;
 
     if (loading) {
         return (
@@ -441,7 +440,7 @@ const Vehicles: React.FC = () => {
                 <DialogTitle>{selectedVehicle ? 'Editar Vehículo' : 'Agregar Vehículo'}</DialogTitle>
                 <DialogContent>
                     <VehicleForm
-                        initialData={selectedVehicle || undefined}
+                        initialData={selectedVehicle as Partial<Vehicle> || undefined}
                         onSave={async (data: Partial<Vehicle>) => {
                             if (selectedVehicle?.id) {
                                 await vehicleService.update(selectedVehicle.id, data);

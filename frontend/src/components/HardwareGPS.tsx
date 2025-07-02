@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { gpsConnectionService, GPSConfig } from '../services/hardware/gpsConnection';
 
 const HardwareGPS: React.FC = () => {
@@ -224,10 +224,14 @@ const HardwareGPS: React.FC = () => {
                             <div className="space-y-2">
                                 <p><span className="font-medium">Nombre:</span> {device.name}</p>
                                 <p><span className="font-medium">IMEI:</span> {device.imei}</p>
-                                <p><span className="font-medium">Estado:</span> {device.status}</p>
+                                <p><span className="font-medium">Estado:</span> {device.connection_status}</p>
                                 <p><span className="font-medium">Velocidad:</span> {device.speed || 0} km/h</p>
                                 <p><span className="font-medium">Batería:</span> {device.battery_level || 0}%</p>
-                                <p><span className="font-medium">Última actualización:</span> {formatDate(device.lastUpdate)}</p>
+                                <p><span className="font-medium">Última actualización:</span> {formatDate(device.updated_at)}</p>
+                                <p>
+                                    Lat: {device.position?.y?.toFixed(6) || 'N/A'}, 
+                                    Lng: {device.position?.x?.toFixed(6) || 'N/A'}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -237,8 +241,8 @@ const HardwareGPS: React.FC = () => {
                         <div className="bg-white shadow rounded-lg p-4 h-full">
                             <h2 className="text-lg font-semibold mb-4">Ubicación del Dispositivo</h2>
                             <div className="bg-gray-100 rounded p-4">
-                                <p><span className="font-medium">Latitud:</span> {device.position?.latitude || 'N/A'}</p>
-                                <p><span className="font-medium">Longitud:</span> {device.position?.longitude || 'N/A'}</p>
+                                <p><span className="font-medium">Latitud:</span> {device.position?.y || 'N/A'}</p>
+                                <p><span className="font-medium">Longitud:</span> {device.position?.x || 'N/A'}</p>
                                 <p><span className="font-medium">Altitud:</span> {device.altitude || 'N/A'} m</p>
                                 <p><span className="font-medium">Satélites:</span> {device.satellites || 'N/A'}</p>
                                 <p><span className="font-medium">HDOP:</span> {device.hdop || 'N/A'}</p>

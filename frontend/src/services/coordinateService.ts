@@ -1,4 +1,4 @@
-import { Device } from '../types';
+import { Device } from '../types/unified';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 

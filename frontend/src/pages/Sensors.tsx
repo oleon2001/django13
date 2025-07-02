@@ -25,8 +25,26 @@ import {
 } from '@mui/icons-material';
 import { sensorService } from '../services/sensorService';
 import { deviceService } from '../services/deviceService';
-import { Device, PressureSensor, AlarmLog } from '../types';
+import { Device } from '../types/unified';
 import { SelectChangeEvent } from '@mui/material/Select';
+
+// Temporary type definitions until they are properly defined
+interface PressureSensor {
+    id: number;
+    device_id: number;
+    name: string;
+    latest_reading?: {
+        psi1: number;
+        date: string;
+    };
+}
+
+interface AlarmLog {
+    id: number;
+    device: number;
+    comment?: string;
+    date: string;
+}
 
 interface ExtendedPressureSensor {
     id: number;

@@ -45,7 +45,7 @@ import {
     Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import authService from '../services/auth';
 import { useDeviceStatus } from '../hooks/useDeviceStatus';
 
@@ -544,7 +544,7 @@ const DeviceManagement: React.FC = () => {
                                             </Typography>
                                         </Box>
                                         
-                                        {device.position && device.position.latitude && device.position.longitude && (
+                                        {device.position && device.position.x && device.position.y && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                     <LocationIcon color="action" fontSize="small" />
@@ -553,7 +553,7 @@ const DeviceManagement: React.FC = () => {
                                     </Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                    {device.position.latitude.toFixed(4)}, {device.position.longitude.toFixed(4)}
+                                    {device.position.y.toFixed(4)}, {device.position.x.toFixed(4)}
                                 </Typography>
                             </Box>
                         )}

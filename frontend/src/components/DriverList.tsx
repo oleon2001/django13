@@ -31,7 +31,7 @@ import {
     DirectionsCar as CarIcon,
 } from '@mui/icons-material';
 import { driverService } from '../services/driverService';
-import { Driver } from '../types';
+import { Driver } from '../types/unified';
 
 const DriverList: React.FC = () => {
     const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -39,6 +39,23 @@ const DriverList: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Helper functions
+    const getFullName = (driver: Driver) => {
+        const parts = [driver.name, driver.middle_name, driver.last_name].filter(Boolean);
+        return parts.join(' ');
+    };
+
+    const isLicenseValid = (driver: Driver) => {
+        if (!driver.license_expiry) return false;
+        const expiryDate = new Date(driver.license_expiry);
+        return expiryDate > new Date();
+    };
+
+    const getDeviceInfo = (driver: Driver) => {
+        const vehicleWithDevice = driver.vehicles?.find(vehicle => vehicle.device);
+        return vehicleWithDevice ? vehicleWithDevice.device : null;
+    };
 
     useEffect(() => {
         fetchDrivers();
@@ -98,7 +115,7 @@ const DriverList: React.FC = () => {
     };
 
     const activeDrivers = drivers.filter(d => d.is_active);
-    const validLicenses = drivers.filter(d => d.is_license_valid).length;
+    const validLicenses = drivers.filter(d => isLicenseValid(d)).length;
 
     if (loading) {
         return (
@@ -215,7 +232,7 @@ const DriverList: React.FC = () => {
                                     primary={
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                                                {driver.full_name || `${driver.name} ${driver.middle_name} ${driver.last_name}`}
+                                                {getFullName(driver)}
                                             </Typography>
                                             <Chip 
                                                 label={driver.is_active ? 'Activo' : 'Inactivo'}
@@ -246,26 +263,26 @@ const DriverList: React.FC = () => {
                                                     Licencia: {driver.license}
                                                 </Typography>
                                                 <Chip
-                                                    label={driver.is_license_valid ? 'Válida' : 'Vencida'}
-                                                    color={getLicenseColor(driver.is_license_valid)}
+                                                    label={isLicenseValid(driver) ? 'Válida' : 'Vencida'}
+                                                    color={getLicenseColor(isLicenseValid(driver))}
                                                     size="small"
                                                 />
                                             </Box>
 
-                                            {driver.vehicle && (
+                                            {driver.vehicles && driver.vehicles.length > 0 && (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <CarIcon color="primary" fontSize="small" />
                                                     <Typography variant="caption">
-                                                        Vehículo: {driver.vehicle.plate}
+                                                        Vehículo: {driver.vehicles[0].plate}
                                                     </Typography>
                                                 </Box>
                                             )}
 
-                                            {driver.device && (
+                                            {getDeviceInfo(driver) && (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <GpsIcon color="success" fontSize="small" />
                                                     <Typography variant="caption">
-                                                        GPS: {driver.device.name || 'Conectado'}
+                                                        GPS: {getDeviceInfo(driver)?.name || 'Conectado'}
                                                     </Typography>
                                                 </Box>
                                             )}

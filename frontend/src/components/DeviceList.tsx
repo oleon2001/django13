@@ -1,5 +1,5 @@
 import React from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 
 interface DeviceListProps {
     devices: Device[];
@@ -20,7 +20,7 @@ const DeviceList: React.FC<DeviceListProps> = React.memo(({ devices, selectedDev
         }
     };
 
-    const formatDate = (date: string | undefined) => {
+    const formatDate = (date: string | null | undefined) => {
         if (!date) return 'Never';
         return new Date(date).toLocaleString();
     };
@@ -51,7 +51,7 @@ const DeviceListItem: React.FC<{
     device: Device;
     isSelected: boolean;
     onSelect: (device: Device) => void;
-    formatDate: (date: string | undefined) => string;
+    formatDate: (date: string | null | undefined) => string;
     getStatusColor: (status: string) => string;
 }> = React.memo(({ device, isSelected, onSelect, formatDate, getStatusColor }) => {
     return (
@@ -65,9 +65,9 @@ const DeviceListItem: React.FC<{
                 <div>
                     <h4 className="text-sm font-medium text-gray-900">{device.name || `Device ${device.imei}`}</h4>
                     <p className="text-sm text-gray-500">IMEI: {device.imei}</p>
-                    {device.lastUpdate && (
+                    {device.last_log && (
                         <div className="text-sm text-gray-500">
-                            Last seen: {formatDate(device.lastUpdate)}
+                            Last seen: {formatDate(device.last_log)}
                         </div>
                     )}
                 </div>
@@ -93,7 +93,7 @@ const DeviceListItem: React.FC<{
                 <div>
                     <p className="text-gray-500">Last Seen</p>
                     <p className="font-medium">
-                        {formatDate(device.lastUpdate)}
+                        {formatDate(device.last_log)}
                     </p>
                 </div>
             </div>

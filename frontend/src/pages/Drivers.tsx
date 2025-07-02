@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Grid,
     Paper,
@@ -19,14 +19,16 @@ import {
     DialogContent,
     IconButton,
     Tooltip,
+    Table,
+    TableBody,
+    TableCell,
+    TableRow,
 } from '@mui/material';
 import {
     Person as PersonIcon,
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    CheckCircleOutline as CheckIcon,
-    ErrorOutline as ErrorIcon,
     Badge as BadgeIcon,
     Phone as PhoneIcon,
     GpsFixed as GpsIcon,
@@ -34,16 +36,32 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { driverService } from '../services/driverService';
-import { Driver } from '../types';
+import { Driver } from '../types/unified';
 import { DriverForm } from '../components/DriverForm';
 
-const Drivers: React.FC = () => {
+export const Drivers = () => {
     const { t } = useTranslation();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [openDialog, setOpenDialog] = useState(false);
-    const [editingDriver, setEditingDriver] = useState<Partial<Driver> | null>(null);
+    const [openForm, setOpenForm] = useState(false);
+    const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Helper functions
+    const getFullName = (driver: Driver) => {
+        const parts = [driver.name, driver.middle_name, driver.last_name].filter(Boolean);
+        return parts.join(' ');
+    };
+
+    const isLicenseValid = (driver: Driver) => {
+        if (!driver.license_expiry) return false;
+        return new Date(driver.license_expiry) > new Date();
+    };
+
+    const getDeviceInfo = (driver: Driver) => {
+        const vehicleWithDevice = driver.vehicles?.find(vehicle => vehicle.device);
+        return vehicleWithDevice ? vehicleWithDevice.device : null;
+    };
 
     useEffect(() => {
         fetchDrivers();
@@ -62,37 +80,24 @@ const Drivers: React.FC = () => {
     };
 
     const handleCreateDriver = () => {
-        setEditingDriver({
-            name: '',
-            middle_name: '',
-            last_name: '',
-            birth_date: '',
-            civil_status: 'SOL',
-            payroll: '',
-            social_security: '',
-            tax_id: '',
-            license: '',
-            address: '',
-            phone: '',
-            is_active: true
-        });
-        setOpenDialog(true);
+        setEditingDriver(null);
+        setOpenForm(true);
     };
 
     const handleEditDriver = (driver: Driver) => {
         setEditingDriver(driver);
-        setOpenDialog(true);
+        setOpenForm(true);
     };
 
     const handleSaveDriver = async (driverData: Partial<Driver>) => {
         try {
-            if (driverData.id) {
-                await driverService.updateDriver(driverData.id, driverData);
+            if (editingDriver?.id) {
+                await driverService.updateDriver(editingDriver.id, driverData);
             } else {
                 await driverService.createDriver(driverData);
             }
             fetchDrivers();
-            setOpenDialog(false);
+            setOpenForm(false);
             setEditingDriver(null);
         } catch (error) {
             console.error('Error saving driver:', error);
@@ -111,14 +116,10 @@ const Drivers: React.FC = () => {
     };
 
     const activeDrivers = drivers.filter(d => d.is_active);
-    const validLicenses = drivers.filter(d => d.is_license_valid).length;
+    const validLicenses = drivers.filter(d => isLicenseValid(d)).length;
 
-    const getStatusChipColor = (isActive: boolean | undefined) => {
-        return isActive ? 'success' : 'error';
-    };
-
-    const getLicenseChipColor = (isValid: boolean | undefined) => {
-        return isValid ? 'success' : 'warning';
+    const getStatusChipColor = (isActive: boolean) => {
+        return isActive ? 'success' : 'default';
     };
 
     if (loading) {
@@ -188,13 +189,32 @@ const Drivers: React.FC = () => {
                         <Typography variant="h6" gutterBottom>
                             {t('drivers.driversList')}
                         </Typography>
-                        <List sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                            {drivers.map((driver) => (
-                                <React.Fragment key={driver.id}>
-                                    <ListItem
+                        <Table sx={{ minWidth: 650 }}>
+                            <TableBody>
+                                {drivers.map((driver) => (
+                                    <TableRow 
+                                        key={driver.id}
                                         onClick={() => setSelectedDriver(driver)}
-                                        sx={{ cursor: 'pointer' }}
-                                        secondaryAction={
+                                        sx={{ 
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                                backgroundColor: 'action.hover'
+                                            },
+                                            ...(selectedDriver?.id === driver.id && {
+                                                backgroundColor: 'action.selected'
+                                            })
+                                        }}
+                                    >
+                                        <TableCell>{getFullName(driver)}</TableCell>
+                                        <TableCell>{driver.license}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={driver.is_active ? t('active') : t('inactive')}
+                                                color={getStatusChipColor(driver.is_active)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
                                             <Box>
                                                 <Tooltip title={t('common.edit')}>
                                                     <IconButton onClick={(e) => {
@@ -213,35 +233,11 @@ const Drivers: React.FC = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                             </Box>
-                                        }
-                                    >
-                                        <ListItemIcon>
-                                            <PersonIcon />
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            primary={driver.full_name}
-                                            secondary={
-                                                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                                                    <Chip
-                                                        label={driver.is_active ? t('drivers.status.active') : t('drivers.status.inactive')}
-                                                        color={getStatusChipColor(driver.is_active)}
-                                                        size="small"
-                                                        icon={driver.is_active ? <CheckIcon fontSize="small" /> : <ErrorIcon fontSize="small" />}
-                                                    />
-                                                    <Chip
-                                                        label={driver.is_license_valid ? t('drivers.license.valid') : t('drivers.license.expired')}
-                                                        color={getLicenseChipColor(driver.is_license_valid)}
-                                                        size="small"
-                                                        icon={<BadgeIcon fontSize="small" />}
-                                                    />
-                                                </Box>
-                                            }
-                                        />
-                                    </ListItem>
-                                    <Divider variant="inset" component="li" />
-                                </React.Fragment>
-                            ))}
-                        </List>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </Paper>
                 </Grid>
 
@@ -251,7 +247,7 @@ const Drivers: React.FC = () => {
                         <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                             <CardContent sx={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                                 <Typography variant="h6" gutterBottom>
-                                    {t('drivers.driverDetails')}: {selectedDriver.full_name}
+                                    {t('drivers.driverDetails')}: {getFullName(selectedDriver)}
                                 </Typography>
                                 <Grid container spacing={2}>
                                     <Grid item xs={12} md={6}>
@@ -329,8 +325,8 @@ const Drivers: React.FC = () => {
                                                 <ListItemText
                                                     primary={t('drivers.fields.gpsDevice')}
                                                     secondary={
-                                                        selectedDriver.device ? 
-                                                        `${selectedDriver.device.name || `Device ${selectedDriver.device.imei}`} - IMEI: ${selectedDriver.device.imei}` : 
+                                                        getDeviceInfo(selectedDriver) ? 
+                                                        `${getDeviceInfo(selectedDriver)?.name || `Device ${getDeviceInfo(selectedDriver)?.imei}`} - IMEI: ${getDeviceInfo(selectedDriver)?.imei}` : 
                                                         t('drivers.noDeviceAssigned')
                                                     }
                                                 />
@@ -344,8 +340,8 @@ const Drivers: React.FC = () => {
                                                 <ListItemText
                                                     primary={t('drivers.fields.assignedVehicle')}
                                                     secondary={
-                                                        selectedDriver.vehicle ? 
-                                                        `${selectedDriver.vehicle.name} - ${t('drivers.fields.plate')}: ${selectedDriver.vehicle.plate}` : 
+                                                        selectedDriver.vehicles && selectedDriver.vehicles.length > 0 ? 
+                                                        `${selectedDriver.vehicles[0].plate} - ${selectedDriver.vehicles[0].make} ${selectedDriver.vehicles[0].model}` : 
                                                         t('drivers.noVehicleAssigned')
                                                     }
                                                 />
@@ -353,6 +349,9 @@ const Drivers: React.FC = () => {
                                         </List>
                                     </Grid>
                                 </Grid>
+                                <Typography variant="body1">
+                                    <strong>{t('vehicles')}:</strong> {selectedDriver.vehicles?.length || 0}
+                                </Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -360,7 +359,7 @@ const Drivers: React.FC = () => {
             </Grid>
 
             {/* Dialog para Crear/Editar Chofer */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+            <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="md" fullWidth>
                 <DialogTitle>
                     {editingDriver?.id ? t('drivers.editDriver') : t('drivers.newDriver')}
                 </DialogTitle>
@@ -368,7 +367,7 @@ const Drivers: React.FC = () => {
                     <DriverForm
                         initialData={editingDriver || {}}
                         onSave={handleSaveDriver}
-                        onCancel={() => setOpenDialog(false)}
+                        onCancel={() => setOpenForm(false)}
                     />
                 </DialogContent>
             </Dialog>

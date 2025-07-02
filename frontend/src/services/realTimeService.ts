@@ -1,4 +1,4 @@
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { deviceService } from './deviceService';
 import { REACT_CONFIG } from '../utils/reactConfig';
 

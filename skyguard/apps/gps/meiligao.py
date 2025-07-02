@@ -73,11 +73,11 @@ class MeiligaoRequestHandler(SocketServer.BaseRequestHandler ):
 				self.harness.save()
 			self.dev = SGAvl(imei=self.imei,name = "%015d"%self.imei, harness = self.harness, comments ="")
 			self.dev.save()
-			print ">>>> Created device %s"%self.dev.name
+			print (">>>> Created device %s"%self.dev.name)
 
 	def setup(self):
-		print "*"*80
-		print datetime.now().ctime(), self.client_address, 'connected!'
+		print ("*"*80)
+		print (datetime.now().ctime(), self.client_address, 'connected!')
 
 	def handle(self):
 		self.imei = None
@@ -86,7 +86,7 @@ class MeiligaoRequestHandler(SocketServer.BaseRequestHandler ):
 		nBytes = len(data)
 		# Sanity Check
 		if data[:2] != '$$' and data[-2:] !='\r\n':
-			print "Invalid packet from", self.client_address
+			print ("Invalid packet from", self.client_address)
 			return
 		# Check crc
 		crc = crcmod.mkCrcFun(0x11021,initCrc=0xFFFF, rev=False)
@@ -94,20 +94,20 @@ class MeiligaoRequestHandler(SocketServer.BaseRequestHandler ):
 		dlen, = struct.unpack(">H",data[2:4])
 		ecrc = crc(data[:-4])
 		if pcrc != ecrc:
-			print "Invalid CRC from", self.client_address
-			print "Expected %04x, got %04x"%(ecrc,pcrc)
+			print ("Invalid CRC from", self.client_address)
+			print ("Expected %04x, got %04x"%(ecrc,pcrc))
 			return
 		if dlen != nBytes:
-			print "Invalid data length from", self.client_address
-			print "Expected %04x, got %04x"%(dlen,nBytes)
+			print ("Invalid data length from", self.client_address)
+			print ("Expected %04x, got %04x"%(dlen,nBytes))
 			return
 		idhex = data[4:11]
 		self.imei = self.getId(idhex)
 		command, = struct.unpack(">H",data[11:13])
 		payload = data[13:-4]
-		print "Received command %04x"%command
-		print "Payload: ",len(payload),payload
-		print "ID: ", self.imei
+		print ("Received command %04x"%command)
+		print ("Payload: ",len(payload),payload)
+		print ("ID: ", self.imei)
 		self.FindOrCreateDev()
 		# Parse Command
 		if command == 0x9955:
@@ -129,7 +129,7 @@ class MeiligaoRequestHandler(SocketServer.BaseRequestHandler ):
 		elif command == 0x5000:
 			pass
 		else :
-			print "Invalid command received from ID %d: 0x%04x"%(self.imei,command)
+			print ("Invalid command received from ID %d: 0x%04x"%(self.imei,command))
 			
 	def finish(self):
 		pass

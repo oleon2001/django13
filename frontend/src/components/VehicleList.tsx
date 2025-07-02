@@ -64,9 +64,8 @@ const VehicleList: React.FC = () => {
 
         if (searchTerm) {
             filtered = filtered.filter(vehicle =>
-                vehicle.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 vehicle.plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                vehicle.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                vehicle.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
@@ -184,10 +183,10 @@ const VehicleList: React.FC = () => {
                                     </Avatar>
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="h6" noWrap>
-                                            {vehicle.plate || vehicle.name}
+                                            {vehicle.plate}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                            {vehicle.make} {vehicle.model} ({vehicle.year})
                                         </Typography>
                                     </Box>
                                 </Box>

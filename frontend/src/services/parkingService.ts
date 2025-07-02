@@ -1,5 +1,5 @@
 import api from './api';
-import { CarPark, CarLane, CarSlot } from '../types';
+import { CarPark, CarLane, CarSlot } from '../types/unified';
 
 export const parkingService = {
   // Car Park operations

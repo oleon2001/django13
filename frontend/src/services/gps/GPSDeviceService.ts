@@ -1,4 +1,4 @@
-import { Device } from '../../types';
+import { Device } from '../../types/unified';
 
 export interface GPSDeviceConfig {
     host: string;

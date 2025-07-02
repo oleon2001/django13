@@ -1,5 +1,5 @@
 import api from './api';
-import { Device, DeviceEvent, DeviceData, NetworkEvent, DeviceStats, ServerSMS, GPRSSession, UDPSession } from '../types';
+import { Device, DeviceEvent, DeviceData, NetworkEvent, DeviceStats, ServerSMS, GPRSSession, UDPSession } from '../types/unified';
 
 export const deviceService = {
   getAll: async (): Promise<Device[]> => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, startTransition } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { deviceService } from '../services/deviceService';
 import DeviceList from '../components/DeviceList';
 import DeviceMap from '../components/DeviceMap';

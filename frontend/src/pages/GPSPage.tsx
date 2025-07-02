@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import DeviceList from '../components/DeviceList';
 import DeviceMap from '../components/DeviceMap';
 import { useRealTimeDevices } from '../hooks/useRealTimeDevices';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, startTransition } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { realTimeService } from '../services/realTimeService';
 
 interface UseRealTimeDevicesOptions {

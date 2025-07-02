@@ -32,7 +32,7 @@ import {
     ViewModule as GridIcon,
 } from '@mui/icons-material';
 import { parkingService } from '../services/parkingService';
-import { CarPark, CarLane, CarSlot } from '../types';
+import { CarPark, CarLane, CarSlot } from '../types/unified';
 import { useTranslation } from 'react-i18next';
 
 const Parking: React.FC = () => {
@@ -331,11 +331,11 @@ const Parking: React.FC = () => {
                                     <Card 
                                         sx={{ 
                                             minHeight: 60,
-                                            backgroundColor: slot.is_occupied ? '#ffebee' : '#e8f5e8',
-                                            border: slot.is_occupied ? '1px solid #f44336' : '1px solid #4caf50',
+                                            backgroundColor: slot.car_serial ? '#ffebee' : '#e8f5e8',
+                                            border: slot.car_serial ? '1px solid #f44336' : '1px solid #4caf50',
                                             cursor: 'pointer',
                                             '&:hover': {
-                                                backgroundColor: slot.is_occupied ? '#ffcdd2' : '#c8e6c9'
+                                                backgroundColor: slot.car_serial ? '#ffcdd2' : '#c8e6c9'
                                             }
                                         }}
                                     >
@@ -343,10 +343,10 @@ const Parking: React.FC = () => {
                                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                                 <CarIcon 
                                                     fontSize="small" 
-                                                    color={slot.is_occupied ? 'error' : 'success'}
+                                                    color={slot.car_serial ? 'error' : 'success'}
                                                 />
                                                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                                                    {slot.display_name}
+                                                    {`${slot.lane.prefix}-${slot.number}`}
                                                 </Typography>
                                                 {slot.car_serial && (
                                                     <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>

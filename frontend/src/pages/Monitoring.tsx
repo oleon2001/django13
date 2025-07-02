@@ -37,7 +37,7 @@ import {
     Error as ErrorIcon,
 } from '@mui/icons-material';
 import DeviceMap from '../components/DeviceMap';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import EnhancedLoading from '../components/EnhancedLoading';
 import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
 
@@ -384,8 +384,8 @@ const Monitoring: React.FC = () => {
                                                         {t('monitoring.lastUpdate')}:
                                                     </Typography>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                        {selectedDevice.lastUpdate ? 
-                                                            new Date(selectedDevice.lastUpdate).toLocaleString() : 
+                                                        {selectedDevice.updated_at ? 
+                                                            new Date(selectedDevice.updated_at).toLocaleString() : 
                                                             'No disponible'
                                                         }
                                                     </Typography>
@@ -410,8 +410,8 @@ const Monitoring: React.FC = () => {
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                        {selectedDevice.position?.latitude && selectedDevice.position?.longitude ? 
-                                                            `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}` : 
+                                                        {selectedDevice.position?.y !== undefined && selectedDevice.position?.x !== undefined ? 
+                                                            `${selectedDevice.position.y.toFixed(6)}, ${selectedDevice.position.x.toFixed(6)}` : 
                                                             'No disponible'
                                                         }
                                                     </Typography>

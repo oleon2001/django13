@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import 'leaflet/dist/leaflet.css';
 import L, { LatLngTuple } from 'leaflet';
 
@@ -50,15 +50,15 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
     
     // Filter devices that have valid coordinates
     const devicesWithLocation = devices.filter(device => 
-        device.position?.latitude && device.position?.longitude && 
-        !isNaN(device.position.latitude) && !isNaN(device.position.longitude)
+        device.position?.x && device.position?.y && 
+        !isNaN(device.position.x) && !isNaN(device.position.y)
     );
     
     // Determine center based on selected device or first device with location
-    const center = selectedDevice && selectedDevice.position?.latitude && selectedDevice.position?.longitude
-        ? [selectedDevice.position.latitude, selectedDevice.position.longitude] as LatLngTuple
+    const center = selectedDevice && selectedDevice.position?.x && selectedDevice.position?.y
+        ? [selectedDevice.position.y, selectedDevice.position.x] as LatLngTuple
         : devicesWithLocation.length > 0 
-            ? [devicesWithLocation[0].position!.latitude, devicesWithLocation[0].position!.longitude] as LatLngTuple
+            ? [devicesWithLocation[0].position!.y, devicesWithLocation[0].position!.x] as LatLngTuple
             : defaultCenter;
 
     return (
@@ -74,7 +74,7 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
             {devicesWithLocation.map(device => (
                 <Marker
                     key={device.imei}
-                    position={[device.position!.latitude, device.position!.longitude] as LatLngTuple}
+                    position={[device.position!.y, device.position!.x] as LatLngTuple}
                     icon={createCustomIcon(device.connection_status || 'OFFLINE', device.speed || 0)}
                     eventHandlers={{
                         click: () => onDeviceSelect(device),
@@ -96,7 +96,7 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
                                     </span>
                                 </p>
                                 <p><strong>Velocidad:</strong> {device.speed || 0} km/h</p>
-                                <p><strong>Coordenadas:</strong> {device.position?.latitude?.toFixed(6)}, {device.position?.longitude?.toFixed(6)}</p>
+                                <p><strong>Coordenadas:</strong> {device.position?.x?.toFixed(6)}, {device.position?.y?.toFixed(6)}</p>
                                 {device.course && (
                                     <p><strong>Rumbo:</strong> {device.course}°</p>
                                 )}
@@ -109,13 +109,13 @@ const DeviceMap: React.FC<DeviceMapProps> = ({ devices, selectedDevice, onDevice
                                 {device.economico && (
                                     <p><strong>Económico:</strong> {device.economico}</p>
                                 )}
-                                {device.lastUpdate && (
-                                    <p><strong>Última actualización:</strong> {new Date(device.lastUpdate).toLocaleString()}</p>
+                                {device.last_log && (
+                                    <p><strong>Última actualización:</strong> {new Date(device.last_log).toLocaleString()}</p>
                                 )}
                             </div>
                             <div className="mt-3 pt-2 border-t">
                                 <a 
-                                    href={`https://maps.google.com/?q=${device.position?.latitude},${device.position?.longitude}`}
+                                    href={`https://maps.google.com/?q=${device.position?.x},${device.position?.y}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:text-blue-800 text-sm"

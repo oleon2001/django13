@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, startTransition } from 'react';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { deviceService } from '../services/deviceService';
 
 interface DeviceStatusOptions {

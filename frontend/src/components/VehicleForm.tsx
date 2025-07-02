@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Vehicle, Device, Driver } from '../types';
+import { Vehicle, Device, Driver } from '../types/unified';
 import { 
   TextField, 
   Button, 
@@ -21,9 +21,24 @@ interface Props {
   onCancel: () => void;
 }
 
+// Extended form interface to handle temporary IDs for form state
+interface VehicleFormData extends Omit<Partial<Vehicle>, 'device' | 'driver'> {
+  device_id?: number; // Temporary field for form handling
+  driver_id?: number; // Temporary field for form handling
+}
+
 export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCancel }) => {
   const { t } = useTranslation();
-  const [form, setForm] = useState<Partial<Vehicle>>(initialData);
+  const [form, setForm] = useState<VehicleFormData>(() => {
+    // Convert Vehicle data to form data, excluding device and driver objects
+    const { device, driver, ...vehicleProps } = initialData;
+    return {
+      ...vehicleProps,
+      // Extract IDs from objects if they exist
+      device_id: device?.id,
+      driver_id: driver?.id
+    };
+  });
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,17 +79,21 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
     setError(null);
     
     try {
-      await onSave(form);
+      // Create the vehicle data without the temporary IDs
+      const { device_id, driver_id, ...vehicleData } = form;
       
-      // Si se seleccionó un dispositivo GPS, vincularlo
-      if (form.device_id && form.id) {
-        await vehicleService.assignDevice(form.id, form.device_id);
-      }
+      // Find the selected device and driver objects
+      const selectedDevice = device_id ? availableDevices.find(d => d.id === device_id) : null;
+      const selectedDriver = driver_id ? availableDrivers.find(d => d.id === driver_id) : null;
       
-      // Si se seleccionó un conductor, vincularlo
-      if (form.driver_id && form.id) {
-        await vehicleService.assignDriver(form.id, form.driver_id);
-      }
+      // Create the final vehicle object with proper references
+      const finalVehicleData: Partial<Vehicle> = {
+        ...vehicleData,
+        device: selectedDevice || null,
+        driver: selectedDriver || null
+      };
+      
+      await onSave(finalVehicleData);
       
     } catch (err) {
       setError(t('vehicles.form.errorSaving'));
@@ -97,16 +116,6 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       </Typography>
       
       <TextField
-        name="name"
-        label={t('vehicles.vehicleName')}
-        value={form.name || ''}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-      />
-      
-      <TextField
         name="plate"
         label={t('vehicles.plate')}
         value={form.plate || ''}
@@ -117,9 +126,9 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
       />
       
       <TextField
-        name="brand"
+        name="make"
         label={t('vehicles.brand')}
-        value={form.brand || ''}
+        value={form.make || ''}
         onChange={handleChange}
         fullWidth
         margin="normal"
@@ -148,13 +157,14 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
         <InputLabel>{t('vehicles.form.status')}</InputLabel>
         <Select
           name="status"
-          value={form.status || 'active'}
+          value={form.status || 'ACTIVE'}
           onChange={handleSelectChange('status')}
           label={t('vehicles.form.status')}
         >
-          <MenuItem value="active">{t('vehicles.form.active')}</MenuItem>
-          <MenuItem value="maintenance">{t('vehicles.form.maintenance')}</MenuItem>
-          <MenuItem value="inactive">{t('vehicles.form.inactive')}</MenuItem>
+          <MenuItem value="ACTIVE">{t('vehicles.form.active')}</MenuItem>
+          <MenuItem value="MAINTENANCE">{t('vehicles.form.maintenance')}</MenuItem>
+          <MenuItem value="INACTIVE">{t('vehicles.form.inactive')}</MenuItem>
+          <MenuItem value="REPAIR">En Reparación</MenuItem>
         </Select>
       </FormControl>
 
@@ -174,7 +184,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
         >
           <MenuItem value="">{t('vehicles.form.noDevice')}</MenuItem>
           {availableDevices.map((device) => (
-            <MenuItem key={device.imei} value={device.imei}>
+            <MenuItem key={device.id} value={device.id}>
               {device.name || `${t('vehicles.form.device')} ${device.imei}`} - IMEI: {device.imei}
             </MenuItem>
           ))}
@@ -192,7 +202,7 @@ export const VehicleForm: React.FC<Props> = ({ initialData = {}, onSave, onCance
           <MenuItem value="">{t('vehicles.form.noDriver')}</MenuItem>
           {availableDrivers.map((driver) => (
             <MenuItem key={driver.id} value={driver.id}>
-              {driver.full_name} - Licencia: {driver.license}
+              {driver.name} {driver.last_name} - Licencia: {driver.license}
             </MenuItem>
           ))}
         </Select>

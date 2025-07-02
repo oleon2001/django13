@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { AxiosError, AxiosResponse } from 'axios';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { ApiResponse, PaginationParams } from '../types/unified';
 
 // ============================================================================
@@ -27,7 +27,7 @@ export interface MutationConfig<TData, TVariables> extends Omit<UseMutationOptio
 // ============================================================================
 
 const handleApiError = (error: AxiosError, customMessage?: string) => {
-  const message = customMessage || error.response?.data?.message || error.message || 'An error occurred';
+  const message = customMessage || (error.response?.data as any)?.message || error.message || 'An error occurred';
   console.error('API Error:', error);
   return message;
 };
@@ -58,10 +58,10 @@ export function useApiQuery<T>(
 
   return useQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async (): Promise<T> => {
       try {
         const response = await queryFn();
-        return response.data.data || response.data;
+        return (response.data.data || response.data) as T;
       } catch (error) {
         const message = handleApiError(error as AxiosError, errorMessage);
         if (showErrorToast) {
@@ -81,7 +81,7 @@ export function useApiQueryPaginated<T>(
   queryKey: string[],
   queryFn: (params: PaginationParams) => Promise<AxiosResponse<ApiResponse<T[]>>>,
   params: PaginationParams = {},
-  config: QueryConfig<T[]> = {}
+  config: QueryConfig<{ data: T[]; pagination: any }> = {}
 ) {
   const {
     showErrorToast = true,
@@ -91,12 +91,12 @@ export function useApiQueryPaginated<T>(
 
   return useQuery({
     queryKey: [...queryKey, params],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ data: T[]; pagination: any }> => {
       try {
         const response = await queryFn(params);
         return {
-          data: response.data.data || response.data,
-          pagination: response.data.pagination,
+          data: (response.data.data || response.data) as T[],
+          pagination: (response.data as any).pagination,
         };
       } catch (error) {
         const message = handleApiError(error as AxiosError, errorMessage);
@@ -128,10 +128,10 @@ export function useApiMutation<TData, TVariables>(
   } = config;
 
   return useMutation({
-    mutationFn: async (variables: TVariables) => {
+    mutationFn: async (variables: TVariables): Promise<TData> => {
       try {
         const response = await mutationFn(variables);
-        const data = response.data.data || response.data;
+        const data = (response.data.data || response.data) as TData;
         
         if (showSuccessToast && successMessage) {
           handleApiSuccess(successMessage);
@@ -176,10 +176,10 @@ export function useApiMutationOptimistic<TData, TVariables>(
   } = config;
 
   return useMutation({
-    mutationFn: async (variables: TVariables) => {
+    mutationFn: async (variables: TVariables): Promise<TData> => {
       try {
         const response = await mutationFn(variables);
-        const data = response.data.data || response.data;
+        const data = (response.data.data || response.data) as TData;
         
         if (showSuccessToast && successMessage) {
           handleApiSuccess(successMessage);
@@ -194,28 +194,29 @@ export function useApiMutationOptimistic<TData, TVariables>(
         throw error;
       }
     },
-    onMutate: async (newItem) => {
+    onMutate: async (newItem: TVariables): Promise<{ previousData: TData[] | undefined } | undefined> => {
       // Cancelar queries en curso
       await queryClient.cancelQueries({ queryKey });
       
-      // Snapshot del valor anterior
+      // Guardar datos anteriores
       const previousData = queryClient.getQueryData<TData[]>(queryKey);
       
       // Optimistic update
       queryClient.setQueryData<TData[]>(queryKey, (old) => {
-        return old ? updateFn(old, newItem as TData) : [newItem as TData];
+        return old ? updateFn(old, newItem as unknown as TData) : [newItem as unknown as TData];
       });
       
       return { previousData };
     },
-    onError: (err, newItem, context) => {
+    onError: (_err, _newItem, context) => {
       // Revertir en caso de error
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
+      const typedContext = context as { previousData: TData[] | undefined } | undefined;
+      if (typedContext?.previousData) {
+        queryClient.setQueryData(queryKey, typedContext.previousData);
       }
     },
     onSettled: () => {
-      // Refetch para asegurar sincronización
+      // Invalidar y refetch
       queryClient.invalidateQueries({ queryKey });
     },
     ...mutationConfig,
@@ -238,7 +239,7 @@ export function useCrudOperations<T>(
   const queryClient = useQueryClient();
 
   // Query para obtener todos los elementos
-  const useGetAll = (params: PaginationParams = {}, config: QueryConfig<T[]> = {}) => {
+  const useGetAll = (params: PaginationParams = {}, config: QueryConfig<{ data: T[]; pagination: any }> = {}) => {
     return useApiQueryPaginated(
       [baseQueryKey, 'list'],
       () => api.getAll(params),
@@ -337,11 +338,9 @@ export function useRealtimeQuery<T>(
  * Hook personalizado para operaciones con archivos
  */
 export function useFileOperations() {
-  const queryClient = useQueryClient();
-
   const useDownload = (config: MutationConfig<Blob, { url: string; filename?: string }> = {}) => {
-    return useApiMutation(
-      async ({ url, filename }: { url: string; filename?: string }) => {
+    return useMutation({
+      mutationFn: async ({ url, filename }: { url: string; filename?: string }): Promise<Blob> => {
         const response = await fetch(url);
         const blob = await response.blob();
         
@@ -357,17 +356,13 @@ export function useFileOperations() {
         
         return blob;
       },
-      {
-        successMessage: 'File downloaded successfully',
-        errorMessage: 'Failed to download file',
-        ...config,
-      }
-    );
+      ...config,
+    });
   };
 
   const useUpload = (config: MutationConfig<any, FormData> = {}) => {
-    return useApiMutation(
-      async (formData: FormData) => {
+    return useMutation({
+      mutationFn: async (formData: FormData): Promise<any> => {
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
@@ -379,12 +374,8 @@ export function useFileOperations() {
         
         return response.json();
       },
-      {
-        successMessage: 'File uploaded successfully',
-        errorMessage: 'Failed to upload file',
-        ...config,
-      }
-    );
+      ...config,
+    });
   };
 
   return {
@@ -398,8 +389,8 @@ export function useFileOperations() {
  */
 export function useExportOperations() {
   const useExport = (config: MutationConfig<Blob, { type: string; params: any; format: string }> = {}) => {
-    return useApiMutation(
-      async ({ type, params, format }: { type: string; params: any; format: string }) => {
+    return useMutation({
+      mutationFn: async ({ type, params, format }: { type: string; params: any; format: string }): Promise<Blob> => {
         const queryString = new URLSearchParams(params).toString();
         const response = await fetch(`/api/export/${type}?${queryString}&format=${format}`);
         
@@ -407,26 +398,10 @@ export function useExportOperations() {
           throw new Error('Export failed');
         }
         
-        const blob = await response.blob();
-        
-        // Descargar archivo
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `${type}_export.${format}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(downloadUrl);
-        
-        return blob;
+        return response.blob();
       },
-      {
-        successMessage: 'Export completed successfully',
-        errorMessage: 'Failed to export data',
-        ...config,
-      }
-    );
+      ...config,
+    });
   };
 
   return {

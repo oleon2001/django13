@@ -1,19 +1,7 @@
 import api from './api';
+import { Vehicle } from '../types/unified';
 
-export interface Vehicle {
-  id: number;
-  name: string;
-  plate: string;
-  model: string;
-  brand: string;
-  year: number;
-  status: string;
-  lastUpdate: string;
-  device_id?: number;
-  device?: any; // Referencia al dispositivo GPS vinculado
-  driver_id?: number;
-  driver?: any; // Referencia al conductor asignado
-}
+export type { Vehicle };
 
 class VehicleService {
   async getAll(): Promise<Vehicle[]> {

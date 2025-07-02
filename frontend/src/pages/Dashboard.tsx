@@ -34,7 +34,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import { useTranslation } from 'react-i18next';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import { DeviceMapWithLoading } from '../components/LazyComponents';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
@@ -390,8 +390,8 @@ const Dashboard: React.FC = () => {
                   <ListItemText
                     primary="Ubicación" 
                     secondary={
-                      selectedDevice.position?.latitude && selectedDevice.position?.longitude
-                        ? `${selectedDevice.position.latitude.toFixed(6)}, ${selectedDevice.position.longitude.toFixed(6)}`
+                      selectedDevice.position?.x && selectedDevice.position?.y
+                        ? `${selectedDevice.position.y.toFixed(6)}, ${selectedDevice.position.x.toFixed(6)}`
                         : 'No disponible'
                     }
                   />

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Driver, Device, Vehicle } from '../types';
+import React, { useState } from 'react';
+import { Driver } from '../types/unified';
 import { 
   TextField, 
   Button, 
@@ -15,7 +15,6 @@ import {
   Switch,
   FormControlLabel
 } from '@mui/material';
-import { driverService } from '../services/driverService';
 
 interface Props {
   initialData?: Partial<Driver>;
@@ -29,31 +28,8 @@ export const DriverForm: React.FC<Props> = ({ initialData = {}, onSave, onCancel
     civil_status: 'SOL',
     ...initialData
   });
-  const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
-  const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadAvailableOptions();
-  }, []);
-
-  const loadAvailableOptions = async () => {
-    try {
-      setLoading(true);
-      const [devices, vehicles] = await Promise.all([
-        driverService.getAvailableDevices(),
-        driverService.getAvailableVehicles()
-      ]);
-      setAvailableDevices(devices);
-      setAvailableVehicles(vehicles);
-    } catch (err) {
-      setError('Error cargando opciones disponibles');
-      console.error('Error loading options:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -73,12 +49,7 @@ export const DriverForm: React.FC<Props> = ({ initialData = {}, onSave, onCancel
       setLoading(true);
       setError(null);
       
-      const driverData = {
-        ...form,
-        full_name: `${form.name} ${form.middle_name || ''} ${form.last_name || ''}`.trim()
-      };
-      
-      await onSave(driverData);
+      await onSave(form);
       
     } catch (err) {
       setError('Error al guardar el conductor');
@@ -252,54 +223,15 @@ export const DriverForm: React.FC<Props> = ({ initialData = {}, onSave, onCancel
       <FormControlLabel
         control={
           <Switch
+            name="is_active"
             checked={form.is_active || false}
             onChange={handleChange}
-            name="is_active"
           />
         }
-        label="Conductor Activo"
-        sx={{ mt: 1 }}
+        label="Activo"
       />
 
       <Divider sx={{ my: 3 }} />
-      
-      <Typography variant="h6" gutterBottom>
-        Vinculaciones
-      </Typography>
-      
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Dispositivo GPS</InputLabel>
-        <Select
-          name="device_id"
-          value={form.device_id || ''}
-          onChange={handleSelectChange('device_id')}
-          label="Dispositivo GPS"
-        >
-          <MenuItem value="">Sin dispositivo</MenuItem>
-          {availableDevices.map((device) => (
-            <MenuItem key={device.imei} value={device.imei}>
-              {device.name || `Device ${device.imei}`} - IMEI: {device.imei}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Vehículo Asignado</InputLabel>
-        <Select
-          name="vehicle_id"
-          value={form.vehicle_id || ''}
-          onChange={handleSelectChange('vehicle_id')}
-          label="Vehículo Asignado"
-        >
-          <MenuItem value="">Sin vehículo</MenuItem>
-          {availableVehicles.map((vehicle) => (
-            <MenuItem key={vehicle.id} value={vehicle.id}>
-              {vehicle.name} - Placa: {vehicle.plate}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
       
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
         <Button onClick={onCancel} disabled={loading}>

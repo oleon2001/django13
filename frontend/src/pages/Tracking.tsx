@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import DeviceMap from '../components/DeviceMap';
-import { Device } from '../types';
+import { Device } from '../types/unified';
 import EnhancedLoading from '../components/EnhancedLoading';
 import FormLoading from '../components/FormLoading';
 import { useRealTimeDevices } from '../hooks/useRealTimeDevices';
@@ -425,13 +425,13 @@ const Tracking: React.FC = () => {
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <Typography variant="body2" color="text.secondary">Latitud:</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                    {selectedDevice.position?.latitude?.toFixed(6) || 'N/A'}
+                                                    {selectedDevice.position?.y?.toFixed(6) || 'N/A'}
                                                 </Typography>
                                             </Box>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <Typography variant="body2" color="text.secondary">Longitud:</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                    {selectedDevice.position?.longitude?.toFixed(6) || 'N/A'}
+                                                    {selectedDevice.position?.x?.toFixed(6) || 'N/A'}
                                                 </Typography>
                                             </Box>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -443,7 +443,7 @@ const Tracking: React.FC = () => {
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <Typography variant="body2" color="text.secondary">Última actualización:</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                    {selectedDevice.lastUpdate ? new Date(selectedDevice.lastUpdate).toLocaleString() : 'N/A'}
+                                                    {selectedDevice.last_log ? new Date(selectedDevice.last_log).toLocaleString() : 'N/A'}
                                                 </Typography>
                                             </Box>
                                         </Box>

@@ -1,5 +1,5 @@
 import api from './api';
-import { PressureSensor, PressureReading, AlarmLog } from '../types';
+import { PressureSensor, PressureReading, AlarmLog } from '../types/unified';
 
 export const sensorService = {
   // Pressure Sensors

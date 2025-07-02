@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Report } from '../../types';
+import { Report } from '../../types/unified';
 import api from '../../services/api';
 
 interface ReportState {

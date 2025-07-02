@@ -1,5 +1,5 @@
 import api from './api';
-import { Driver, TicketLog, TicketDetail } from '../types';
+import { Driver, TicketDetail } from '../types/unified';
 
 export const driverService = {
   // Driver CRUD operations
@@ -28,11 +28,6 @@ export const driverService = {
   },
 
   // Ticket management
-  getTicketLogs: async (): Promise<TicketLog[]> => {
-    const response = await api.get('/api/gps/ticket-logs/');
-    return response.data;
-  },
-
   getTicketDetails: async (
     deviceId?: number,
     startDate?: string,
