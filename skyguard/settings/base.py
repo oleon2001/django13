@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'skyguard.apps.tracking',
     'skyguard.apps.monitoring',
     'skyguard.apps.coordinates',  # New coordinates app
+    'skyguard.apps.reports',  # Reports system
     'skyguard.gps.tracker',  # GPS tracker models
 ]
 
