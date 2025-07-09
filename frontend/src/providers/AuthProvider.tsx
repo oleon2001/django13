@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../types/unified';
+import { User } from '../types';
 
 // ============================================================================
 // AUTH CONTEXT - Contexto para autenticación
@@ -53,17 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           id: 1,
           username: 'admin',
           email: 'admin@skyguard.com',
-          first_name: 'Admin',
-          last_name: 'User',
-          full_name: 'Admin User',
           is_active: true,
-          is_staff: true,
-          is_superuser: true,
-          date_joined: new Date().toISOString(),
-          groups: ['admin'],
-          permissions: ['all'],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         });
       }
     } catch (error) {
@@ -74,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     try {
       setIsLoading(true);
       
@@ -88,17 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: 1,
         username: 'admin',
         email: email,
-        first_name: 'Admin',
-        last_name: 'User',
-        full_name: 'Admin User',
         is_active: true,
-        is_staff: true,
-        is_superuser: true,
-        date_joined: new Date().toISOString(),
-        groups: ['admin'],
-        permissions: ['all'],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
       
       // Guardar token en localStorage
@@ -144,17 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: 2,
         username: userData.username,
         email: userData.email,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        full_name: `${userData.first_name} ${userData.last_name}`,
         is_active: true,
-        is_staff: false,
-        is_superuser: false,
-        date_joined: new Date().toISOString(),
-        groups: ['user'],
-        permissions: ['basic'],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
       
       // Guardar token en localStorage
@@ -182,8 +152,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedUser: User = {
         ...user!,
         ...profileData,
-        full_name: `${profileData.first_name} ${profileData.last_name}`,
-        updated_at: new Date().toISOString(),
       };
       
       // Actualizar estado
@@ -226,7 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const resetPassword = async (token: string, password: string) => {
+  const resetPassword = async (_token: string, _password: string) => {
     try {
       // Llamar al servicio de autenticación
       // await authService.resetPassword(token, password);
@@ -239,7 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string) => {
+  const changePassword = async (_currentPassword: string, _newPassword: string) => {
     try {
       // Llamar al servicio de autenticación
       // await authService.changePassword(currentPassword, newPassword);
