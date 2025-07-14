@@ -284,3 +284,7 @@ GPS_DEVICE_TOKEN = os.environ.get('GPS_DEVICE_TOKEN', 'your-secure-token-here')
 GPS_UPDATE_INTERVAL = 60  # seconds
 GPS_MAX_RETRIES = 3
 GPS_TIMEOUT = 30  # seconds 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+] 

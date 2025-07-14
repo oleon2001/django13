@@ -12,6 +12,7 @@
     "dashboard": "Dashboard",
     "gps": "GPS",
     "deviceManagement": "Gestión de Dispositivos",
+    "geofences": "Geocercas",
     "monitoring": "Monitoreo",
     "tracking": "Rastreo",
     "vehicles": "Vehículos",
@@ -618,6 +619,82 @@
     "notSpecified": "No especificado",
     "notAvailable": "No disponible"
   },
+  
+  "geofence": {
+    "title": "Geocercas",
+    "create_title": "Crear Geocerca",
+    "edit_title": "Editar Geocerca",
+    "deleteConfirmTitle": "Eliminar Geocerca",
+    "deleteConfirmMessage": "¿Está seguro de que desea eliminar esta geocerca? Esta acción no se puede deshacer.",
+    "noGeofences": "No se encontraron geocercas",
+    "itemsFound": "{{count}} geocercas encontradas",
+    "mapTitle": "Mapa de Geocercas",
+    "listTitle": "Lista de Geocercas",
+    "draw_geofence": "Dibujar Geocerca",
+    "assigned_devices": "Dispositivos Asignados",
+    "no_devices_available": "No hay dispositivos disponibles",
+    "notification_settings": "Configuración de Notificaciones",
+    "alert_settings": "Configuración de Alertas",
+    "notification_recipients": "Destinatarios de Notificaciones",
+    "appearance": "Apariencia",
+    
+    "tabs": {
+      "basic_info": "Información Básica",
+      "notifications": "Notificaciones",
+      "map": "Mapa",
+      "devices": "Dispositivos"
+    },
+    
+    "fields": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "type": "Tipo",
+      "is_active": "Activo",
+      "color": "Color de Relleno",
+      "stroke_color": "Color del Borde",
+      "stroke_width": "Ancho del Borde",
+      "notify_on_entry": "Notificar en Entrada",
+      "notify_on_exit": "Notificar en Salida",
+      "alert_on_entry": "Alerta en Entrada",
+      "alert_on_exit": "Alerta en Salida",
+      "notification_cooldown": "Tiempo entre Notificaciones",
+      "notify_emails": "Correos Electrónicos para Notificaciones",
+      "notify_sms": "Notificaciones por SMS"
+    },
+    
+    "types": {
+      "circle": "Círculo",
+      "polygon": "Polígono",
+      "rectangle": "Rectángulo"
+    },
+    
+    "help": {
+      "drawing_circle": "Haz clic en el mapa para establecer el centro, luego arrastra para establecer el radio.",
+      "drawing_polygon": "Haz clic para agregar puntos. Haz doble clic para terminar.",
+      "drawing_rectangle": "Haz clic y arrastra para dibujar un rectángulo.",
+      "notification_cooldown": "Tiempo mínimo (en segundos) entre notificaciones para el mismo evento",
+      "notify_emails": "Lista de direcciones de correo electrónico separadas por comas para recibir notificaciones",
+      "notify_sms": "Lista de números de teléfono separados por comas para recibir notificaciones por SMS",
+      "assigned_devices": "Selecciona los dispositivos que activarán notificaciones para esta geocerca"
+    },
+    
+    "messages": {
+      "createSuccess": "Geocerca creada exitosamente",
+      "updateSuccess": "Geocerca actualizada exitosamente",
+      "deleteSuccess": "Geocerca eliminada exitosamente",
+      "activateSuccess": "Geocerca activada exitosamente",
+      "deactivateSuccess": "Geocerca desactivada exitosamente"
+    },
+    
+    "errors": {
+      "loadError": "Error al cargar las geocercas",
+      "saveError": "Error al guardar la geocerca",
+      "deleteError": "Error al eliminar la geocerca",
+      "updateError": "Error al actualizar la geocerca",
+      "draw_required": "Por favor, dibuja la geocerca en el mapa"
+    }
+  },
+  
   "errors": {
     "network": "Error de conexión de red",
     "server": "Error del servidor",

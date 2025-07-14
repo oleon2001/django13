@@ -519,6 +519,81 @@
       "loadProfile": "Could not load user profile"
     }
   },
+  "geofence": {
+    "title": "Geofences",
+    "create_title": "Create Geofence",
+    "edit_title": "Edit Geofence",
+    "deleteConfirmTitle": "Delete Geofence",
+    "deleteConfirmMessage": "Are you sure you want to delete this geofence? This action cannot be undone.",
+    "noGeofences": "No geofences found",
+    "itemsFound": "{{count}} geofences found",
+    "mapTitle": "Geofence Map",
+    "listTitle": "Geofence List",
+    "draw_geofence": "Draw Geofence",
+    "assigned_devices": "Assigned Devices",
+    "no_devices_available": "No devices available",
+    "notification_settings": "Notification Settings",
+    "alert_settings": "Alert Settings",
+    "notification_recipients": "Notification Recipients",
+    "appearance": "Appearance",
+    
+    "tabs": {
+      "basic_info": "Basic Information",
+      "notifications": "Notifications",
+      "map": "Map",
+      "devices": "Devices"
+    },
+    
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "type": "Type",
+      "is_active": "Active",
+      "color": "Fill Color",
+      "stroke_color": "Border Color",
+      "stroke_width": "Border Width",
+      "notify_on_entry": "Notify on Entry",
+      "notify_on_exit": "Notify on Exit",
+      "alert_on_entry": "Alert on Entry",
+      "alert_on_exit": "Alert on Exit",
+      "notification_cooldown": "Notification Cooldown",
+      "notify_emails": "Notification Emails",
+      "notify_sms": "SMS Notifications"
+    },
+    
+    "types": {
+      "circle": "Circle",
+      "polygon": "Polygon",
+      "rectangle": "Rectangle"
+    },
+    
+    "help": {
+      "drawing_circle": "Click on the map to set the center, then drag to set the radius.",
+      "drawing_polygon": "Click to add points. Double-click to finish.",
+      "drawing_rectangle": "Click and drag to draw a rectangle.",
+      "notification_cooldown": "Minimum time (in seconds) between notifications for the same event",
+      "notify_emails": "Comma-separated list of email addresses to receive notifications",
+      "notify_sms": "Comma-separated list of phone numbers to receive SMS notifications",
+      "assigned_devices": "Select devices that will trigger notifications for this geofence"
+    },
+    
+    "messages": {
+      "createSuccess": "Geofence created successfully",
+      "updateSuccess": "Geofence updated successfully",
+      "deleteSuccess": "Geofence deleted successfully",
+      "activateSuccess": "Geofence activated successfully",
+      "deactivateSuccess": "Geofence deactivated successfully"
+    },
+    
+    "errors": {
+      "loadError": "Error loading geofences",
+      "saveError": "Error saving geofence",
+      "deleteError": "Error deleting geofence",
+      "updateError": "Error updating geofence",
+      "draw_required": "Please draw the geofence on the map"
+    }
+  },
+  
   "auth": {
     "title": "Authentication",
     "login": "Login",

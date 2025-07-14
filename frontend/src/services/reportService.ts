@@ -13,7 +13,7 @@ export interface Report {
 class ReportService {
   async getAll(): Promise<Report[]> {
     try {
-      const response = await api.get('/reports/');
+      const response = await api.get('/api/reports/');
       return response.data;
     } catch (error) {
       console.error('Error fetching reports:', error);
@@ -23,7 +23,7 @@ class ReportService {
 
   async getById(id: number): Promise<Report | null> {
     try {
-      const response = await api.get(`/reports/${id}/`);
+      const response = await api.get(`/api/reports/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching report:', error);
@@ -33,7 +33,7 @@ class ReportService {
 
   async create(data: Partial<Report>): Promise<Report | null> {
     try {
-      const response = await api.post('/reports/', data);
+      const response = await api.post('/api/reports/', data);
       return response.data;
     } catch (error) {
       console.error('Error creating report:', error);
@@ -43,7 +43,7 @@ class ReportService {
 
   async download(id: number): Promise<Blob | null> {
     try {
-      const response = await api.get(`/reports/${id}/download/`, {
+      const response = await api.get(`/api/reports/${id}/download/`, {
         responseType: 'blob'
       });
       return response.data;

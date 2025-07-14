@@ -4,6 +4,12 @@ export { BaseLayout } from './Layout/BaseLayout';
 // Enhanced Loading Components
 export { default as EnhancedLoading } from './EnhancedLoading';
 
+// Modal Components
+export * from './Modals';
+
+// Geofence Components
+export * from './Geofence';
+
 // Enhanced Card Components
 export { default as EnhancedCard, MetricCard, ActionCard } from './Cards/EnhancedCard';
 

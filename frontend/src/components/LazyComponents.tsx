@@ -50,6 +50,10 @@ export const LazyGPS = lazy(() =>
   import(/* webpackChunkName: "gps" */ '../pages/GPS')
 );
 
+export const LazyGeofence = lazy(() => 
+  import(/* webpackChunkName: "geofence" */ '../components/Geofence/GeofenceManager')
+);
+
 export const LazyTracking = lazy(() => 
   import(/* webpackChunkName: "tracking" */ '../pages/Tracking')
 );
@@ -133,8 +137,14 @@ export const MonitoringWithLoading = withLazyLoading(
 );
 
 export const GPSWithLoading = withLazyLoading(
-  LazyGPS, 
-  'Cargando GPS...', 
+  LazyGPS,
+  'Cargando módulo GPS...',
+  true
+);
+
+export const GeofenceWithLoading = withLazyLoading(
+  LazyGeofence,
+  'Cargando geocercas...',
   true
 );
 
@@ -228,6 +238,7 @@ export default {
   DashboardWithLoading,
   MonitoringWithLoading,
   GPSWithLoading,
+  GeofenceWithLoading,
   TrackingWithLoading,
   VehiclesWithLoading,
   DriversWithLoading,

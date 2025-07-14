@@ -11,6 +11,7 @@ import {
   DashboardWithLoading,
   MonitoringWithLoading,
   GPSWithLoading,
+  GeofenceWithLoading,
   TrackingWithLoading,
   VehiclesWithLoading,
   DriversWithLoading,
@@ -100,6 +101,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <GPSWithLoading />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/geofences"
+                  element={
+                    <ProtectedRoute>
+                      <GeofenceWithLoading />
                     </ProtectedRoute>
                   }
                 />

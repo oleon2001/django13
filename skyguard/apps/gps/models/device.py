@@ -387,6 +387,23 @@ class GeoFence(BaseGeoFence):
     notify_on_exit = models.BooleanField(default=True)
     notify_owners = models.ManyToManyField(User, related_name='notified_fences', blank=True)
     
+    # Visual properties for frontend
+    color = models.CharField(max_length=7, default='#3388ff', help_text='Fill color in hex format')
+    stroke_color = models.CharField(max_length=7, default='#3388ff', help_text='Border color in hex format')
+    stroke_width = models.IntegerField(default=2, help_text='Border width in pixels')
+    
+    # Alert settings
+    alert_on_entry = models.BooleanField(default=False, help_text='Show alert when device enters geofence')
+    alert_on_exit = models.BooleanField(default=False, help_text='Show alert when device exits geofence')
+    
+    # Notification settings
+    notification_cooldown = models.IntegerField(default=300, help_text='Minimum seconds between notifications')
+    notify_emails = models.JSONField(default=list, blank=True, help_text='List of email addresses for notifications')
+    notify_sms = models.JSONField(default=list, blank=True, help_text='List of phone numbers for SMS notifications')
+    
+    # Device relationship
+    devices = models.ManyToManyField(GPSDevice, related_name='geofences', blank=True)
+    
     # Migrated field from old backend
     base = models.IntegerField(null=True, blank=True, choices=GPSDevice.ROUTE_CHOICES)
 

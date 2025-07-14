@@ -11,6 +11,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/vehicles', label: 'Vehículos' },
+  { path: '/geofences', label: 'Geocercas' },
   { path: '/reports', label: 'Reportes' },
   { path: '/settings', label: 'Configuración' },
 ];

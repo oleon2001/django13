@@ -28,7 +28,6 @@ import {
   Dashboard as DashboardIcon,
   LocationOn as LocationOnIcon,
   MonitorHeart as MonitorHeartIcon,
-  TrackChanges as TrackChangesIcon,
   DirectionsCar as DirectionsCarIcon,
   BarChart as BarChartIcon,
   Settings as SettingsIcon,
@@ -80,11 +79,11 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
       path: '/dashboard',
       badge: 3
     },
-    { 
-      text: t('navigation.gps'), 
-      icon: <LocationOnIcon />, 
-      path: '/gps' 
-    },
+    // { 
+    //   text: t('navigation.gps'), 
+    //   icon: <LocationOnIcon />, 
+    //   path: '/gps' 
+    // },
     { 
       text: t('navigation.deviceManagement'), 
       icon: <DevicesIcon />, 
@@ -92,14 +91,14 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({ children }) => {
       badge: 2
     },
     { 
+      text: t('navigation.geofences'), 
+      icon: <LocationOnIcon />, 
+      path: '/geofences' 
+    },
+    { 
       text: t('navigation.monitoring'), 
       icon: <MonitorHeartIcon />, 
       path: '/monitoring' 
-    },
-    { 
-      text: t('navigation.tracking'), 
-      icon: <TrackChangesIcon />, 
-      path: '/tracking' 
     },
     { 
       text: t('navigation.fleet'), 
