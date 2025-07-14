@@ -8,7 +8,7 @@ from skyguard.apps.gps.models import GPSDevice
 class UdpSession(models.Model):
     """UDP session for AVL devices."""
     session = models.AutoField('session', primary_key=True)
-    imei = models.ForeignKey(GPSDevice, null=False, unique=True, on_delete=models.CASCADE)
+    imei = models.OneToOneField(GPSDevice, null=False, on_delete=models.CASCADE)
     expires = models.DateTimeField('expires', null=False)
     host = models.CharField("host", max_length=128, null=False)
     port = models.IntegerField("port", null=False)

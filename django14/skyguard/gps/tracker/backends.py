@@ -1,9 +1,25 @@
+# -*- coding: utf-8 -*-
+# DEPRECATED: Custom authentication backend - NO LONGER IN USE
+# This backend was designed for custom user model but was never properly implemented
+# The system uses django.contrib.auth.backends.ModelBackend instead
+# KEPT FOR HISTORICAL REFERENCE ONLY
+
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import get_model
 
 class TrackerUserBackend(ModelBackend):
+    """
+    DEPRECATED: Custom authentication backend for tracker users.
+    
+    This backend was intended to work with a custom User model defined in
+    settings.TRACKER_USER_MODEL, but the custom User model was never implemented.
+    
+    The system currently uses the standard Django authentication backend.
+    
+    STATUS: DISCONTINUED - NOT IN USE
+    """
     def authenticate(self, username=None, password=None):
         try:
             user = self.user_class.objects.get(username=username)

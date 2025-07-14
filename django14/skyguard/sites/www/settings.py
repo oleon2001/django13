@@ -68,10 +68,18 @@ LOGIN_URL='/login'
 LOGIN_REDIRECT_URL='/'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
+# DEPRECATED: Custom authentication backend configuration
+# The TrackerUserBackend was never properly implemented and is not used
+# The system uses the standard Django authentication backend
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
+
+# DEPRECATED: Custom user model setting - NOT IMPLEMENTED
+# The custom User model was never created, so this setting is ignored
+# The system uses the standard Django User model
 TRACKER_USER_MODEL = 'tracker.User'
+
 TRACKER_LOGO = 'logo64.png'
 TRACKER_API_KEY = 'AIzaSyDAJgTMNvIGnRCrnqH6Ok8kayI-shZhRPI'
 

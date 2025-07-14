@@ -1,5 +1,6 @@
 """
-URLs for the reports application.
+Report URLs.
+Migrated from legacy django14 system to modern architecture.
 """
 from django.urls import path
 from . import views
@@ -7,20 +8,33 @@ from . import views
 app_name = 'reports'
 
 urlpatterns = [
-    # Report types and generation
-    path('available/', views.available_reports, name='available_reports'),
-    path('generate/', views.generate_report, name='generate_report'),
-    path('device/<int:device_id>/', views.device_reports, name='device_reports'),
+    # Dashboard
+    path('', views.report_dashboard, name='dashboard'),
     
-    # Templates management
-    path('templates/', views.report_templates, name='report_templates'),
-    path('templates/create/', views.create_report_template, name='create_report_template'),
-    path('templates/<int:template_id>/delete/', views.delete_report_template, name='delete_report_template'),
+    # Modern report views
+    path('ticket/', views.ticket_report_view, name='ticket_report'),
+    path('statistics/', views.statistics_report_view, name='statistics_report'),
+    path('people/', views.people_count_report_view, name='people_count_report'),
+    path('alarm/', views.alarm_report_view, name='alarm_report'),
+    path('route/', views.route_report_view, name='route_report'),
     
-    # Executions and statistics
-    path('executions/', views.report_executions, name='report_executions'),
-    path('statistics/', views.report_statistics, name='report_statistics'),
+    # Report executions
+    path('executions/', views.report_executions_list, name='executions_list'),
+    path('executions/<int:pk>/', views.report_execution_detail, name='execution_detail'),
     
-    # Download reports
-    path('download/<int:execution_id>/', views.ReportDownloadView.as_view(), name='download_report'),
+    # API endpoints
+    path('api/generate/', views.api_generate_report, name='api_generate_report'),
+    path('api/reports/', views.api_available_reports, name='api_available_reports'),
+    path('api/routes/', views.api_route_choices, name='api_route_choices'),
+    
+    # Legacy compatibility URLs (migrated from django14)
+    path('legacy/ticket/', views.legacy_ticket_report, name='legacy_ticket_report'),
+    path('legacy/people/', views.legacy_people_count_report, name='legacy_people_count_report'),
+    path('legacy/alarm/', views.legacy_alarm_report, name='legacy_alarm_report'),
+    
+    # Legacy URL patterns for backward compatibility
+    path('rutas/conteo/', views.legacy_people_count_report, name='legacy_people_count'),
+    path('rutas/csv/', views.legacy_people_count_report, name='legacy_people_count_csv'),
+    path('rutas/alarma/', views.legacy_alarm_report, name='legacy_alarm'),
+    path('ptickets/', views.legacy_ticket_report, name='legacy_ticket_pdf'),
 ] 

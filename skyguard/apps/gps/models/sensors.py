@@ -81,7 +81,7 @@ class AlarmLog(models.Model):
 class Tracking(models.Model):
     """Model for tracking sessions (migrated from old backend)."""
     tracking = models.CharField(_('tracking'), max_length=40, unique=True)
-    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='tracking_sessions')
+    device = models.ForeignKey(GPSDevice, on_delete=models.CASCADE, related_name='legacy_tracking_sessions')
     stop_fence = models.ForeignKey('GeoFence', on_delete=models.CASCADE, related_name='stop_sessions')
     fences = models.ManyToManyField('GeoFence', related_name='tracking_events')
     start = models.DateTimeField(db_index=True)

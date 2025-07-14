@@ -9,8 +9,8 @@ from PyCRC.CRCCCITT import CRCCCITT
 from django.db import transaction, DatabaseError, IntegrityError, connection
 from django.contrib.gis.geos import Point
 from django.conf import settings
-from gps.tracker.models import SGAvl
-from gps.udp.models import UdpSession
+from skyguard.apps.gps.models.device import GPSDevice
+from skyguard.apps.gps.models.protocols import UDPSession
 
 # Constants
 PKTID_LOGIN = 0x01
@@ -36,26 +36,26 @@ def send_cmd(session, cmd):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(cmd, (session.host, session.port))
 
-def blu_avl_reset(name):
+def blu_avl_reset(device_name):
     """Reset a Bluetooth AVL device."""
-    avl = SGAvl.objects.get(name=name)
-    session = UdpSession.objects.get(imei=avl)
+    device = GPSDevice.objects.get(name=device_name)
+    session = UDPSession.objects.get(device=device)
     send_cmd(session, CMDID_RESET)
 
-def blu_avl_info(name):
+def blu_avl_info(device_name):
     """Get information from a Bluetooth AVL device."""
-    avl = SGAvl.objects.get(name=name)
-    session = UdpSession.objects.get(imei=avl)
+    device = GPSDevice.objects.get(name=device_name)
+    session = UDPSession.objects.get(device=device)
     send_cmd(session, CMDID_DEVINFO)
 
-def blu_avl_motor_on(name):
+def blu_avl_motor_on(device_name):
     """Turn on the motor of a Bluetooth AVL device."""
-    avl = SGAvl.objects.get(name=name)
-    session = UdpSession.objects.get(imei=avl)
+    device = GPSDevice.objects.get(name=device_name)
+    session = UDPSession.objects.get(device=device)
     send_cmd(session, CMDID_MOTORON)
 
-def blu_avl_motor_off(name):
+def blu_avl_motor_off(device_name):
     """Turn off the motor of a Bluetooth AVL device."""
-    avl = SGAvl.objects.get(name=name)
-    session = UdpSession.objects.get(imei=avl)
+    device = GPSDevice.objects.get(name=device_name)
+    session = UDPSession.objects.get(device=device)
     send_cmd(session, CMDID_MOTOROFF) 

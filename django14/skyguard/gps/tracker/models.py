@@ -60,10 +60,14 @@ EDOCIVIL_CHOICES = (
 	("VIU", "Viudo"),
 	("DIV", "Divorciado")
 )
-#lass User(auth_User):
-#	user = models.OneToOneField(auth_User, parent_link = True)
-#	site = models.ForeignKey(Site, null = False, default = settings.SITE_ID)
-#	objects = UserManager()
+
+# DEPRECATED: Custom User model - NEVER IMPLEMENTED
+# This commented code shows an attempt to create a custom User model
+# that was never fully implemented. The system uses django.contrib.auth.models.User
+# lass User(auth_User):
+# 	user = models.OneToOneField(auth_User, parent_link = True)
+# 	site = models.ForeignKey(Site, null = False, default = settings.SITE_ID)
+# 	objects = UserManager()
 
 class Stats(models.Model):
 	name = models.CharField(_('name'),null = False, max_length = 20)

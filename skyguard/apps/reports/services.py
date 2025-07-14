@@ -1,29 +1,106 @@
 """
 Report generation services.
+Migrated from legacy django14 system to modern architecture.
 """
 import csv
 import json
-from datetime import datetime, timedelta, time
+import os
+from datetime import datetime, timedelta, time, date
 from decimal import Decimal
 from io import StringIO, BytesIO
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from django.db.models import Avg, Max, Min, Sum, Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, BaseDocTemplate, PageTemplate, Frame, PageBreak
 from reportlab.lib.styles import ParagraphStyle
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+import reportlab.rl_config
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
-from skyguard.apps.gps.models import GPSDevice, GPSEvent, GPSLocation
+from skyguard.apps.gps.models import GPSDevice, GPSEvent, GPSLocation, PressureWeightLog, IOEvent, GSMEvent
 from .models import (
     ReportTemplate, ReportExecution, TicketReport, 
     StatisticsReport, PeopleCountReport, AlarmReport
 )
+
+# Configure ReportLab
+reportlab.rl_config.warnOnMissingFontGlyphs = 0
+
+# Register fonts (adjust paths as needed)
+try:
+    pdfmetrics.registerFont(TTFont('Arial', '/usr/share/fonts/truetype/arial.ttf'))
+    pdfmetrics.registerFont(TTFont('ArialNarrow', '/usr/share/fonts/truetype/arialn.ttf'))
+except:
+    # Fallback to default fonts
+    pass
+
+
+# Route choices from legacy system
+RUTA_CHOICES = (
+    (92, "Ruta 4"),
+    (112, "Ruta 6"),
+    (114, "Ruta 12"),
+    (115, "Ruta 31"),
+    (90, "Ruta 82"),
+    (88, "Ruta 118"),
+    (215, "Ruta 140"),
+    (89, "Ruta 202"),
+    (116, "Ruta 207"),
+    (96, "Ruta 400"),
+    (97, "Ruta 408"),
+)
+
+RUTA_CHOICES2 = (
+    (90, "Ruta 82"),
+    (92, "Ruta 4"),
+    (96, "Ruta 400"),
+    (97, "Ruta 408"),
+    (112, "Ruta 6"),
+    (115, "Ruta 31"),
+    (116, "Ruta 207"),
+)
+
+
+def find_choice(choice):
+    """Find route name by choice value."""
+    for i in RUTA_CHOICES:
+        if i[0] == int(choice):
+            return i[1]
+    return "Ruta Desconocida"
+
+
+def day_range_x(date_obj, start_time, stop_time):
+    """Create day range with time offsets."""
+    start_dt = datetime.combine(date_obj, time(3, 0))  # 3 AM
+    end_dt = start_dt + timedelta(days=1)
+    return (start_dt, end_dt)
+
+
+def get_people_count(sensor, start_time, end_time):
+    """Get people count for a sensor in time range."""
+    logs = PressureWeightLog.objects.filter(
+        sensor=sensor,
+        timestamp__range=(start_time, end_time)
+    ).order_by('timestamp')
+    
+    if not logs:
+        return 0, 0
+    
+    # Calculate people count from pressure logs
+    total_in = sum(log.psi1 for log in logs if log.psi1)
+    total_out = sum(log.psi2 for log in logs if log.psi2)
+    
+    return total_in, total_out
 
 
 class ReportGenerator:
@@ -33,15 +110,29 @@ class ReportGenerator:
         """Initialize the report generator."""
         self.user = user
         self.styles = getSampleStyleSheet()
+        self.boxgrid = TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('BOX', (0, 0), (-1, -1), 1.5, colors.black),
+            ('BOX', (0, 0), (-1, 0), 1.5, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightyellow),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('LINEBELOW', (0, 'splitlast'), (-1, 'splitlast'), 1.5, colors.black),
+            ('ALIGN', (0, 0), (-1, 1), 'CENTER'),
+            ('VALIGN', (0, 2), (-1, -1), "TOP"),
+        ])
     
     def generate_pdf(self, data: List[List], title: str, filename: str) -> HttpResponse:
         """Generate PDF report."""
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+        response['Content-Disposition'] = f'filename="{filename}.pdf"'
         
-        doc = SimpleDocTemplate(response, pagesize=letter, 
-                              leftMargin=0.25*inch, rightMargin=0.25*inch,
-                              topMargin=0.25*inch, bottomMargin=0.25*inch)
+        doc = BaseDocTemplate(response, pagesize=letter, 
+                            leftMargin=0.25*inch, rightMargin=0.25*inch,
+                            topMargin=0.25*inch, bottomMargin=0.25*inch)
+        
+        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+        template = PageTemplate(id='page', frames=frame)
+        doc.addPageTemplates([template])
         
         story = []
         
@@ -51,26 +142,14 @@ class ReportGenerator:
             parent=self.styles['Heading1'],
             fontSize=16,
             spaceAfter=30,
-            alignment=1  # Center alignment
+            alignment=1
         )
         story.append(Paragraph(title, title_style))
         story.append(Spacer(1, 12))
         
         # Create table
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-            ('BOX', (0, 0), (-1, -1), 1.5, colors.black),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightyellow),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-        ]))
+        table = Table(data, repeatRows=2)
+        table.setStyle(self.boxgrid)
         
         story.append(table)
         doc.build(story)
@@ -86,35 +165,6 @@ class ReportGenerator:
             writer.writerow(row)
         
         return response
-    
-    def generate_excel(self, data: List[List], title: str, filename: str) -> HttpResponse:
-        """Generate Excel report."""
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
-        
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Report"
-        
-        # Add title
-        ws['A1'] = title
-        ws['A1'].font = Font(bold=True, size=16)
-        ws.merge_cells('A1:E1')
-        ws['A1'].alignment = Alignment(horizontal='center')
-        
-        # Add data
-        for row_idx, row in enumerate(data, start=3):
-            for col_idx, cell_value in enumerate(row, start=1):
-                ws.cell(row=row_idx, column=col_idx, value=cell_value)
-        
-        # Style header row
-        for col in range(1, len(data[0]) + 1):
-            cell = ws.cell(row=3, column=col)
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-        
-        wb.save(response)
-        return response
 
 
 class TicketReportGenerator(ReportGenerator):
@@ -127,12 +177,13 @@ class TicketReportGenerator(ReportGenerator):
         events = GPSEvent.objects.filter(
             device=device,
             timestamp__range=(start_date, end_date),
-            type='TICKET'
+            event_type='TICKET'
         ).order_by('timestamp')
         
         # Prepare data
         data = [
-            ['Fecha', 'Hora', 'Conductor', 'Total', 'Recibido', 'Diferencia', 'Detalles']
+            ['Reporte de Tickets'],
+            ['Ticket', 'Unidad', 'Chofer', 'Hora', 'Vueltas', 'Inicio', 'Fin', 'Duración', 'Pasaje', 'Ord', 'Pref', 'Sistema', 'Liq', 'Diferencia']
         ]
         
         total_amount = Decimal('0.00')
@@ -150,32 +201,36 @@ class TicketReportGenerator(ReportGenerator):
             
             data.append([
                 event.timestamp.strftime('%Y-%m-%d'),
-                event.timestamp.strftime('%H:%M:%S'),
+                device.name,
                 driver_name,
+                event.timestamp.strftime('%H:%M:%S'),
+                ticket_data.get('rounds', 0),
+                ticket_data.get('start_time', ''),
+                ticket_data.get('end_time', ''),
+                ticket_data.get('duration', ''),
                 f"${amount:.2f}",
+                ticket_data.get('normal_tickets', 0),
+                ticket_data.get('pref_tickets', 0),
+                ticket_data.get('system_amount', 0),
                 f"${received:.2f}",
-                f"${difference:.2f}",
-                ticket_data.get('details', '')
+                f"${difference:.2f}"
             ])
         
         # Add totals row
         data.append([
-            'TOTALES', '', '', 
-            f"${total_amount:.2f}", 
+            'TOTALES', '', '', '', '', '', '', '', 
+            f"${total_amount:.2f}", '', '', '', 
             f"${total_received:.2f}", 
-            f"${total_amount - total_received:.2f}", 
-            ''
+            f"${total_amount - total_received:.2f}"
         ])
         
-        title = f"Reporte de Tickets - {device.name} ({start_date.date()} - {end_date.date()})"
-        filename = f"ticket_report_{device.imei}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+        title = f"Tickets.{device.name}.{start_date.strftime('%Y.%m.%d')}"
+        filename = f"Tickets.{device.name}.{start_date.strftime('%Y.%m.%d')}"
         
         if format == 'pdf':
             return self.generate_pdf(data, title, filename)
         elif format == 'csv':
             return self.generate_csv(data, filename)
-        elif format == 'xlsx':
-            return self.generate_excel(data, title, filename)
         else:
             raise ValueError(f"Unsupported format: {format}")
 
@@ -197,58 +252,48 @@ class StatisticsReportGenerator(ReportGenerator):
         average_speed = self._calculate_average_speed(locations)
         operating_hours = self._calculate_operating_hours(locations)
         
-        # Get events
-        events = GPSEvent.objects.filter(
-            device=device,
-            timestamp__range=(start_date, end_date)
-        )
-        
-        total_events = events.count()
-        alarm_events = events.filter(type='ALARM').count()
+        # Get people count data
+        people_count = self._get_people_count(device, start_date, end_date)
         
         # Prepare data
         data = [
-            ['Métrica', 'Valor', 'Unidad']
+            [f'Stats.{device.name}.{start_date.strftime("%Y.%m.%d")}'],
+            ['Unidad', 'Kms', 'Sub. Del.', 'Sub. Tra.', 'Baj. Del.', 'Baj. Tra.']
         ]
         
-        data.extend([
-            ['Distancia Total', f"{total_distance:.2f}", 'km'],
-            ['Velocidad Promedio', f"{average_speed:.2f}", 'km/h'],
-            ['Horas Operación', f"{operating_hours:.2f}", 'horas'],
-            ['Total Eventos', str(total_events), 'eventos'],
-            ['Eventos de Alarma', str(alarm_events), 'alarmas'],
-            ['Última Actualización', device.last_connection.strftime('%Y-%m-%d %H:%M:%S') if device.last_connection else 'N/A', ''],
+        data.append([
+            device.name,
+            f"{total_distance:.2f}",
+            people_count.get('sub_del', 0),
+            people_count.get('sub_tra', 0),
+            people_count.get('baj_del', 0),
+            people_count.get('baj_tra', 0)
         ])
         
-        title = f"Reporte de Estadísticas - {device.name} ({start_date.date()} - {end_date.date()})"
-        filename = f"stats_report_{device.imei}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+        title = f"Stats.{device.name}.{start_date.strftime('%Y.%m.%d')}"
+        filename = f"Stats.{device.name}.{start_date.strftime('%Y.%m.%d')}"
         
         if format == 'pdf':
             return self.generate_pdf(data, title, filename)
         elif format == 'csv':
             return self.generate_csv(data, filename)
-        elif format == 'xlsx':
-            return self.generate_excel(data, title, filename)
         else:
             raise ValueError(f"Unsupported format: {format}")
     
     def _calculate_total_distance(self, locations) -> float:
-        """Calculate total distance from location points."""
-        if not locations:
+        """Calculate total distance from location data."""
+        if len(locations) < 2:
             return 0.0
         
         total_distance = 0.0
-        prev_location = None
-        
-        for location in locations:
-            if prev_location and location.position and prev_location.position:
-                # Calculate distance between points
-                distance = self._haversine_distance(
-                    prev_location.position.y, prev_location.position.x,
-                    location.position.y, location.position.x
-                )
-                total_distance += distance
-            prev_location = location
+        for i in range(1, len(locations)):
+            prev_loc = locations[i-1]
+            curr_loc = locations[i]
+            distance = self._haversine_distance(
+                prev_loc.position.y, prev_loc.position.x,
+                curr_loc.position.y, curr_loc.position.x
+            )
+            total_distance += distance
         
         return total_distance
     
@@ -257,7 +302,7 @@ class StatisticsReportGenerator(ReportGenerator):
         if not locations:
             return 0.0
         
-        speeds = [loc.speed for loc in locations if loc.speed and loc.speed > 0]
+        speeds = [loc.speed for loc in locations if loc.speed]
         return sum(speeds) / len(speeds) if speeds else 0.0
     
     def _calculate_operating_hours(self, locations) -> float:
@@ -265,14 +310,29 @@ class StatisticsReportGenerator(ReportGenerator):
         if not locations:
             return 0.0
         
-        first_location = locations.first()
-        last_location = locations.last()
+        start_time = locations.first().timestamp
+        end_time = locations.last().timestamp
+        duration = end_time - start_time
+        return duration.total_seconds() / 3600.0
+    
+    def _get_people_count(self, device, start_date, end_date) -> Dict[str, int]:
+        """Get people count statistics."""
+        logs = PressureWeightLog.objects.filter(
+            device=device,
+            timestamp__range=(start_date, end_date)
+        )
         
-        if first_location and last_location:
-            duration = last_location.timestamp - first_location.timestamp
-            return duration.total_seconds() / 3600  # Convert to hours
+        sub_del = sum(log.psi1 for log in logs if log.psi1)
+        sub_tra = sum(log.psi1 for log in logs if log.psi1 and log.psi1 > 0)
+        baj_del = sum(log.psi2 for log in logs if log.psi2)
+        baj_tra = sum(log.psi2 for log in logs if log.psi2 and log.psi2 > 0)
         
-        return 0.0
+        return {
+            'sub_del': sub_del,
+            'sub_tra': sub_tra,
+            'baj_del': baj_del,
+            'baj_tra': baj_tra
+        }
     
     def _haversine_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance between two points using Haversine formula."""
@@ -296,59 +356,48 @@ class PeopleCountReportGenerator(ReportGenerator):
     def generate_people_count_report(self, device: GPSDevice, start_date: datetime, 
                                    end_date: datetime, format: str = 'pdf') -> HttpResponse:
         """Generate people count report for a device."""
-        # Get people count events
-        events = GPSEvent.objects.filter(
+        # Get pressure weight logs
+        logs = PressureWeightLog.objects.filter(
             device=device,
-            timestamp__range=(start_date, end_date),
-            type='PEOPLE_COUNT'
+            timestamp__range=(start_date, end_date)
         ).order_by('timestamp')
-        
-        # Group by hour
-        hourly_data = {}
-        total_people = 0
-        
-        for event in events:
-            hour = event.timestamp.hour
-            count = event.raw_data.get('count', 0)
-            
-            if hour not in hourly_data:
-                hourly_data[hour] = 0
-            hourly_data[hour] += count
-            total_people += count
-        
-        # Find peak hour
-        peak_hour = max(hourly_data.items(), key=lambda x: x[1]) if hourly_data else (0, 0)
         
         # Prepare data
         data = [
-            ['Hora', 'Personas', 'Porcentaje']
+            [f'Conteo de Personas - {device.name}'],
+            ['Fecha', 'Hora', 'Sensor', 'Subidas', 'Bajadas', 'Total']
         ]
         
-        for hour in range(24):
-            count = hourly_data.get(hour, 0)
-            percentage = (count / total_people * 100) if total_people > 0 else 0
+        total_in = 0
+        total_out = 0
+        
+        for log in logs:
+            in_count = log.psi1 if log.psi1 else 0
+            out_count = log.psi2 if log.psi2 else 0
+            total_in += in_count
+            total_out += out_count
+            
             data.append([
-                f"{hour:02d}:00",
-                str(count),
-                f"{percentage:.1f}%"
+                log.timestamp.strftime('%Y-%m-%d'),
+                log.timestamp.strftime('%H:%M:%S'),
+                log.sensor,
+                in_count,
+                out_count,
+                in_count + out_count
             ])
         
-        # Add summary
-        data.extend([
-            ['', '', ''],
-            ['TOTAL', str(total_people), '100%'],
-            ['HORA PICO', f"{peak_hour[0]:02d}:00", f"{peak_hour[1]} personas"]
+        # Add totals
+        data.append([
+            'TOTALES', '', '', total_in, total_out, total_in + total_out
         ])
         
-        title = f"Reporte de Conteo de Personas - {device.name} ({start_date.date()} - {end_date.date()})"
+        title = f"Conteo de Personas - {device.name} ({start_date.date()} - {end_date.date()})"
         filename = f"people_count_{device.imei}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
         
         if format == 'pdf':
             return self.generate_pdf(data, title, filename)
         elif format == 'csv':
             return self.generate_csv(data, filename)
-        elif format == 'xlsx':
-            return self.generate_excel(data, title, filename)
         else:
             raise ValueError(f"Unsupported format: {format}")
 
@@ -363,65 +412,127 @@ class AlarmReportGenerator(ReportGenerator):
         events = GPSEvent.objects.filter(
             device=device,
             timestamp__range=(start_date, end_date),
-            type='ALARM'
+            event_type__in=['ALARM', 'WARNING', 'CRITICAL']
         ).order_by('timestamp')
         
-        # Group alarms by type
-        alarm_types = {}
+        # Prepare data
+        data = [
+            [f'Alarmas del dia: {start_date.strftime("%A %d. %B %Y")}'],
+            ['Unidad', 'Sensor', 'ID', 'Duración', 'Hora', 'Tipo']
+        ]
+        
+        total_alarms = 0
         critical_alarms = 0
         warning_alarms = 0
         
         for event in events:
-            alarm_type = event.raw_data.get('alarm_type', 'Unknown')
-            severity = event.raw_data.get('severity', 'warning')
+            alarm_data = event.raw_data.get('alarm_data', {})
+            sensor = alarm_data.get('sensor', 'N/A')
+            alarm_id = alarm_data.get('alarm_id', 'N/A')
+            duration = alarm_data.get('duration', 'N/A')
+            alarm_type = event.event_type
             
-            if alarm_type not in alarm_types:
-                alarm_types[alarm_type] = 0
-            alarm_types[alarm_type] += 1
-            
-            if severity == 'critical':
+            total_alarms += 1
+            if alarm_type == 'CRITICAL':
                 critical_alarms += 1
-            else:
+            elif alarm_type == 'WARNING':
                 warning_alarms += 1
-        
-        # Prepare data
-        data = [
-            ['Tipo de Alarma', 'Cantidad', 'Porcentaje']
-        ]
-        
-        total_alarms = len(events)
-        
-        for alarm_type, count in alarm_types.items():
-            percentage = (count / total_alarms * 100) if total_alarms > 0 else 0
+            
             data.append([
-                alarm_type,
-                str(count),
-                f"{percentage:.1f}%"
+                device.name,
+                sensor,
+                alarm_id,
+                duration,
+                event.timestamp.strftime('%H:%M:%S'),
+                alarm_type
             ])
         
         # Add summary
-        data.extend([
-            ['', '', ''],
-            ['TOTAL ALARMAS', str(total_alarms), '100%'],
-            ['ALARMAS CRÍTICAS', str(critical_alarms), ''],
-            ['ALARMAS DE ADVERTENCIA', str(warning_alarms), '']
+        data.append([
+            'RESUMEN', '', '', '', '', ''
+        ])
+        data.append([
+            'Total Alarmas', total_alarms, '', '', '', ''
+        ])
+        data.append([
+            'Alarmas Críticas', critical_alarms, '', '', '', ''
+        ])
+        data.append([
+            'Alarmas de Advertencia', warning_alarms, '', '', '', ''
         ])
         
-        title = f"Reporte de Alarmas - {device.name} ({start_date.date()} - {end_date.date()})"
-        filename = f"alarm_report_{device.imei}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+        title = f"Alarmas - {device.name} ({start_date.date()})"
+        filename = f"alarm_report_{device.imei}_{start_date.strftime('%Y%m%d')}"
         
         if format == 'pdf':
             return self.generate_pdf(data, title, filename)
         elif format == 'csv':
             return self.generate_csv(data, filename)
-        elif format == 'xlsx':
-            return self.generate_excel(data, title, filename)
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
+
+class RouteReportGenerator(ReportGenerator):
+    """Generate route-specific reports."""
+    
+    def generate_route_people_report(self, route_number: int, report_date: date, 
+                                   format: str = 'pdf') -> HttpResponse:
+        """Generate people count report for a specific route."""
+        # Get devices for the route
+        devices = GPSDevice.objects.filter(route=route_number)
+        
+        # Prepare data
+        data = [
+            [f'Conteo de Personas - {find_choice(route_number)} - {report_date.strftime("%A %d. %B %Y")}'],
+            ['Unidad', 'Sensor', 'Subidas', 'Bajadas', 'Total', 'Diferencia']
+        ]
+        
+        total_up = 0
+        total_down = 0
+        
+        for device in devices:
+            # Get people count for the device
+            start_time = datetime.combine(report_date, time(3, 0))
+            end_time = start_time + timedelta(days=1)
+            
+            logs = PressureWeightLog.objects.filter(
+                device=device,
+                timestamp__range=(start_time, end_time)
+            )
+            
+            device_up = sum(log.psi1 for log in logs if log.psi1)
+            device_down = sum(log.psi2 for log in logs if log.psi2)
+            
+            total_up += device_up
+            total_down += device_down
+            
+            data.append([
+                device.name,
+                'Sensor Principal',
+                device_up,
+                device_down,
+                device_up + device_down,
+                abs(device_up - device_down)
+            ])
+        
+        # Add totals
+        data.append([
+            'TOTALES', '', total_up, total_down, total_up + total_down, abs(total_up - total_down)
+        ])
+        
+        title = f"Conteo de Personas - {find_choice(route_number)} - {report_date.strftime('%Y.%m.%d')}"
+        filename = f"people_count_route_{route_number}_{report_date.strftime('%Y%m%d')}"
+        
+        if format == 'pdf':
+            return self.generate_pdf(data, title, filename)
+        elif format == 'csv':
+            return self.generate_csv(data, filename)
         else:
             raise ValueError(f"Unsupported format: {format}")
 
 
 class ReportService:
-    """Main service for report operations."""
+    """Main service for report generation."""
     
     def __init__(self, user):
         """Initialize the report service."""
@@ -430,52 +541,61 @@ class ReportService:
         self.stats_generator = StatisticsReportGenerator(user)
         self.people_generator = PeopleCountReportGenerator(user)
         self.alarm_generator = AlarmReportGenerator(user)
+        self.route_generator = RouteReportGenerator(user)
     
     def generate_report(self, report_type: str, device_id: int, start_date: datetime, 
                        end_date: datetime, format: str = 'pdf') -> HttpResponse:
-        """Generate a report based on type."""
-        try:
-            device = GPSDevice.objects.get(id=device_id)
-            
-            if report_type == 'ticket':
-                return self.ticket_generator.generate_ticket_report(device, start_date, end_date, format)
-            elif report_type == 'stats':
-                return self.stats_generator.generate_statistics_report(device, start_date, end_date, format)
-            elif report_type == 'people':
-                return self.people_generator.generate_people_count_report(device, start_date, end_date, format)
-            elif report_type == 'alarm':
-                return self.alarm_generator.generate_alarm_report(device, start_date, end_date, format)
-            else:
-                raise ValueError(f"Unsupported report type: {report_type}")
+        """Generate a specific type of report."""
+        device = get_object_or_404(GPSDevice, id=device_id)
         
-        except GPSDevice.DoesNotExist:
-            raise ValueError(f"Device with ID {device_id} not found")
+        # Check permissions
+        if not (device.owner == self.user or self.user.is_staff):
+            raise Http404("No permission to access this device")
+        
+        if report_type == 'ticket':
+            return self.ticket_generator.generate_ticket_report(device, start_date, end_date, format)
+        elif report_type == 'statistics':
+            return self.stats_generator.generate_statistics_report(device, start_date, end_date, format)
+        elif report_type == 'people':
+            return self.people_generator.generate_people_count_report(device, start_date, end_date, format)
+        elif report_type == 'alarm':
+            return self.alarm_generator.generate_alarm_report(device, start_date, end_date, format)
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+    
+    def generate_route_report(self, route_number: int, report_date: date, 
+                            report_type: str = 'people', format: str = 'pdf') -> HttpResponse:
+        """Generate a route-specific report."""
+        if report_type == 'people':
+            return self.route_generator.generate_route_people_report(route_number, report_date, format)
+        else:
+            raise ValueError(f"Unknown route report type: {report_type}")
     
     def get_available_reports(self) -> List[Dict[str, Any]]:
         """Get list of available report types."""
         return [
             {
                 'type': 'ticket',
-                'name': 'Reporte de Tickets',
-                'description': 'Reporte de tickets y pagos por conductor',
-                'formats': ['pdf', 'csv', 'xlsx']
+                'name': 'Ticket Report',
+                'description': 'Report of ticket sales and collections'
             },
             {
-                'type': 'stats',
-                'name': 'Reporte de Estadísticas',
-                'description': 'Estadísticas de operación del dispositivo',
-                'formats': ['pdf', 'csv', 'xlsx']
+                'type': 'statistics',
+                'name': 'Statistics Report',
+                'description': 'Statistical report of device operations'
             },
             {
                 'type': 'people',
-                'name': 'Reporte de Conteo de Personas',
-                'description': 'Conteo de personas por hora',
-                'formats': ['pdf', 'csv', 'xlsx']
+                'name': 'People Count Report',
+                'description': 'Report of people boarding and alighting'
             },
             {
                 'type': 'alarm',
-                'name': 'Reporte de Alarmas',
-                'description': 'Reporte de alarmas del dispositivo',
-                'formats': ['pdf', 'csv', 'xlsx']
+                'name': 'Alarm Report',
+                'description': 'Report of system alarms and warnings'
             }
-        ] 
+        ]
+    
+    def get_route_choices(self) -> List[Tuple[int, str]]:
+        """Get available route choices."""
+        return list(RUTA_CHOICES2) 
