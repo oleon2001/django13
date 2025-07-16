@@ -1,0 +1,160 @@
+/* Estilos personalizados para las herramientas de dibujo de geocercas */
+
+/* Personalización del control de dibujo */
+.leaflet-draw-toolbar {
+  margin-top: 10px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  background: white !important;
+}
+
+.leaflet-draw-toolbar a {
+  background-color: #fff !important;
+  border: 2px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  margin: 2px !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #2196F3 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
+  background-color: #2196F3 !important;
+  border-color: #2196F3 !important;
+  color: #fff !important;
+}
+
+/* Estilos para los iconos de dibujo */
+.leaflet-draw-draw-circle {
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+}
+
+.leaflet-draw-draw-polygon {
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+}
+
+.leaflet-draw-draw-rectangle {
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Herramientas de edición */
+.leaflet-draw-edit-edit {
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+}
+
+.leaflet-draw-edit-remove {
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Personalización del control de edición */
+.leaflet-draw-edit-toolbar {
+  margin-top: 10px !important;
+}
+
+.leaflet-draw-edit-toolbar a {
+  background-color: #fff !important;
+  border: 2px solid #ccc !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  margin-right: 5px !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-draw-edit-toolbar a:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #FF9800 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-draw-edit-toolbar a.leaflet-draw-toolbar-button-enabled {
+  background-color: #FF9800 !important;
+  border-color: #FF9800 !important;
+  color: #fff !important;
+}
+
+/* Estilos para las formas dibujadas */
+.leaflet-interactive {
+  transition: all 0.2s ease;
+}
+
+.leaflet-interactive:hover {
+  stroke-width: 4 !important;
+  filter: brightness(1.1);
+}
+
+/* Tooltips de dibujo */
+.leaflet-draw-tooltip {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.leaflet-draw-tooltip:before {
+  display: none !important;
+}
+
+/* Personalización de los marcadores de edición */
+.leaflet-editing-icon {
+  border-radius: 50% !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .leaflet-draw-toolbar a,
+  .leaflet-draw-edit-toolbar a {
+    width: 36px !important;
+    height: 36px !important;
+    margin-right: 3px !important;
+  }
+  
+  .leaflet-draw-tooltip {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+/* Mejoras de accesibilidad */
+.leaflet-draw-toolbar a:focus,
+.leaflet-draw-edit-toolbar a:focus {
+  outline: 2px solid #2196F3 !important;
+  outline-offset: 2px !important;
+}
+
+/* Animaciones sutiles */
+@keyframes drawingPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.leaflet-draw-toolbar-button-enabled {
+  animation: drawingPulse 2s infinite;
+} 

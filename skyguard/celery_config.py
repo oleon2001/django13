@@ -10,7 +10,7 @@ CELERYBEAT_SCHEDULE = {
     'check-devices-heartbeat': {
         'task': 'skyguard.apps.gps.tasks.check_devices_heartbeat',
         'schedule': crontab(minute='*'),  # Cada minuto
-                    'kwargs': {'timeout_minutes': 1}
+        'kwargs': {'timeout_minutes': 1}
     },
     
     # Limpiar sesiones antiguas diariamente a las 2:00 AM
@@ -31,6 +31,33 @@ CELERYBEAT_SCHEDULE = {
         'task': 'skyguard.apps.gps.tasks.generate_device_statistics',
         'schedule': crontab(minute=0, hour='*/6'),  # Cada 6 horas
     },
+    
+    # === TAREAS DE GEOCERCAS ===
+    
+    # Verificar geocercas para todos los dispositivos cada 2 minutos
+    'check-all-devices-geofences': {
+        'task': 'skyguard.apps.gps.tasks.check_all_devices_geofences',
+        'schedule': crontab(minute='*/2'),  # Cada 2 minutos
+    },
+    
+    # Limpiar eventos de geocercas antiguos diariamente a las 3:00 AM
+    'cleanup-old-geofence-events': {
+        'task': 'skyguard.apps.gps.tasks.cleanup_old_geofence_events',
+        'schedule': crontab(hour=3, minute=0),  # Diario a las 3:00 AM
+        'kwargs': {'days_old': 30}
+    },
+    
+    # Generar estadísticas de geocercas cada 4 horas
+    'generate-geofence-statistics': {
+        'task': 'skyguard.apps.gps.tasks.generate_geofence_statistics',
+        'schedule': crontab(minute=0, hour='*/4'),  # Cada 4 horas
+    },
+    
+    # Enviar reporte diario de geocercas a las 8:00 AM
+    'send-geofence-daily-report': {
+        'task': 'skyguard.apps.gps.tasks.send_geofence_daily_report',
+        'schedule': crontab(hour=8, minute=0),  # Diario a las 8:00 AM
+    },
 }
 
 # Configuración de zona horaria para Celery
@@ -47,6 +74,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_ROUTES = {
     'skyguard.apps.gps.tasks.*': {'queue': 'gps_tasks'},
+    'skyguard.apps.gps.tasks.process_geofence_detection': {'queue': 'geofence_tasks'},
+    'skyguard.apps.gps.tasks.check_all_devices_geofences': {'queue': 'geofence_tasks'},
 }
 
 # Configuración de retry
@@ -58,5 +87,25 @@ CELERY_TASK_ANNOTATIONS = {
     'skyguard.apps.gps.tasks.cleanup_old_device_sessions': {
         'rate_limit': '1/h',   # Máximo 1 por hora
         'time_limit': 600,     # 10 minutos máximo
+    },
+    'skyguard.apps.gps.tasks.check_all_devices_geofences': {
+        'rate_limit': '30/m',  # Máximo 30 por minuto (cada 2 segundos)
+        'time_limit': 300,     # 5 minutos máximo
+    },
+    'skyguard.apps.gps.tasks.process_geofence_detection': {
+        'rate_limit': '200/m', # Máximo 200 por minuto (alta frecuencia para dispositivos individuales)
+        'time_limit': 60,      # 1 minuto máximo
+    },
+    'skyguard.apps.gps.tasks.cleanup_old_geofence_events': {
+        'rate_limit': '1/d',   # Máximo 1 por día
+        'time_limit': 1800,    # 30 minutos máximo
+    },
+    'skyguard.apps.gps.tasks.generate_geofence_statistics': {
+        'rate_limit': '6/d',   # Máximo 6 por día (cada 4 horas)
+        'time_limit': 600,     # 10 minutos máximo
+    },
+    'skyguard.apps.gps.tasks.send_geofence_daily_report': {
+        'rate_limit': '1/d',   # Máximo 1 por día
+        'time_limit': 900,     # 15 minutos máximo
     },
 } 

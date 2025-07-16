@@ -357,3 +357,320 @@ def validate_gps_data_integrity(self):
     except Exception as e:
         logger.error(f"Error in validate_gps_data_integrity task: {e}")
         raise self.retry(exc=e, countdown=60, max_retries=3) 
+
+
+@shared_task(bind=True)
+def process_geofence_detection(self, device_imei):
+    """
+    Procesar detección de geocercas para un dispositivo específico.
+    
+    Args:
+        device_imei (int): IMEI del dispositivo a procesar
+    """
+    try:
+        from skyguard.apps.gps.models import GPSDevice
+        from skyguard.apps.gps.services.geofence_service import geofence_detection_service
+        
+        # Obtener el dispositivo
+        try:
+            device = GPSDevice.objects.get(imei=device_imei)
+        except GPSDevice.DoesNotExist:
+            logger.error(f"Device {device_imei} not found for geofence detection")
+            return {'success': False, 'error': 'Device not found'}
+        
+        # Solo procesar dispositivos con posición y que estén online
+        if not device.position:
+            logger.debug(f"Device {device_imei} has no position, skipping geofence detection")
+            return {'success': True, 'skipped': 'No position'}
+        
+        if device.connection_status != 'ONLINE':
+            logger.debug(f"Device {device_imei} is {device.connection_status}, skipping geofence detection")
+            return {'success': True, 'skipped': f'Device {device.connection_status}'}
+        
+        # Procesar geocercas
+        events_generated = geofence_detection_service.check_device_geofences(device)
+        
+        logger.info(
+            f"Processed geofence detection for device {device.name} ({device_imei}): "
+            f"{len(events_generated)} events generated"
+        )
+        
+        return {
+            'success': True,
+            'device_imei': device_imei,
+            'device_name': device.name,
+            'events_generated': len(events_generated),
+            'events': events_generated
+        }
+        
+    except Exception as error:
+        logger.error(f"Error processing geofence detection for device {device_imei}: {error}")
+        return {'success': False, 'error': str(error)}
+
+
+@shared_task(bind=True)
+def check_all_devices_geofences(self):
+    """
+    Verificar geocercas para todos los dispositivos activos.
+    Esta tarea se ejecuta periódicamente para detectar eventos de geocercas.
+    """
+    try:
+        from skyguard.apps.gps.models import GPSDevice
+        
+        # Obtener todos los dispositivos activos con posición
+        active_devices = GPSDevice.objects.filter(
+            connection_status='ONLINE',
+            position__isnull=False
+        ).values_list('imei', flat=True)
+        
+        if not active_devices:
+            logger.info("No active devices found for geofence checking")
+            return {'success': True, 'devices_processed': 0}
+        
+        # Procesar cada dispositivo de forma asíncrona
+        results = []
+        for device_imei in active_devices:
+            try:
+                # Llamar a la tarea de procesamiento individual
+                result = process_geofence_detection.delay(device_imei)
+                results.append({
+                    'device_imei': device_imei,
+                    'task_id': result.id
+                })
+            except Exception as e:
+                logger.error(f"Error queuing geofence detection for device {device_imei}: {e}")
+                results.append({
+                    'device_imei': device_imei,
+                    'error': str(e)
+                })
+        
+        logger.info(f"Queued geofence detection for {len(active_devices)} devices")
+        
+        return {
+            'success': True,
+            'devices_processed': len(active_devices),
+            'results': results
+        }
+        
+    except Exception as error:
+        logger.error(f"Error in check_all_devices_geofences: {error}")
+        return {'success': False, 'error': str(error)}
+
+
+@shared_task(bind=True)
+def cleanup_old_geofence_events(self, days_old=30):
+    """
+    Limpiar eventos de geocercas antiguos.
+    
+    Args:
+        days_old (int): Días de antigüedad para considerar eventos como antiguos
+    """
+    try:
+        from skyguard.apps.gps.models import GeoFenceEvent
+        from datetime import timedelta
+        
+        cutoff_date = timezone.now() - timedelta(days=days_old)
+        
+        # Contar eventos antiguos
+        old_events = GeoFenceEvent.objects.filter(created_at__lt=cutoff_date)
+        events_count = old_events.count()
+        
+        if events_count == 0:
+            logger.info("No old geofence events to clean up")
+            return {'success': True, 'events_deleted': 0}
+        
+        # Eliminar eventos antiguos
+        deleted_count, _ = old_events.delete()
+        
+        logger.info(
+            f"Cleaned up {deleted_count} geofence events older than {days_old} days"
+        )
+        
+        return {
+            'success': True,
+            'events_deleted': deleted_count,
+            'cutoff_date': cutoff_date.isoformat()
+        }
+        
+    except Exception as error:
+        logger.error(f"Error cleaning up old geofence events: {error}")
+        return {'success': False, 'error': str(error)}
+
+
+@shared_task(bind=True)
+def generate_geofence_statistics(self):
+    """
+    Generar estadísticas de uso de geocercas.
+    """
+    try:
+        from skyguard.apps.gps.models import GeoFence, GeoFenceEvent
+        from django.db.models import Count, Q
+        from datetime import timedelta
+        
+        # Estadísticas básicas
+        total_geofences = GeoFence.objects.count()
+        active_geofences = GeoFence.objects.filter(is_active=True).count()
+        
+        # Eventos de las últimas 24 horas
+        yesterday = timezone.now() - timedelta(days=1)
+        recent_events = GeoFenceEvent.objects.filter(
+            timestamp__gte=yesterday
+        ).count()
+        
+        # Eventos por tipo
+        entry_events = GeoFenceEvent.objects.filter(
+            timestamp__gte=yesterday,
+            event_type='ENTRY'
+        ).count()
+        
+        exit_events = GeoFenceEvent.objects.filter(
+            timestamp__gte=yesterday,
+            event_type='EXIT'
+        ).count()
+        
+        # Geocercas más activas
+        most_active_geofences = GeoFence.objects.annotate(
+            event_count=Count('events', filter=Q(events__timestamp__gte=yesterday))
+        ).filter(event_count__gt=0).order_by('-event_count')[:10]
+        
+        # Dispositivos más activos en geocercas
+        most_active_devices = GeoFenceEvent.objects.filter(
+            timestamp__gte=yesterday
+        ).values('device__name', 'device__imei').annotate(
+            event_count=Count('id')
+        ).order_by('-event_count')[:10]
+        
+        stats = {
+            'total_geofences': total_geofences,
+            'active_geofences': active_geofences,
+            'events_last_24h': recent_events,
+            'entry_events_24h': entry_events,
+            'exit_events_24h': exit_events,
+            'most_active_geofences': [
+                {
+                    'name': gf.name,
+                    'id': gf.id,
+                    'event_count': gf.event_count
+                }
+                for gf in most_active_geofences
+            ],
+            'most_active_devices': list(most_active_devices),
+            'generated_at': timezone.now().isoformat()
+        }
+        
+        # Almacenar estadísticas en cache
+        from django.core.cache import cache
+        cache.set('geofence_statistics', stats, 3600)  # Cache por 1 hora
+        
+        logger.info(
+            f"Generated geofence statistics: {total_geofences} total geofences, "
+            f"{recent_events} events in last 24h"
+        )
+        
+        return {
+            'success': True,
+            'statistics': stats
+        }
+        
+    except Exception as error:
+        logger.error(f"Error generating geofence statistics: {error}")
+        return {'success': False, 'error': str(error)}
+
+
+@shared_task(bind=True)
+def send_geofence_daily_report(self, user_id=None):
+    """
+    Enviar reporte diario de actividad de geocercas.
+    
+    Args:
+        user_id (int): ID del usuario específico, None para todos los usuarios
+    """
+    try:
+        from django.contrib.auth.models import User
+        from skyguard.apps.gps.models import GeoFence, GeoFenceEvent
+        from skyguard.apps.gps.notifications import geofence_notification_service
+        from datetime import timedelta
+        
+        # Obtener usuarios
+        if user_id:
+            users = User.objects.filter(id=user_id, is_active=True)
+        else:
+            # Solo usuarios que tienen geocercas
+            users = User.objects.filter(
+                geofence_set__isnull=False,
+                is_active=True
+            ).distinct()
+        
+        reports_sent = 0
+        yesterday = timezone.now() - timedelta(days=1)
+        
+        for user in users:
+            try:
+                # Obtener geocercas del usuario
+                user_geofences = GeoFence.objects.filter(owner=user)
+                
+                if not user_geofences.exists():
+                    continue
+                
+                # Obtener eventos de ayer
+                events_yesterday = GeoFenceEvent.objects.filter(
+                    fence__owner=user,
+                    timestamp__gte=yesterday
+                ).select_related('fence', 'device')
+                
+                # Preparar datos del reporte
+                report_data = {
+                    'user': user,
+                    'date': yesterday.date(),
+                    'total_geofences': user_geofences.count(),
+                    'active_geofences': user_geofences.filter(is_active=True).count(),
+                    'total_events': events_yesterday.count(),
+                    'entry_events': events_yesterday.filter(event_type='ENTRY').count(),
+                    'exit_events': events_yesterday.filter(event_type='EXIT').count(),
+                    'events_by_geofence': {},
+                    'events_by_device': {}
+                }
+                
+                # Agrupar eventos por geocerca
+                for geofence in user_geofences:
+                    geofence_events = events_yesterday.filter(fence=geofence)
+                    if geofence_events.exists():
+                        report_data['events_by_geofence'][geofence.name] = {
+                            'total': geofence_events.count(),
+                            'entries': geofence_events.filter(event_type='ENTRY').count(),
+                            'exits': geofence_events.filter(event_type='EXIT').count()
+                        }
+                
+                # Agrupar eventos por dispositivo
+                device_events = events_yesterday.values('device__name').annotate(
+                    total=Count('id'),
+                    entries=Count('id', filter=Q(event_type='ENTRY')),
+                    exits=Count('id', filter=Q(event_type='EXIT'))
+                )
+                
+                for device_data in device_events:
+                    device_name = device_data['device__name']
+                    report_data['events_by_device'][device_name] = {
+                        'total': device_data['total'],
+                        'entries': device_data['entries'],
+                        'exits': device_data['exits']
+                    }
+                
+                # Enviar reporte por email (implementar template)
+                # geofence_notification_service.send_daily_report(report_data)
+                
+                reports_sent += 1
+                logger.info(f"Generated daily geofence report for user {user.username}")
+                
+            except Exception as e:
+                logger.error(f"Error generating report for user {user.username}: {e}")
+        
+        return {
+            'success': True,
+            'reports_sent': reports_sent,
+            'date': yesterday.date().isoformat()
+        }
+        
+    except Exception as error:
+        logger.error(f"Error sending daily geofence reports: {error}")
+        return {'success': False, 'error': str(error)} 

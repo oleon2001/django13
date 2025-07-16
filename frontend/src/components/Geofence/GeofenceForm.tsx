@@ -27,7 +27,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useTranslation } from 'react-i18next';
 import { Geofence, CreateGeofenceDTO, GeofenceType } from '../../types/geofence';
-import { GeofenceMap } from './GeofenceMap';
+import GeofenceDrawingMap from './GeofenceDrawingMap';
 
 // Tipos de geocercas disponibles
 const GEOFENCE_TYPES: { value: GeofenceType; label: string }[] = [
@@ -94,7 +94,6 @@ const GeofenceForm: React.FC<GeofenceFormProps> = ({
   // Estados
   const [activeTab, setActiveTab] = useState(0);
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.4326, -99.1332]); // CDMX por defecto
-  const [drawingMode, setDrawingMode] = useState<GeofenceType>('circle');
   const [drawnGeometry, setDrawnGeometry] = useState<any>(null);
   
   // Inicializar el formulario con Formik
@@ -139,11 +138,6 @@ const GeofenceForm: React.FC<GeofenceFormProps> = ({
     },
     enableReinitialize: true,
   });
-
-  // Efecto para sincronizar el modo de dibujo con el tipo seleccionado
-  useEffect(() => {
-    setDrawingMode(formik.values.type as GeofenceType);
-  }, [formik.values.type]);
 
   // Efecto para manejar la inicialización con datos existentes
   useEffect(() => {
@@ -502,12 +496,18 @@ const GeofenceForm: React.FC<GeofenceFormProps> = ({
       case 2: // Mapa
         return (
           <Box sx={{ mt: 2, height: 400 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('geofence.draw_geofence')}
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="subtitle2">
+                {t('geofence.draw_geofence')}
+              </Typography>
+              <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold' }}>
+                {formik.values.type === 'circle' && 'Haz clic y arrastra para crear un círculo'}
+                {formik.values.type === 'polygon' && 'Haz clic para agregar puntos, doble clic para finalizar'}
+                {formik.values.type === 'rectangle' && 'Haz clic y arrastra para crear un rectángulo'}
+              </Typography>
+            </Box>
             
-            <GeofenceMap
-              geofences={[]}
+            <GeofenceDrawingMap
               center={mapCenter}
               height={350}
               onGeometryCreated={handleGeometryCreated}
@@ -515,7 +515,9 @@ const GeofenceForm: React.FC<GeofenceFormProps> = ({
             />
             
             <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
-              {t(`geofence.help.drawing_${drawingMode}`)}
+              • Usa las herramientas de dibujo en la esquina superior derecha del mapa<br/>
+              • Para editar, selecciona el ícono de lápiz y luego tu forma<br/>
+              • Para eliminar, selecciona el ícono de papelera y luego tu forma
             </Typography>
             
             {!drawnGeometry && !initialData?.geometry && (
