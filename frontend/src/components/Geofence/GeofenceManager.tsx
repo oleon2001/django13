@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -93,26 +93,39 @@ const GeofenceManager: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
   const [selectedGeofenceForChecker, setSelectedGeofenceForChecker] = useState<Geofence | null>(null);
 
-  // Cargar geocercas
-  const loadGeofences = async (filters: GeofenceFilterParams = {}) => {
+  // Definir showSnackbar primero para usarlo en loadGeofences
+  const showSnackbar = useCallback((message: string, severity: 'success' | 'error' = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  }, []);
+
+  // Cargar geocercas usando useCallback para evitar recreación innecesaria
+  const loadGeofences = useCallback(async (filters: GeofenceFilterParams = {}) => {
     try {
       setLoading(true);
       setError(null);
       const data = await geofenceService.getAll(filters);
-      setGeofences(data);
+      // Asegurar que data es un array
+      if (Array.isArray(data)) {
+        setGeofences(data);
+      } else {
+        console.warn('Expected array from geofenceService.getAll, got:', data);
+        setGeofences([]);
+      }
     } catch (err) {
       console.error('Error loading geofences:', err);
       setError(t('geofence.errors.loadError'));
       showSnackbar(t('geofence.errors.loadError'), 'error');
+      // Asegurar que geofences sea un array aún en caso de error
+      setGeofences([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, showSnackbar]);
 
   // Cargar datos iniciales
   useEffect(() => {
     loadGeofences();
-  }, []);
+  }, [loadGeofences]);
 
   // Manejadores de eventos existentes
   const handleCreate = () => {
@@ -182,10 +195,6 @@ const GeofenceManager: React.FC = () => {
       console.error('Error saving geofence:', err);
       showSnackbar(t('geofence.errors.saveError'), 'error');
     }
-  };
-
-  const showSnackbar = (message: string, severity: 'success' | 'error' = 'success') => {
-    setSnackbar({ open: true, message, severity });
   };
 
   const handleSnackbarClose = () => {
@@ -314,7 +323,8 @@ const GeofenceManager: React.FC = () => {
                   </Alert>
                 )}
 
-                {geofences.length === 0 ? (
+                {/* Asegurar que geofences es un array antes de usar .map() */}
+                {!Array.isArray(geofences) || geofences.length === 0 ? (
                   <Alert severity="info">
                     {t('geofence.noGeofences')}
                   </Alert>

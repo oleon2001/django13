@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -220,7 +220,7 @@ export const GeofenceMetricsDashboard: React.FC = () => {
   const [timeWindow, setTimeWindow] = useState<number>(24);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const loadMetrics = async (showRefreshing = false) => {
+  const loadMetrics = useCallback(async (showRefreshing = false) => {
     try {
       if (showRefreshing) setRefreshing(true);
       else setLoading(true);
@@ -235,11 +235,11 @@ export const GeofenceMetricsDashboard: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [timeWindow]);
 
   useEffect(() => {
     loadMetrics();
-  }, [timeWindow]);
+  }, [loadMetrics]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -248,7 +248,7 @@ export const GeofenceMetricsDashboard: React.FC = () => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [timeWindow]);
+  }, [loadMetrics]);
 
   const handleRefresh = () => {
     loadMetrics(true);
