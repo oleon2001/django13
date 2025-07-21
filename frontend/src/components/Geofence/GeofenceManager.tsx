@@ -23,6 +23,9 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Tabs,
+  Tab,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -30,18 +33,49 @@ import {
   Delete as DeleteIcon,
   Map as MapIcon,
   Refresh as RefreshIcon,
+  Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { geofenceService, Geofence, GeofenceFilterParams } from '../../services/geofenceService';
 import { GeofenceMap } from './GeofenceMap';
+import { GeofenceMetricsDashboard } from './GeofenceMetricsDashboard';
+import { ManualGeofenceChecker } from './ManualGeofenceChecker';
 import GeofenceForm from './GeofenceForm';
 import ConfirmationDialog from '../Modals/ConfirmationDialog';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`geofence-tabpanel-${index}`}
+      aria-labelledby={`geofence-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ pt: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const GeofenceManager: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   
-  // Estados
+  // Estados existentes
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +88,10 @@ const GeofenceManager: React.FC = () => {
     message: '',
     severity: 'success',
   });
+
+  // Nuevos estados para tabs
+  const [currentTab, setCurrentTab] = useState(0);
+  const [selectedGeofenceForChecker, setSelectedGeofenceForChecker] = useState<Geofence | null>(null);
 
   // Cargar geocercas
   const loadGeofences = async (filters: GeofenceFilterParams = {}) => {
@@ -76,7 +114,7 @@ const GeofenceManager: React.FC = () => {
     loadGeofences();
   }, []);
 
-  // Manejadores de eventos
+  // Manejadores de eventos existentes
   const handleCreate = () => {
     setSelectedGeofence(null);
     setIsFormOpen(true);
@@ -85,6 +123,11 @@ const GeofenceManager: React.FC = () => {
   const handleEdit = (geofence: Geofence) => {
     setSelectedGeofence(geofence);
     setIsFormOpen(true);
+  };
+
+  const handleView = (geofence: Geofence) => {
+    setSelectedGeofenceForChecker(geofence);
+    setCurrentTab(3); // Tab de verificación manual
   };
 
   const handleDeleteClick = (id: number) => {
@@ -149,8 +192,21 @@ const GeofenceManager: React.FC = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  // Renderizado condicional
-  if (loading && geofences.length === 0) {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
+  const getStatusChip = (isActive: boolean) => (
+    <Chip
+      label={isActive ? 'Activo' : 'Inactivo'}
+      color={isActive ? 'success' : 'error'}
+      size="small"
+      variant="outlined"
+    />
+  );
+
+  // Renderizado condicional para loading
+  if (loading && geofences.length === 0 && currentTab !== 0) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
         <CircularProgress />
@@ -158,156 +214,234 @@ const GeofenceManager: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ my: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
-
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        {/* Encabezado */}
-        <Grid item xs={12}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h4" component="h1">
-              {t('geofence.title')}
-            </Typography>
-            <Box>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleCreate}
-                sx={{ mr: 1 }}
-              >
-                {t('common.add')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={() => loadGeofences()}
-              >
-                {t('common.refresh')}
-              </Button>
-            </Box>
-          </Box>
-        </Grid>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4" component="h1">
+          {t('geofence.title')}
+        </Typography>
+        <Box>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+            sx={{ mr: 1 }}
+          >
+            {t('common.add')}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => loadGeofences()}
+          >
+            {t('common.refresh')}
+          </Button>
+        </Box>
+      </Box>
 
-        {/* Mapa */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardHeader
-              title={t('geofence.mapTitle')}
-              avatar={<MapIcon color="primary" />}
-            />
-            <CardContent sx={{ height: '500px' }}>
-              <GeofenceMap 
-                geofences={geofences} 
-                onGeofenceClick={(geofence) => navigate(`/geofences/${geofence.id}`)}
+      {/* Tabs Navigation */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="geofence tabs">
+          <Tab 
+            label="Dashboard de Métricas" 
+            icon={<AnalyticsIcon />} 
+            iconPosition="start"
+            id="geofence-tab-0"
+            aria-controls="geofence-tabpanel-0"
+          />
+          <Tab 
+            label="Mapa y Lista" 
+            icon={<MapIcon />} 
+            iconPosition="start"
+            id="geofence-tab-1"
+            aria-controls="geofence-tabpanel-1"
+          />
+          <Tab 
+            label="Analytics Detallados" 
+            icon={<AssessmentIcon />} 
+            iconPosition="start"
+            id="geofence-tab-2"
+            aria-controls="geofence-tabpanel-2"
+          />
+          <Tab 
+            label="Verificación Manual" 
+            icon={<RefreshIcon />} 
+            iconPosition="start"
+            id="geofence-tab-3"
+            aria-controls="geofence-tabpanel-3"
+          />
+        </Tabs>
+      </Box>
+
+      {/* Tab Panels */}
+      <TabPanel value={currentTab} index={0}>
+        {/* Dashboard de Métricas */}
+        <GeofenceMetricsDashboard />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={1}>
+        {/* Vista original: Mapa y Lista */}
+        <Grid container spacing={3}>
+          {/* Mapa */}
+          <Grid item xs={12} md={8}>
+            <Card>
+              <CardHeader
+                title={t('geofence.mapTitle')}
+                avatar={<MapIcon color="primary" />}
               />
-            </CardContent>
-          </Card>
-        </Grid>
+              <CardContent sx={{ height: '500px' }}>
+                <GeofenceMap 
+                  geofences={geofences} 
+                  onGeofenceClick={(geofence) => navigate(`/geofences/${geofence.id}`)}
+                />
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Lista de geocercas */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardHeader
-              title={t('geofence.listTitle')}
-              subheader={`${geofences.length} ${t('geofence.itemsFound')}`}
-              action={
-                <Tooltip title={t('common.refresh')}>
-                  <IconButton onClick={() => loadGeofences()}>
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-              }
-            />
-            <CardContent>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>{t('geofence.fields.name')}</TableCell>
-                      <TableCell align="center">{t('geofence.fields.status')}</TableCell>
-                      <TableCell align="right">{t('common.actions')}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {geofences.length > 0 ? (
-                      geofences.map((geofence) => (
-                        <TableRow key={geofence.id} hover>
-                          <TableCell>
-                            <Typography variant="body2">{geofence.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {geofence.description || t('common.noDescription')}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  checked={geofence.is_active}
-                                  onChange={() => 
-                                    handleStatusToggle(geofence.id, geofence.is_active)
-                                  }
-                                  color="primary"
-                                  size="small"
-                                />
-                              }
-                              label={geofence.is_active ? t('common.active') : t('common.inactive')}
-                              labelPlacement="top"
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Tooltip title={t('common.edit')}>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleEdit(geofence)}
-                                color="primary"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={t('common.delete')}>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleDeleteClick(geofence.id)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
+          {/* Lista de geocercas */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%' }}>
+              <CardHeader
+                title={t('geofence.listTitle')}
+                subheader={`${geofences.length} geocercas encontradas`}
+              />
+              <CardContent sx={{ pt: 0, maxHeight: '500px', overflow: 'auto' }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+
+                {geofences.length === 0 ? (
+                  <Alert severity="info">
+                    {t('geofence.noGeofences')}
+                  </Alert>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Nombre</TableCell>
+                          <TableCell>Estado</TableCell>
+                          <TableCell>Acciones</TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} align="center">
-                          <Typography variant="body2" color="textSecondary">
-                            {t('geofence.noGeofences')}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+                      </TableHead>
+                      <TableBody>
+                        {geofences.map((geofence) => (
+                          <TableRow key={geofence.id}>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={500}>
+                                {geofence.name}
+                              </Typography>
+                              {geofence.description && (
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  {geofence.description}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={geofence.is_active}
+                                    onChange={() => handleStatusToggle(geofence.id, geofence.is_active)}
+                                    size="small"
+                                  />
+                                }
+                                label=""
+                                sx={{ m: 0 }}
+                              />
+                              {getStatusChip(geofence.is_active)}
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" gap={0.5}>
+                                <Tooltip title="Ver detalles">
+                                  <IconButton size="small" onClick={() => handleView(geofence)}>
+                                    <ViewIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Editar">
+                                  <IconButton size="small" onClick={() => handleEdit(geofence)}>
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Eliminar">
+                                  <IconButton size="small" onClick={() => handleDeleteClick(geofence.id)}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={2}>
+        {/* Analytics Detallados - Placeholder por ahora */}
+        <Alert severity="info" sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Analytics Detallados por Geocerca
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Esta funcionalidad estará disponible próximamente. Incluirá análisis detallados 
+            de cada geocerca con gráficos de actividad, patrones de entrada/salida y más.
+          </Typography>
+        </Alert>
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={3}>
+        {/* Verificación Manual */}
+        {selectedGeofenceForChecker ? (
+          <ManualGeofenceChecker
+            geofenceId={selectedGeofenceForChecker.id}
+            geofenceName={selectedGeofenceForChecker.name}
+            onResultsUpdate={(results) => {
+              console.log('Manual check results:', results);
+              showSnackbar(
+                `Verificación completa: ${results.devices_checked} dispositivos verificados`,
+                'success'
+              );
+            }}
+          />
+        ) : (
+          <Alert severity="info" sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Verificación Manual de Geocercas
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Selecciona una geocerca desde la pestaña "Mapa y Lista" para realizar 
+              una verificación manual de todos los dispositivos asociados.
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => setCurrentTab(1)}
+              sx={{ mt: 2 }}
+            >
+              Ir a Mapa y Lista
+            </Button>
+          </Alert>
+        )}
+      </TabPanel>
 
       {/* Formulario de geocerca */}
-      <GeofenceForm
-        open={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={selectedGeofence}
-      />
+      {isFormOpen && (
+        <GeofenceForm
+          open={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          initialData={selectedGeofence}
+        />
+      )}
 
       {/* Diálogo de confirmación de eliminación */}
       <ConfirmationDialog
@@ -315,22 +449,19 @@ const GeofenceManager: React.FC = () => {
         title={t('geofence.deleteConfirmTitle')}
         message={t('geofence.deleteConfirmMessage')}
         onConfirm={handleDeleteConfirm}
-        onCancel={() => {
-          setIsDeleteDialogOpen(false);
-          setGeofenceToDelete(null);
-        }}
+        onCancel={() => setIsDeleteDialogOpen(false)}
       />
 
-      {/* Notificación */}
+      {/* Snackbar para notificaciones */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={handleSnackbarClose} 
-          severity={snackbar.severity} 
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
           {snackbar.message}

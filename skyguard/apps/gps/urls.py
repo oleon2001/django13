@@ -1,13 +1,24 @@
 """
 URL patterns for the GPS application.
 """
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
 from . import views, vehicle_views, driver_views, geofence_views
+from .api.geofence_views import GeofenceViewSet, GeofenceEventViewSet, DeviceGeofenceAnalyticsViewSet
 
 app_name = 'gps'
 
+# Create router for ViewSets
+router = DefaultRouter()
+router.register(r'geofences', GeofenceViewSet, basename='geofence')
+router.register(r'geofence-events', GeofenceEventViewSet, basename='geofence-event')
+router.register(r'device-analytics', DeviceGeofenceAnalyticsViewSet, basename='device-analytics')
+
 urlpatterns = [
+    # Include ViewSet URLs
+    path('', include(router.urls)),
+    
     # Device CRUD endpoints
     path('devices/', views.list_devices, name='list_devices'),  # GET for list, POST for create
     path('devices/<int:imei>/', views.update_device, name='update_device'),  # PATCH for update, DELETE for delete
@@ -63,12 +74,12 @@ urlpatterns = [
     path('drivers/available-vehicles/', driver_views.available_vehicles, name='available_vehicles'),
     path('drivers/<int:driver_id>/assign-vehicle/', driver_views.assign_vehicle_to_driver, name='assign_vehicle_to_driver'),
     
-    # Geofence endpoints
-    path('geofences/', geofence_views.geofence_list, name='geofence_list'),
-    path('geofences/<int:geofence_id>/', geofence_views.geofence_detail, name='geofence_detail'),
-    path('geofences/<int:geofence_id>/events/', geofence_views.geofence_events, name='geofence_events'),
-    path('geofences/<int:geofence_id>/check-point/', geofence_views.check_point_in_geofence, name='check_point_in_geofence'),
-    path('geofences/<int:geofence_id>/assign-devices/', geofence_views.assign_devices_to_geofence, name='assign_devices_to_geofence'),
-    path('geofences/<int:geofence_id>/devices/', geofence_views.get_geofence_devices, name='get_geofence_devices'),
-    path('geofences/stats/', geofence_views.geofence_stats, name='geofence_stats'),
+    # Legacy geofence endpoints (mantener compatibilidad)
+    path('legacy-geofences/', geofence_views.geofence_list, name='legacy_geofence_list'),
+    path('legacy-geofences/<int:geofence_id>/', geofence_views.geofence_detail, name='legacy_geofence_detail'),
+    path('legacy-geofences/<int:geofence_id>/events/', geofence_views.geofence_events, name='legacy_geofence_events'),
+    path('legacy-geofences/<int:geofence_id>/check-point/', geofence_views.check_point_in_geofence, name='legacy_check_point_in_geofence'),
+    path('legacy-geofences/<int:geofence_id>/assign-devices/', geofence_views.assign_devices_to_geofence, name='legacy_assign_devices_to_geofence'),
+    path('legacy-geofences/<int:geofence_id>/devices/', geofence_views.get_geofence_devices, name='legacy_get_geofence_devices'),
+    path('legacy-geofences/stats/', geofence_views.geofence_stats, name='legacy_geofence_stats'),
 ]

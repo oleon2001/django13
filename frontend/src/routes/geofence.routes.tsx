@@ -1,5 +1,5 @@
 import { RouteObject } from 'react-router-dom';
-import { GeofenceManager } from '../components/Geofence';
+import { GeofenceManager, DeviceBehaviorAnalysis } from '../components/Geofence';
 import { useTranslation } from 'react-i18next';
 import PrivateRoute from '../components/PrivateRoute';
 
@@ -22,6 +22,19 @@ const GeofenceRoutes: RouteObject[] = [
         const { t } = useTranslation();
         return t('geofence.title');
       },
+      roles: ['admin', 'manager', 'user'],
+    },
+  },
+  {
+    path: '/geofences/analytics/:deviceId',
+    element: (
+      <PrivateRoute>
+        <DeviceBehaviorAnalysis deviceId={""} />
+      </PrivateRoute>
+    ),
+    handle: {
+      title: () => 'Análisis Comportamental ML',
+      breadcrumb: () => 'Análisis ML',
       roles: ['admin', 'manager'],
     },
   },

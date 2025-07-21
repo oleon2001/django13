@@ -8,28 +8,39 @@ from django.utils import timezone
 from django.contrib.gis.geos import Point
 from django.db import transaction
 from django.db.models import Q
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 
-from skyguard.core.interfaces import IGeofenceService
 from skyguard.apps.gps.models import GPSDevice, GeoFence, GeoFenceEvent
 from skyguard.apps.gps.notifications import GeofenceNotificationService
+from skyguard.apps.gps.services.geofence_manager import advanced_geofence_manager
 
 logger = logging.getLogger(__name__)
-channel_layer = get_channel_layer()
+
+# Safely import and initialize channel layer
+def get_safe_channel_layer():
+    """Get channel layer safely without causing connection errors."""
+    try:
+        from channels.layers import get_channel_layer
+        return get_channel_layer()
+    except Exception as e:
+        logger.debug(f"Channel layer not available: {e}")
+        return None
+
+channel_layer = get_safe_channel_layer()
 
 
-class GeofenceDetectionService(IGeofenceService):
+class GeofenceDetectionService:
     """Service for automatic geofence detection and event generation."""
     
     def __init__(self):
         """Initialize the geofence detection service."""
         self.notification_service = GeofenceNotificationService()
         self.logger = logger
+        self.advanced_manager = advanced_geofence_manager
     
     def check_device_geofences(self, device: GPSDevice) -> List[Dict[str, Any]]:
         """
         Check all geofences for a device and detect entry/exit events.
+        Now uses the advanced manager for better performance and features.
         
         Args:
             device: GPS device to check
@@ -37,28 +48,12 @@ class GeofenceDetectionService(IGeofenceService):
         Returns:
             List of events generated
         """
-        if not device.position:
-            self.logger.debug(f"Device {device.imei} has no position")
-            return []
-        
-        events_generated = []
-        
-        # Get all active geofences for this device
-        active_geofences = GeoFence.objects.filter(
-            is_active=True,
-            devices=device
-        ).prefetch_related('events')
-        
-        for geofence in active_geofences:
-            event = self._check_single_geofence(device, geofence)
-            if event:
-                events_generated.append(event)
-        
-        return events_generated
+        return self.advanced_manager.check_device_geofences(device)
     
     def _check_single_geofence(self, device: GPSDevice, geofence: GeoFence) -> Optional[Dict[str, Any]]:
         """
         Check a single geofence for entry/exit events.
+        Deprecated: Use advanced_manager for new implementations.
         
         Args:
             device: GPS device
@@ -67,45 +62,14 @@ class GeofenceDetectionService(IGeofenceService):
         Returns:
             Event data if an event was generated, None otherwise
         """
-        is_inside = geofence.geometry.contains(device.position)
-        
-        # Get the last event for this device/geofence combination
-        last_event = GeoFenceEvent.objects.filter(
-            device=device,
-            fence=geofence
-        ).order_by('-timestamp').first()
-        
-        # Determine if we need to generate an event
-        should_generate_event = False
-        event_type = None
-        
-        if last_event is None:
-            # First time checking this device/geofence - generate event if inside
-            if is_inside:
-                should_generate_event = True
-                event_type = 'ENTRY'
-        else:
-            # Check for state change
-            was_inside = (last_event.event_type == 'ENTRY')
-            
-            if is_inside and not was_inside:
-                # Device entered geofence
-                should_generate_event = True
-                event_type = 'ENTRY'
-            elif not is_inside and was_inside:
-                # Device exited geofence
-                should_generate_event = True
-                event_type = 'EXIT'
-        
-        if should_generate_event:
-            return self._generate_geofence_event(device, geofence, event_type)
-        
-        return None
+        logger.warning("Using deprecated _check_single_geofence method. Use advanced_manager instead.")
+        return self.advanced_manager._check_single_geofence_enhanced(device, geofence)
     
     @transaction.atomic
     def _generate_geofence_event(self, device: GPSDevice, geofence: GeoFence, event_type: str) -> Dict[str, Any]:
         """
         Generate a geofence event and trigger notifications.
+        Deprecated: Use advanced_manager for new implementations.
         
         Args:
             device: GPS device
@@ -115,36 +79,8 @@ class GeofenceDetectionService(IGeofenceService):
         Returns:
             Event data
         """
-        # Create the event
-        event = GeoFenceEvent.objects.create(
-            fence=geofence,
-            device=device,
-            event_type=event_type,
-            position=device.position,
-            timestamp=timezone.now()
-        )
-        
-        self.logger.info(f"Generated geofence event: {device.name} {event_type} {geofence.name}")
-        
-        # Prepare event data
-        event_data = {
-            'id': event.id,
-            'device_id': device.imei,
-            'device_name': device.name,
-            'geofence_id': geofence.id,
-            'geofence_name': geofence.name,
-            'event_type': event_type,
-            'position': [device.position.y, device.position.x],  # [lat, lng]
-            'timestamp': event.timestamp.isoformat()
-        }
-        
-        # Send WebSocket notification
-        self._broadcast_event(event_data, geofence.owner.id)
-        
-        # Send notifications (email/SMS) if configured
-        self._send_notifications(event, geofence, device)
-        
-        return event_data
+        logger.warning("Using deprecated _generate_geofence_event method. Use advanced_manager instead.")
+        return self.advanced_manager._generate_enhanced_geofence_event(device, geofence, event_type)
     
     def _broadcast_event(self, event_data: Dict[str, Any], user_id: int):
         """
@@ -154,21 +90,8 @@ class GeofenceDetectionService(IGeofenceService):
             event_data: Event data to broadcast
             user_id: User ID to send to
         """
-        if channel_layer:
-            try:
-                message = {
-                    'type': 'geofence_event',
-                    'data': event_data
-                }
-                
-                async_to_sync(channel_layer.group_send)(
-                    f"geofences_user_{user_id}",
-                    message
-                )
-                
-                self.logger.debug(f"Broadcasted geofence event to user {user_id}")
-            except Exception as e:
-                self.logger.error(f"Error broadcasting geofence event: {e}")
+        # Use advanced manager's method
+        self.advanced_manager._broadcast_geofence_event(event_data, user_id)
     
     def _send_notifications(self, event: GeoFenceEvent, geofence: GeoFence, device: GPSDevice):
         """
@@ -194,7 +117,7 @@ class GeofenceDetectionService(IGeofenceService):
         try:
             self.notification_service.send_geofence_notification(event, geofence, device)
         except Exception as e:
-            self.logger.error(f"Error sending geofence notification: {e}")
+            self.logger.warning(f"Error sending geofence notification: {e}")
     
     def _is_in_cooldown(self, geofence: GeoFence, device: GPSDevice, event_type: str) -> bool:
         """
@@ -208,24 +131,12 @@ class GeofenceDetectionService(IGeofenceService):
         Returns:
             True if in cooldown, False otherwise
         """
-        cooldown_seconds = geofence.notification_cooldown
-        if cooldown_seconds <= 0:
-            return False
-        
-        # Check for recent events of the same type
-        since = timezone.now() - timedelta(seconds=cooldown_seconds)
-        recent_events = GeoFenceEvent.objects.filter(
-            fence=geofence,
-            device=device,
-            event_type=event_type,
-            timestamp__gte=since
-        ).exists()
-        
-        return recent_events
+        return self.advanced_manager._is_in_cooldown(geofence, device, event_type)
     
     def create_geofence(self, name: str, geometry: Point, owner) -> GeoFence:
         """
         Create a new geofence.
+        Deprecated: Use advanced_manager.create_geofence instead.
         
         Args:
             name: Geofence name
@@ -235,6 +146,7 @@ class GeofenceDetectionService(IGeofenceService):
         Returns:
             Created geofence
         """
+        logger.warning("Using deprecated create_geofence method. Use advanced_manager.create_geofence instead.")
         return GeoFence.objects.create(
             name=name,
             geometry=geometry,
@@ -293,7 +205,20 @@ class GeofenceDetectionService(IGeofenceService):
             fence__owner_id=user_id,
             timestamp__gte=since
         ).select_related('fence', 'device').order_by('-timestamp')
+    
+    # New methods for integration with advanced manager
+    def analyze_device_behavior(self, device: GPSDevice, days_back: int = 7) -> Dict[str, Any]:
+        """Analyze device behavior patterns within geofences."""
+        return self.advanced_manager.analyzer.analyze_device_behavior(device, days_back)
+    
+    def generate_metrics(self, user, time_window_hours: int = 24):
+        """Generate geofence metrics for a user."""
+        return self.advanced_manager.generate_geofence_metrics(user, time_window_hours)
+    
+    def get_user_geofences(self, user, include_inactive: bool = False):
+        """Get geofences for a user with permission checking."""
+        return self.advanced_manager.get_user_geofences(user, include_inactive)
 
 
-# Global instance
+# Global instance - maintaining backward compatibility
 geofence_detection_service = GeofenceDetectionService() 

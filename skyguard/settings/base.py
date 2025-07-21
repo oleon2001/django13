@@ -15,6 +15,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key-for-development')
 
+# Site ID for django.contrib.sites
+SITE_ID = 1
+
 # Sentry Configuration for Error Monitoring
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 if SENTRY_DSN:

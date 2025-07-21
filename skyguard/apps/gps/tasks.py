@@ -362,14 +362,14 @@ def validate_gps_data_integrity(self):
 @shared_task(bind=True)
 def process_geofence_detection(self, device_imei):
     """
-    Procesar detección de geocercas para un dispositivo específico.
+    Procesar detección de geocercas para un dispositivo específico usando el gestor avanzado.
     
     Args:
         device_imei (int): IMEI del dispositivo a procesar
     """
     try:
         from skyguard.apps.gps.models import GPSDevice
-        from skyguard.apps.gps.services.geofence_service import geofence_detection_service
+        from skyguard.apps.gps.services.geofence_manager import advanced_geofence_manager
         
         # Obtener el dispositivo
         try:
@@ -387,8 +387,8 @@ def process_geofence_detection(self, device_imei):
             logger.debug(f"Device {device_imei} is {device.connection_status}, skipping geofence detection")
             return {'success': True, 'skipped': f'Device {device.connection_status}'}
         
-        # Procesar geocercas
-        events_generated = geofence_detection_service.check_device_geofences(device)
+        # Procesar geocercas usando el gestor avanzado
+        events_generated = advanced_geofence_manager.check_device_geofences(device)
         
         logger.info(
             f"Processed geofence detection for device {device.name} ({device_imei}): "

@@ -8,11 +8,18 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 
 logger = logging.getLogger(__name__)
-channel_layer = get_channel_layer()
+
+# Safely import and initialize channel layer
+def get_safe_channel_layer():
+    """Get channel layer safely without causing connection errors."""
+    try:
+        from channels.layers import get_channel_layer
+        return get_channel_layer()
+    except Exception as e:
+        logger.debug(f"Channel layer not available: {e}")
+        return None
 
 
 class GeofenceNotificationService:
@@ -123,7 +130,7 @@ class GeofenceNotificationService:
             
             self.logger.info(f"Sent geofence email notification to {len(email_addresses)} recipients")
                     
-                except Exception as e:
+        except Exception as e:
             self.logger.error(f"Error sending email notifications: {e}")
     
     def _send_sms_notifications(self, data: Dict[str, Any], phone_numbers: List[str]):
@@ -167,21 +174,28 @@ class GeofenceNotificationService:
                 'timestamp': data['timestamp'].isoformat()
             }
             
-            # Send to each user via WebSocket
+            # Send to each user via WebSocket (safely)
+            channel_layer = get_safe_channel_layer()
             if channel_layer:
-                for user in users:
-                    try:
-                        async_to_sync(channel_layer.group_send)(
-                            f"notifications_user_{user.id}",
-                            notification_message
-                        )
-                    except Exception as e:
-                        self.logger.error(f"Error sending push notification to user {user.id}: {e}")
+                try:
+                    from asgiref.sync import async_to_sync
+                    for user in users:
+                        try:
+                            async_to_sync(channel_layer.group_send)(
+                                f"notifications_user_{user.id}",
+                                notification_message
+                            )
+                        except Exception as e:
+                            self.logger.warning(f"Error sending push notification to user {user.id}: {e}")
+                except Exception as e:
+                    self.logger.warning(f"Error with WebSocket push notifications: {e}")
+            else:
+                self.logger.debug("Channel layer not available, skipping push notifications")
             
-            self.logger.info(f"Sent push notifications to {users.count()} users")
+            self.logger.info(f"Attempted push notifications to {users.count()} users")
             
         except Exception as e:
-            self.logger.error(f"Error sending push notifications: {e}")
+            self.logger.warning(f"Error sending push notifications: {e}")
     
     def _send_realtime_alert(self, data: Dict[str, Any], user_id: int):
         """
@@ -203,13 +217,21 @@ class GeofenceNotificationService:
                 'sound': True  # Play alert sound
             }
             
+            # Safely get channel layer for alerts
+            channel_layer = get_safe_channel_layer()
             if channel_layer:
-            async_to_sync(channel_layer.group_send)(
-                    f"alerts_user_{user_id}",
-                    alert_message
-                )
+                try:
+                    from asgiref.sync import async_to_sync
+                    async_to_sync(channel_layer.group_send)(
+                        f"alerts_user_{user_id}",
+                        alert_message
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Error sending real-time alert to user {user_id}: {e}")
+            else:
+                self.logger.debug(f"Channel layer not available for real-time alerts to user {user_id}")
             
-            self.logger.info(f"Sent real-time alert to user {user_id}")
+            self.logger.info(f"Attempted real-time alert to user {user_id}")
             
         except Exception as e:
             self.logger.error(f"Error sending real-time alert: {e}")
@@ -243,13 +265,21 @@ class NotificationService:
                 'timestamp': timezone.now().isoformat()
             }
             
+            # Safely get channel layer for alerts
+            channel_layer = get_safe_channel_layer()
             if channel_layer:
-                async_to_sync(channel_layer.group_send)(
-                    f"alerts_user_{user_id}",
-                    alert_data
-                )
+                try:
+                    from asgiref.sync import async_to_sync
+                    async_to_sync(channel_layer.group_send)(
+                        f"alerts_user_{user_id}",
+                        alert_data
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Error sending device alert to user {user_id}: {e}")
+            else:
+                self.logger.debug(f"Channel layer not available for device alerts to user {user_id}")
             
-            self.logger.info(f"Sent device alert {alert_type} for device {device.name}")
+            self.logger.info(f"Attempted device alert {alert_type} for device {device.name}")
             
         except Exception as e:
             self.logger.error(f"Error sending device alert: {e}")
@@ -271,21 +301,29 @@ class NotificationService:
                 'timestamp': timezone.now().isoformat()
             }
             
+            # Safely get channel layer for notifications
+            channel_layer = get_safe_channel_layer()
             if channel_layer:
-                if user_id:
-                    # Send to specific user
-                    async_to_sync(channel_layer.group_send)(
-                        f"notifications_user_{user_id}",
-                        notification_data
-                    )
-                else:
-                    # Broadcast to all users
-                    async_to_sync(channel_layer.group_send)(
-                        "system_notifications",
-                        notification_data
-                    )
+                try:
+                    from asgiref.sync import async_to_sync
+                    if user_id:
+                        # Send to specific user
+                        async_to_sync(channel_layer.group_send)(
+                            f"notifications_user_{user_id}",
+                            notification_data
+                        )
+                    else:
+                        # Broadcast to all users
+                        async_to_sync(channel_layer.group_send)(
+                            "system_notifications",
+                            notification_data
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Error sending system notification to user {user_id}: {e}")
+            else:
+                self.logger.debug(f"Channel layer not available for system notifications to user {user_id}")
             
-            self.logger.info(f"Sent system notification: {message}")
+            self.logger.info(f"Attempted system notification: {message}")
             
         except Exception as e:
             self.logger.error(f"Error sending system notification: {e}")

@@ -3,11 +3,15 @@ Celery configuration for SkyGuard project.
 """
 
 import os
+import django
 from celery import Celery
 from celery.schedules import crontab
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'skyguard.settings.dev')
+
+# Ensure Django is setup before importing any Django modules
+django.setup()
 
 app = Celery('skyguard')
 
@@ -44,6 +48,33 @@ app.conf.beat_schedule = {
     'generate-device-stats': {
         'task': 'skyguard.apps.gps.tasks.generate_device_statistics',
         'schedule': crontab(minute=0, hour='*/6'),  # Cada 6 horas
+    },
+    
+    # === TAREAS DE GEOCERCAS ===
+    
+    # Verificar geocercas para todos los dispositivos cada 2 minutos
+    'check-all-devices-geofences': {
+        'task': 'skyguard.apps.gps.tasks.check_all_devices_geofences',
+        'schedule': crontab(minute='*/2'),  # Cada 2 minutos
+    },
+    
+    # Limpiar eventos de geocercas antiguos diariamente a las 3:00 AM
+    'cleanup-old-geofence-events': {
+        'task': 'skyguard.apps.gps.tasks.cleanup_old_geofence_events',
+        'schedule': crontab(hour=3, minute=0),  # Diario a las 3:00 AM
+        'kwargs': {'days_old': 30}
+    },
+    
+    # Generar estadísticas de geocercas cada 4 horas
+    'generate-geofence-statistics': {
+        'task': 'skyguard.apps.gps.tasks.generate_geofence_statistics',
+        'schedule': crontab(minute=0, hour='*/4'),  # Cada 4 horas
+    },
+    
+    # Enviar reporte diario de geocercas a las 8:00 AM
+    'send-geofence-daily-report': {
+        'task': 'skyguard.apps.gps.tasks.send_geofence_daily_report',
+        'schedule': crontab(hour=8, minute=0),  # Diario a las 8:00 AM
     },
 }
 

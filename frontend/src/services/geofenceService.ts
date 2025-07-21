@@ -9,6 +9,13 @@ import {
   GeofenceEventFilterParams,
   GeofenceType,
   GeofenceGeometry,
+  GeofenceMetrics,
+  GeofenceAnalytics,
+  ManualGeofenceCheck,
+  BehaviorAnalysis,
+  DeviceGeofenceCheck,
+  GeofenceEventsResult,
+  GeofenceEventFilters,
 } from '../types/geofence';
 
 // Re-exportar tipos para compatibilidad
@@ -22,6 +29,13 @@ export type {
   GeofenceEventFilterParams,
   GeofenceType,
   GeofenceGeometry,
+  GeofenceMetrics,
+  GeofenceAnalytics,
+  ManualGeofenceCheck,
+  BehaviorAnalysis,
+  DeviceGeofenceCheck,
+  GeofenceEventsResult,
+  GeofenceEventFilters,
 };
 
 /**
@@ -163,6 +177,99 @@ class GeofenceService {
       return response.data;
     } catch (error) {
       console.error(`Error al verificar punto en geocerca ${geofenceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene métricas comprehensivas de geocercas
+   */
+  async getMetrics(hours: number = 24): Promise<GeofenceMetrics> {
+    try {
+      const response = await api.get<GeofenceMetrics>(`${this.baseUrl}/metrics/`, { 
+        params: { hours } 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener métricas de geocercas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene analytics detallados para una geocerca específica
+   */
+  async getGeofenceAnalytics(id: number, days: number = 7): Promise<GeofenceAnalytics> {
+    try {
+      const response = await api.get<GeofenceAnalytics>(
+        `${this.baseUrl}/${id}/analytics/`, 
+        { params: { days } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener analytics para geocerca ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica manualmente todas las geocercas para una geocerca específica
+   */
+  async checkGeofenceDevices(id: number): Promise<ManualGeofenceCheck> {
+    try {
+      const response = await api.post<ManualGeofenceCheck>(
+        `${this.baseUrl}/${id}/check_devices/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error al verificar dispositivos para geocerca ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene análisis comportamental ML para un dispositivo específico
+   */
+  async getDeviceBehaviorAnalysis(deviceId: string, days: number = 7): Promise<BehaviorAnalysis> {
+    try {
+      const response = await api.get<BehaviorAnalysis>(
+        `/api/device-analytics/${deviceId}/behavior_analysis/`, 
+        { params: { days } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener análisis comportamental para dispositivo ${deviceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica geocercas manualmente para un dispositivo específico
+   */
+  async checkDeviceGeofences(deviceId: string): Promise<DeviceGeofenceCheck> {
+    try {
+      const response = await api.post<DeviceGeofenceCheck>(
+        `/api/device-analytics/${deviceId}/check_geofences/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error al verificar geocercas para dispositivo ${deviceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene eventos de geocerca con filtros avanzados
+   */
+  async getGeofenceEvents(id: number, filters?: GeofenceEventFilters): Promise<GeofenceEventsResult> {
+    try {
+      const response = await api.get<GeofenceEventsResult>(
+        `${this.baseUrl}/${id}/events/`, 
+        { params: filters }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener eventos para geocerca ${id}:`, error);
       throw error;
     }
   }
