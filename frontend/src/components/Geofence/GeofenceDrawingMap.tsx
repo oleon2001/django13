@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, useMap, Marker, Tooltip } from 'react-leaflet';
+import L, { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import './GeofenceDrawingMap.css';
 import 'leaflet-draw';
 import { Box, Typography, Button, Alert } from '@mui/material';
 import { RadioButtonUnchecked, CropSquare, ChangeHistory } from '@mui/icons-material';
+import { Device } from '../../types';
+import { TextField, InputAdornment, List, ListItem, ListItemText } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import gpsIconUrl from '../../assets/gps-device.png'; // Asegúrate de tener este icono en assets
 
 // Fix para los iconos de Leaflet en producción
 // @ts-ignore
@@ -23,6 +27,9 @@ interface GeofenceDrawingMapProps {
   height?: string | number;
   onGeometryCreated: (geometry: any) => void;
   initialGeometry?: any;
+  devices?: Device[];
+  selectedDeviceIds?: number[];
+  onCenterChange?: (coords: [number, number]) => void; // NUEVO
 }
 
 const DEFAULT_CENTER: [number, number] = [19.4326, -99.1332]; // CDMX
@@ -234,9 +241,14 @@ const GeofenceDrawingMap: React.FC<GeofenceDrawingMapProps> = ({
   height = '100%',
   onGeometryCreated,
   initialGeometry,
+  devices = [],
+  selectedDeviceIds = [],
+  onCenterChange, // NUEVO
 }) => {
   const mapRef = useRef<L.Map>(null);
   const [hasError, setHasError] = useState(false);
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   // Manejar errores de carga del mapa
   useEffect(() => {
@@ -249,6 +261,39 @@ const GeofenceDrawingMap: React.FC<GeofenceDrawingMapProps> = ({
       window.removeEventListener('error', handleMapError);
     };
   }, []);
+
+  // Buscar ubicación con Nominatim
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!search) return;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(search)}`);
+      const data = await res.json();
+      setSearchResults(data);
+    } finally {
+      // setSearchLoading(false); // Eliminado
+    }
+  };
+
+  const handleResultClick = (result: any) => {
+    if (mapRef.current && result.lat && result.lon) {
+      const coords: [number, number] = [parseFloat(result.lat), parseFloat(result.lon)];
+      mapRef.current.setView(coords, 16);
+      setSearchResults([]);
+      setSearch('');
+      if (onCenterChange) {
+        onCenterChange(coords);
+      }
+    }
+  };
+
+  // Icono personalizado para dispositivos
+  const deviceIcon = new Icon({
+    iconUrl: gpsIconUrl,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  });
 
   if (hasError) {
     return (
@@ -282,6 +327,32 @@ const GeofenceDrawingMap: React.FC<GeofenceDrawingMapProps> = ({
 
   return (
     <Box height={height} width="100%" position="relative">
+      {/* Barra de búsqueda textual */}
+      <form onSubmit={handleSearch} style={{ position: 'absolute', top: 8, left: 8, right: 60, zIndex: 1200 }}>
+        <TextField
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar dirección o lugar..."
+          size="small"
+          fullWidth
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        {searchResults.length > 0 && (
+          <List sx={{ bgcolor: 'background.paper', maxHeight: 200, overflow: 'auto', position: 'absolute', width: '100%', zIndex: 1300 }}>
+            {searchResults.map((result, idx) => (
+              <ListItem button key={idx} onClick={() => handleResultClick(result)}>
+                <ListItemText primary={result.display_name} />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </form>
       {/* Instrucciones de dibujo */}
       <Alert 
         severity="info" 
@@ -328,6 +399,29 @@ const GeofenceDrawingMap: React.FC<GeofenceDrawingMapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
+        {/* Mostrar dispositivos como marcadores */}
+        {devices.map(device => device.position && (
+          <Marker
+            key={device.id}
+            position={[device.position.latitude, device.position.longitude]}
+            icon={deviceIcon}
+            eventHandlers={{
+              click: () => {
+                if (mapRef.current) {
+                  mapRef.current.setView([device.position!.latitude, device.position!.longitude], 16);
+                }
+              },
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={selectedDeviceIds.includes(device.id!)}>
+              <div>
+                <strong>{device.name || `Device ${device.imei}`}</strong>
+                <div>IMEI: {device.imei}</div>
+                <div>Status: {device.connection_status || 'OFFLINE'}</div>
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
         <DrawingControls 
           onGeometryCreated={onGeometryCreated}
           initialGeometry={initialGeometry}

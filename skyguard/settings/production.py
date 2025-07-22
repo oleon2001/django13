@@ -13,9 +13,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Security Settings
 DEBUG = False
 ALLOWED_HOSTS = [
-    'your-domain.com',
-    'api.your-domain.com',
-    'ws.your-domain.com',
     '10.0.0.0/8',  # Private networks
     '172.16.0.0/12',
     '192.168.0.0/16'
