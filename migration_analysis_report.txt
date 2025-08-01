@@ -1,8 +1,0 @@
-REPORTE DE ANÁLISIS DE MIGRACIÓN
-Generado: 2025-06-29 01:46:51.291068
-Total registros: 6
-Tiempo estimado: 2.0 horas
-Problemas encontrados: 1
-
-Problemas:
-- ⚠️  1 dispositivos sin propietario
